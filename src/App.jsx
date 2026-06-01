@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { Analytics } from '@vercel/analytics/react';
 
 // SHARED COMPONENTS
 import Header from "./components/common/Header.jsx";
@@ -21,6 +22,7 @@ function App() {
        
         <Outlet />
       </main>
+      <Analytics/>
 
       {/* FOOTER */}
       <Footer />
