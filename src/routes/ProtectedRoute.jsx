@@ -4,6 +4,11 @@ import { useAuth } from '../context/AuthContext.jsx';
 export default function ProtectedRoute({ children, role }) {
   // 1. Destructure 'loading' from your Auth Context
   const { user, isAuthenticated, loading } = useAuth(); 
+  console.log("ProtectedRoute", {
+  user,
+  isAuthenticated,
+  loading,
+});
 
   // 2. Prevent redirecting while checking if the user is logged in
   if (loading) {

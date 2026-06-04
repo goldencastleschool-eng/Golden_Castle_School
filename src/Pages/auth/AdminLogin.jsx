@@ -76,13 +76,19 @@ function Login() {
           };
 
       const response = await API.post(endpoint, payload);
-      const { student, admin } = response.data;
-      const account = isStudent
-        ? {
-            ...student,
-            role: "student",
-          }
+      const { student, admin, token } = response.data;
+
+      if (token) {
+        localStorage.setItem("token", token);
+      }
+      console.log(student, admin, token)
+      const account = isStudent ? {
+        ...student, 
+        role: "student",
+        }
         : admin;
+
+      localStorage.setItem( "user",JSON.stringify(account));
 
       setUser(account);
       navigate(isStudent ? "/student" : "/admin");
