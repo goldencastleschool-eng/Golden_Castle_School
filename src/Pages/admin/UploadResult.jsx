@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { FaArrowRight, FaClipboardCheck } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
+import AdminNotification from "../../components/common/AdminNotification.jsx";
 
 const initialResultForm = {
   studentId: "",
@@ -43,6 +45,8 @@ function UploadResult() {
   const [resultSearch, setResultSearch] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
   const [uploading, setUploading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchResults = async () => {
     const response = await API.get("/results");
@@ -192,19 +196,23 @@ function UploadResult() {
     setResultForm(initialResultForm);
   };
 
-  const handleDelete = async (resultId) => {
-    const confirmed = window.confirm("Delete this result record?");
+  const handleDeleteRequest = (result) => {
+    setDeleteTarget(result);
+  };
 
-    if (!confirmed) {
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget?._id) {
       return;
     }
 
+    setDeleting(true);
     try {
-      await API.delete(`/results/${resultId}`);
+      await API.delete(`/results/${deleteTarget._id}`);
       setStatus({
         type: "success",
         message: "Result deleted successfully.",
       });
+      setDeleteTarget(null);
       await fetchResults();
     } catch (error) {
       setStatus({
@@ -214,19 +222,35 @@ function UploadResult() {
           error.response?.data?.error ||
           "Unable to delete result.",
       });
+    } finally {
+      setDeleting(false);
     }
   };
-
-  const statusClass =
-    status.type === "success"
-      ? "bg-green-500/10 border-green-500/30 text-green-300"
-      : "bg-red-500/10 border-red-500/30 text-red-300";
 
   const inputClass =
     "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
   return (
     <div className="px-6 py-10 lg:px-12">
+      <AdminNotification
+        status={status}
+        onDismiss={() => setStatus({ type: "", message: "" })}
+      />
+      <AdminDeleteModal
+        open={Boolean(deleteTarget)}
+        title="Delete Result"
+        message="This action will permanently remove this uploaded result PDF record from the system."
+        details={
+          deleteTarget
+            ? `${deleteTarget.student?.full_name || "Unknown student"} - ${deleteTarget.class} - ${deleteTarget.session} - ${deleteTarget.term}`
+            : ""
+        }
+        confirmLabel="Delete Result"
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+      />
+
       <div className="mb-8">
         <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
           <FaClipboardCheck />
@@ -252,12 +276,6 @@ function UploadResult() {
             The backend accepts PDF files up to 5MB and stores them securely in
             the database.
           </p>
-
-          {status.message && (
-            <div className={`mt-6 rounded-2xl border px-4 py-3 text-sm ${statusClass}`}>
-              {status.message}
-            </div>
-          )}
 
           <div className="mt-7 grid grid-cols-1 gap-5 md:grid-cols-2">
             <input
@@ -416,7 +434,7 @@ function UploadResult() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(result._id)}
+                          onClick={() => handleDeleteRequest(result)}
                           className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-200"
                         >
                           Delete

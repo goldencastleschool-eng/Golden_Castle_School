@@ -89,6 +89,9 @@ function StudentDashboard() {
             <h3 className="mt-3 text-3xl font-extrabold text-primary">
               {user?.class || "Not available"}
             </h3>
+            <p className="mt-3 text-sm font-semibold text-primary/60">
+              {user?.current_session || "Session not available"}
+            </p>
           </div>
 
           <div className="rounded-[2rem] bg-secondary p-7 shadow-xl">

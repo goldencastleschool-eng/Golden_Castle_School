@@ -60,7 +60,7 @@ function AdminLayout() {
   const navigate = useNavigate();
 
   // Get authenticated user and logout function
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
 
   /* ==========================================
      HANDLE LOGOUT

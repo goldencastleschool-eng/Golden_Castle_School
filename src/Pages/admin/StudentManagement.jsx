@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { FaArrowRight, FaUserGraduate } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
+import AdminNotification from "../../components/common/AdminNotification.jsx";
 
 const initialStudentForm = {
   full_name: "",
   admission_no: "",
   class: "",
+  current_session: "",
   gender: "",
   password: "",
 };
@@ -19,6 +22,8 @@ function StudentManagement() {
   const [studentSearch, setStudentSearch] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchStudents = async () => {
     try {
@@ -93,6 +98,7 @@ function StudentManagement() {
       full_name: student.full_name || "",
       admission_no: student.admission_no || "",
       class: student.class || "",
+      current_session: student.current_session || "",
       gender: student.gender || "",
       password: "",
     });
@@ -104,21 +110,23 @@ function StudentManagement() {
     setStudentForm(initialStudentForm);
   };
 
-  const handleDelete = async (studentId) => {
-    const confirmed = window.confirm(
-      "Delete this student and their result records?"
-    );
+  const handleDeleteRequest = (student) => {
+    setDeleteTarget(student);
+  };
 
-    if (!confirmed) {
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget?._id) {
       return;
     }
 
+    setDeleting(true);
     try {
-      await API.delete(`/students/${studentId}`);
+      await API.delete(`/students/${deleteTarget._id}`);
       setStatus({
         type: "success",
         message: "Student deleted successfully.",
       });
+      setDeleteTarget(null);
       await fetchStudents();
     } catch (error) {
       setStatus({
@@ -128,13 +136,10 @@ function StudentManagement() {
           error.response?.data?.error ||
           "Unable to delete student.",
       });
+    } finally {
+      setDeleting(false);
     }
   };
-
-  const statusClass =
-    status.type === "success"
-      ? "bg-green-500/10 border-green-500/30 text-green-300"
-      : "bg-red-500/10 border-red-500/30 text-red-300";
 
   const inputClass =
     "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
@@ -151,6 +156,7 @@ function StudentManagement() {
         student.full_name,
         student.admission_no,
         student.class,
+        student.current_session,
         student.gender,
       ]
         .filter(Boolean)
@@ -163,6 +169,25 @@ function StudentManagement() {
 
   return (
     <div className="px-6 py-10 lg:px-12">
+      <AdminNotification
+        status={status}
+        onDismiss={() => setStatus({ type: "", message: "" })}
+      />
+      <AdminDeleteModal
+        open={Boolean(deleteTarget)}
+        title="Delete Student"
+        message="This action will permanently remove this student account and all result records linked to the student."
+        details={
+          deleteTarget
+            ? `${deleteTarget.full_name} - ${deleteTarget.admission_no}`
+            : ""
+        }
+        confirmLabel="Delete Student"
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+      />
+
       <div className="mb-8">
         <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
           <FaUserGraduate />
@@ -188,12 +213,6 @@ function StudentManagement() {
             The password is stored securely by the backend.
           </p>
 
-          {status.message && (
-            <div className={`mt-6 rounded-2xl border px-4 py-3 text-sm ${statusClass}`}>
-              {status.message}
-            </div>
-          )}
-
           <div className="mt-7 grid grid-cols-1 gap-5">
             <input
               className={inputClass}
@@ -217,6 +236,14 @@ function StudentManagement() {
               value={studentForm.class}
               onChange={handleChange}
               placeholder="Class"
+              required
+            />
+            <input
+              className={inputClass}
+              name="current_session"
+              value={studentForm.current_session}
+              onChange={handleChange}
+              placeholder="Current session e.g. 2025/2026"
               required
             />
             <select
@@ -295,13 +322,14 @@ function StudentManagement() {
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-primary/10">
-            <table className="w-full min-w-[760px] text-left">
+            <table className="w-full min-w-[860px] text-left">
               <thead className="bg-primary/10 text-primary">
                 <tr>
                   <th className="px-5 py-4 font-bold">S/N</th>
                   <th className="px-5 py-4 font-bold">Student</th>
                   <th className="px-5 py-4 font-bold">Admission No.</th>
                   <th className="px-5 py-4 font-bold">Class</th>
+                  <th className="px-5 py-4 font-bold">Session</th>
                   <th className="px-5 py-4 font-bold">Gender</th>
                   <th className="px-5 py-4 font-bold">Created</th>
                   <th className="px-5 py-4 font-bold">Actions</th>
@@ -311,13 +339,13 @@ function StudentManagement() {
               <tbody className="divide-y divide-primary/10">
                 {loadingStudents ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="7">
+                    <td className="px-5 py-6 text-primary/70" colSpan="8">
                       Loading students...
                     </td>
                   </tr>
                 ) : displayedStudents.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="7">
+                    <td className="px-5 py-6 text-primary/70" colSpan="8">
                       {studentSearch
                         ? "No student matches your search."
                         : "No students registered yet."}
@@ -337,6 +365,9 @@ function StudentManagement() {
                       </td>
                       <td className="px-5 py-4">{student.admission_no}</td>
                       <td className="px-5 py-4">{student.class}</td>
+                      <td className="px-5 py-4">
+                        {student.current_session || "Not set"}
+                      </td>
                       <td className="px-5 py-4">{student.gender || "Not set"}</td>
                       <td className="px-5 py-4">
                         {student.createdAt
@@ -352,7 +383,7 @@ function StudentManagement() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDelete(student._id)}
+                            onClick={() => handleDeleteRequest(student)}
                             className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-200"
                           >
                             Delete

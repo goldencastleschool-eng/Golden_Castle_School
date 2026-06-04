@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { FaArrowRight, FaLayerGroup } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
+import AdminNotification from "../../components/common/AdminNotification.jsx";
 
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
@@ -15,11 +17,12 @@ function ClassManagement() {
   const [editingClassId, setEditingClassId] = useState("");
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [status, setStatus] = useState({ type: "", message: "" });
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchClassData = async () => {
     try {
       setLoadingStudents(true);
-      setStatus({ type: "", message: "" });
       const [studentsResponse, classesResponse] = await Promise.all([
         API.get("/students"),
         API.get("/classes"),
@@ -96,24 +99,28 @@ function ClassManagement() {
     setClassName(classRecord.name);
   };
 
-  const handleDeleteClass = async (classRecord) => {
-    const confirmed = window.confirm(`Delete ${classRecord.name.toUpperCase()}?`);
+  const handleDeleteClassRequest = (classRecord) => {
+    setDeleteTarget(classRecord);
+  };
 
-    if (!confirmed) {
+  const handleDeleteClassConfirm = async () => {
+    if (!deleteTarget?._id) {
       return;
     }
 
+    setDeleting(true);
     try {
-      await API.delete(`/classes/${classRecord._id}`);
+      await API.delete(`/classes/${deleteTarget._id}`);
       setStatus({
         type: "success",
         message: "Class deleted successfully.",
       });
 
-      if (selectedClass === classRecord.name) {
+      if (selectedClass === deleteTarget.name) {
         setSelectedClass("");
       }
 
+      setDeleteTarget(null);
       await fetchClassData();
     } catch (error) {
       setStatus({
@@ -123,6 +130,8 @@ function ClassManagement() {
           error.response?.data?.error ||
           "Unable to delete class.",
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -131,13 +140,23 @@ function ClassManagement() {
     setClassName("");
   };
 
-  const statusClass =
-    status.type === "success"
-      ? "bg-green-500/10 border-green-500/30 text-green-300"
-      : "bg-red-500/10 border-red-500/30 text-red-300";
-
   return (
     <div className="px-6 py-10 lg:px-12">
+      <AdminNotification
+        status={status}
+        onDismiss={() => setStatus({ type: "", message: "" })}
+      />
+      <AdminDeleteModal
+        open={Boolean(deleteTarget)}
+        title="Delete Class"
+        message="This action will permanently remove this class record from the system. Students already assigned to this class will still keep their class text until updated or promoted."
+        details={deleteTarget ? deleteTarget.name.toUpperCase() : ""}
+        confirmLabel="Delete Class"
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteClassConfirm}
+      />
+
       <div className="mb-8">
         <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
           <FaLayerGroup />
@@ -150,12 +169,6 @@ function ClassManagement() {
           class.
         </p>
       </div>
-
-      {status.message && (
-        <div className={`mb-6 rounded-2xl border px-5 py-4 ${statusClass}`}>
-          {status.message}
-        </div>
-      )}
 
       <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_360px]">
@@ -265,12 +278,12 @@ function ClassManagement() {
                   tabIndex={0}
                   onClick={(event) => {
                     event.stopPropagation();
-                    handleDeleteClass(classRecord);
+                    handleDeleteClassRequest(classRecord);
                   }}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
                       event.stopPropagation();
-                      handleDeleteClass(classRecord);
+                      handleDeleteClassRequest(classRecord);
                     }
                   }}
                   className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-100"

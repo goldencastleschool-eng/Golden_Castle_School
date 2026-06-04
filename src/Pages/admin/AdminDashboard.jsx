@@ -4,11 +4,13 @@ import {
   FaArrowRight,
   FaBookOpen,
   FaChartLine,
+  FaGraduationCap,
   FaUsers,
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
+import AdminNotification from "../../components/common/AdminNotification.jsx";
 
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
@@ -23,7 +25,14 @@ function AdminDashboard() {
     session: "",
     term: "",
   });
+  const [promotionForm, setPromotionForm] = useState({
+    fromClass: "",
+    toClass: "",
+    fromSession: "",
+    toSession: "",
+  });
   const [status, setStatus] = useState({ type: "", message: "" });
+  const [promoting, setPromoting] = useState(false);
 
   const fetchDashboardData = async () => {
     try {
@@ -145,13 +154,66 @@ function AdminDashboard() {
     }
   };
 
-  const statusClass =
-    status.type === "success"
-      ? "bg-green-500/10 border-green-500/30 text-green-300"
-      : "bg-red-500/10 border-red-500/30 text-red-700";
+  const handlePromotionChange = (event) => {
+    const { name, value } = event.target;
+    setPromotionForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
+  };
+
+  const promotionCandidates = useMemo(() => {
+    if (!promotionForm.fromClass || !promotionForm.fromSession) {
+      return [];
+    }
+
+    return students.filter(
+      (student) =>
+        normalizeClassName(student.class) === normalizeClassName(promotionForm.fromClass) &&
+        student.current_session === promotionForm.fromSession
+    );
+  }, [promotionForm.fromClass, promotionForm.fromSession, students]);
+
+  const handlePromotionSubmit = async (event) => {
+    event.preventDefault();
+    setPromoting(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const response = await API.post("/students/promote", promotionForm);
+      await fetchDashboardData();
+      setStatus({
+        type: "success",
+        message:
+          response.data?.message ||
+          `${promotionCandidates.length} student(s) promoted successfully.`,
+      });
+      setPromotionForm({
+        fromClass: "",
+        toClass: "",
+        fromSession: "",
+        toSession: "",
+      });
+    } catch (requestError) {
+      setStatus({
+        type: "error",
+        message:
+          requestError.response?.data?.message ||
+          requestError.response?.data?.error ||
+          "Unable to promote students.",
+      });
+    } finally {
+      setPromoting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen overflow-hidden">
+      <AdminNotification
+        status={status}
+        onDismiss={() => setStatus({ type: "", message: "" })}
+      />
+
       <section className="hidden relative overflow-hidden bg-secondary px-6 py-12 lg:block px-12">
         <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-button/20 blur-3xl"></div>
 
@@ -176,12 +238,6 @@ function AdminDashboard() {
       </section>
 
       <section className="px-6 py-10 lg:px-12">
-        {status.message && (
-          <div className={`mb-6 rounded-2xl border px-5 py-4 ${statusClass}`}>
-            {status.message}
-          </div>
-        )}
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {stats.map((stat) => (
             <div
@@ -246,6 +302,95 @@ function AdminDashboard() {
               >
                 Save Access
                 <FaArrowRight />
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+          <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_520px]">
+            <div>
+              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+                <FaGraduationCap />
+              </div>
+              <h3 className="text-3xl font-extrabold text-primary">
+                Promote Students
+              </h3>
+              <p className="mt-3 max-w-3xl text-primary/70">
+                Move all students in a class from one academic session into the
+                next class and session. Existing result records keep their
+                original class, session, and term.
+              </p>
+
+              <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/5 p-5">
+                <p className="text-sm font-bold uppercase text-primary/60">
+                  Students Matched
+                </p>
+                <p className="mt-3 text-4xl font-extrabold text-primary">
+                  {promotionCandidates.length}
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handlePromotionSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <select
+                  name="fromClass"
+                  value={promotionForm.fromClass}
+                  onChange={handlePromotionChange}
+                  required
+                  className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                >
+                  <option value="">From class</option>
+                  {classes.map((classRecord) => (
+                    <option key={classRecord._id} value={classRecord.name}>
+                      {classRecord.name.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  name="toClass"
+                  value={promotionForm.toClass}
+                  onChange={handlePromotionChange}
+                  required
+                  className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                >
+                  <option value="">To class</option>
+                  {classes.map((classRecord) => (
+                    <option key={classRecord._id} value={classRecord.name}>
+                      {classRecord.name.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <input
+                  name="fromSession"
+                  value={promotionForm.fromSession}
+                  onChange={handlePromotionChange}
+                  placeholder="From session e.g. 2025/2026"
+                  required
+                  className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+                />
+                <input
+                  name="toSession"
+                  value={promotionForm.toSession}
+                  onChange={handlePromotionChange}
+                  placeholder="To session e.g. 2026/2027"
+                  required
+                  className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={promoting || promotionCandidates.length === 0}
+                className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {promoting ? "Promoting students..." : "Promote Class"}
+                {!promoting && <FaArrowRight />}
               </button>
             </form>
           </div>

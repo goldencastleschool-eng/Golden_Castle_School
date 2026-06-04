@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import AdminNotification from "../../components/common/AdminNotification.jsx";
 
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
@@ -133,6 +134,11 @@ function ClassCoverage() {
 
   return (
     <div className="px-6 py-10 lg:px-12">
+      <AdminNotification
+        status={status}
+        onDismiss={() => setStatus({ type: "", message: "" })}
+      />
+
       <div className="mb-8">
         <Link
           to="/admin"
@@ -157,12 +163,6 @@ function ClassCoverage() {
           here automatically.
         </p>
       </div>
-
-      {status.message && (
-        <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
-          {status.message}
-        </div>
-      )}
 
       {!loading && !classRecord ? (
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
