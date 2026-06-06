@@ -10,28 +10,9 @@ const initialResultForm = {
   session: "",
   term: "",
   class: "",
+  class_record: "",
   pdf: null,
 };
-
-const classGroups = [
-  "pg-1",
-  "pg-2",
-  "nur-1",
-  "nur-2",
-  "nur-3",
-  "basic-1",
-  "basic-2",
-  "basic-3",
-  "basic-4",
-  "basic-5",
-  "jss-1a",
-  "jss1b",
-  "jss2a",
-  "jss3",
-  "ss1",
-  "ss2art",
-  "ss2scienc",
-];
 
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
@@ -39,6 +20,7 @@ const normalizeClassName = (className = "") =>
 function UploadResult() {
   const [students, setStudents] = useState([]);
   const [results, setResults] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [resultForm, setResultForm] = useState(initialResultForm);
   const [editingResultId, setEditingResultId] = useState("");
@@ -57,12 +39,15 @@ function UploadResult() {
     const fetchPageData = async () => {
       try {
         setLoadingStudents(true);
-        const [studentsResponse, resultsResponse] = await Promise.all([
+        const [studentsResponse, resultsResponse, classesResponse] =
+          await Promise.all([
           API.get("/students"),
           API.get("/results"),
+          API.get("/classes"),
         ]);
         setStudents(studentsResponse.data || []);
         setResults(resultsResponse.data || []);
+        setClasses(classesResponse.data || []);
       } catch (error) {
         setStatus({
           type: "error",
@@ -79,15 +64,23 @@ function UploadResult() {
   }, []);
 
   const filteredStudents = useMemo(() => {
-    if (!resultForm.class) {
+    if (!resultForm.class || !resultForm.session) {
       return [];
     }
 
     return students.filter(
       (student) =>
-        normalizeClassName(student.class) === normalizeClassName(resultForm.class)
+        normalizeClassName(student.class) ===
+          normalizeClassName(resultForm.class) &&
+        student.current_session === resultForm.session
     );
-  }, [resultForm.class, students]);
+  }, [resultForm.class, resultForm.session, students]);
+
+  const availableClasses = useMemo(() => {
+    return classes.filter(
+      (classRecord) => classRecord.session === resultForm.session
+    );
+  }, [classes, resultForm.session]);
 
   const displayedResults = useMemo(() => {
     const searchValue = resultSearch.trim().toLowerCase();
@@ -118,10 +111,24 @@ function UploadResult() {
   const handleChange = (event) => {
     const { name, value, files } = event.target;
 
-    if (name === "class") {
+    if (name === "session") {
       setResultForm((currentForm) => ({
         ...currentForm,
-        class: value,
+        session: value,
+        class: "",
+        class_record: "",
+        studentId: editingResultId ? currentForm.studentId : "",
+      }));
+      return;
+    }
+
+    if (name === "class_record") {
+      const selectedClass = classes.find((classRecord) => classRecord._id === value);
+
+      setResultForm((currentForm) => ({
+        ...currentForm,
+        class_record: value,
+        class: selectedClass?.name || "",
         studentId: editingResultId ? currentForm.studentId : "",
       }));
       return;
@@ -187,6 +194,12 @@ function UploadResult() {
       session: result.session || "",
       term: result.term || "",
       class: result.class || "",
+      class_record:
+        classes.find(
+          (classRecord) =>
+            classRecord.name === result.class &&
+            classRecord.session === result.session
+        )?._id || "",
       pdf: null,
     });
   };
@@ -301,18 +314,26 @@ function UploadResult() {
 
             <select
               className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
-              name="class"
-              value={resultForm.class}
+              name="class_record"
+              value={resultForm.class_record}
               onChange={handleChange}
+              disabled={!resultForm.session}
               required
             >
-              <option value="">Select class</option>
-              {classGroups.map((className) => (
-                <option key={className} value={className}>
-                  {className.toUpperCase()}
+              <option value="">
+                {resultForm.session ? "Select class" : "Enter session first"}
+              </option>
+              {availableClasses.map((classRecord) => (
+                <option key={classRecord._id} value={classRecord._id}>
+                  {classRecord.name.toUpperCase()}
                 </option>
               ))}
             </select>
+            {resultForm.session && availableClasses.length === 0 && (
+              <p className="text-sm font-semibold text-primary/60">
+                No class has been created for this session yet.
+              </p>
+            )}
 
             <select
               className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"

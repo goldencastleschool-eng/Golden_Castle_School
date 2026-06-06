@@ -26,6 +26,7 @@ function AdminDashboard() {
     term: "",
   });
   const [promotionForm, setPromotionForm] = useState({
+    fromClassRecord: "",
     fromClass: "",
     toClass: "",
     fromSession: "",
@@ -90,19 +91,22 @@ function AdminDashboard() {
       const className = classRecord.name;
       const classStudents = students.filter(
         (student) =>
-          normalizeClassName(student.class) === normalizeClassName(className)
+          normalizeClassName(student.class) === normalizeClassName(className) &&
+          student.current_session === classRecord.session
       );
       const uploadedStudentIds = new Set(
         activeResults
           .filter(
             (result) =>
-              normalizeClassName(result.class) === normalizeClassName(className)
+              normalizeClassName(result.class) === normalizeClassName(className) &&
+              result.session === classRecord.session
           )
           .map((result) => result.student?._id || result.student)
       );
       return {
         id: classRecord._id,
         className,
+        session: classRecord.session,
         total: classStudents.length,
         uploaded: uploadedStudentIds.size,
       };
@@ -156,6 +160,19 @@ function AdminDashboard() {
 
   const handlePromotionChange = (event) => {
     const { name, value } = event.target;
+
+    if (name === "fromClassRecord") {
+      const selectedClass = classes.find((classRecord) => classRecord._id === value);
+
+      setPromotionForm((currentForm) => ({
+        ...currentForm,
+        fromClassRecord: value,
+        fromClass: selectedClass?.name || "",
+        fromSession: selectedClass?.session || "",
+      }));
+      return;
+    }
+
     setPromotionForm((currentForm) => ({
       ...currentForm,
       [name]: value,
@@ -163,16 +180,29 @@ function AdminDashboard() {
   };
 
   const promotionCandidates = useMemo(() => {
-    if (!promotionForm.fromClass || !promotionForm.fromSession) {
+    if (!promotionForm.fromClassRecord) {
+      return [];
+    }
+
+    const selectedClass = classes.find(
+      (classRecord) => classRecord._id === promotionForm.fromClassRecord
+    );
+
+    if (!selectedClass) {
       return [];
     }
 
     return students.filter(
       (student) =>
-        normalizeClassName(student.class) === normalizeClassName(promotionForm.fromClass) &&
-        student.current_session === promotionForm.fromSession
+        (student.class_record?._id || student.class_record) === selectedClass._id ||
+        (normalizeClassName(student.class) === normalizeClassName(selectedClass.name) &&
+          student.current_session === selectedClass.session)
     );
-  }, [promotionForm.fromClass, promotionForm.fromSession, students]);
+  }, [classes, promotionForm.fromClassRecord, students]);
+
+  const classNameOptions = useMemo(() => {
+    return [...new Set(classes.map((classRecord) => classRecord.name))].sort();
+  }, [classes]);
 
   const handlePromotionSubmit = async (event) => {
     event.preventDefault();
@@ -189,6 +219,7 @@ function AdminDashboard() {
           `${promotionCandidates.length} student(s) promoted successfully.`,
       });
       setPromotionForm({
+        fromClassRecord: "",
         fromClass: "",
         toClass: "",
         fromSession: "",
@@ -314,11 +345,11 @@ function AdminDashboard() {
                 <FaGraduationCap />
               </div>
               <h3 className="text-3xl font-extrabold text-primary">
-                Promote Students
+                Promote or Demote Students
               </h3>
               <p className="mt-3 max-w-3xl text-primary/70">
-                Move all students in a class from one academic session into the
-                next class and session. Existing result records keep their
+                Move all students in one class session into another class and
+                session. Existing result records keep their
                 original class, session, and term.
               </p>
 
@@ -335,16 +366,16 @@ function AdminDashboard() {
             <form onSubmit={handlePromotionSubmit} className="space-y-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <select
-                  name="fromClass"
-                  value={promotionForm.fromClass}
+                  name="fromClassRecord"
+                  value={promotionForm.fromClassRecord}
                   onChange={handlePromotionChange}
                   required
                   className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 >
-                  <option value="">From class</option>
+                  <option value="">From class/session</option>
                   {classes.map((classRecord) => (
-                    <option key={classRecord._id} value={classRecord.name}>
-                      {classRecord.name.toUpperCase()}
+                    <option key={classRecord._id} value={classRecord._id}>
+                      {classRecord.name.toUpperCase()} - {classRecord.session}
                     </option>
                   ))}
                 </select>
@@ -357,9 +388,9 @@ function AdminDashboard() {
                   className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 >
                   <option value="">To class</option>
-                  {classes.map((classRecord) => (
-                    <option key={classRecord._id} value={classRecord.name}>
-                      {classRecord.name.toUpperCase()}
+                  {classNameOptions.map((className) => (
+                    <option key={className} value={className}>
+                      {className.toUpperCase()}
                     </option>
                   ))}
                 </select>
@@ -371,6 +402,7 @@ function AdminDashboard() {
                   value={promotionForm.fromSession}
                   onChange={handlePromotionChange}
                   placeholder="From session e.g. 2025/2026"
+                  readOnly
                   required
                   className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
                 />
@@ -389,7 +421,7 @@ function AdminDashboard() {
                 disabled={promoting || promotionCandidates.length === 0}
                 className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {promoting ? "Promoting students..." : "Promote Class"}
+                {promoting ? "Moving students..." : "Move Class"}
                 {!promoting && <FaArrowRight />}
               </button>
             </form>
@@ -409,16 +441,25 @@ function AdminDashboard() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {classCoverage.map((item) => (
+          {classCoverage.length === 0 ? (
+            <div className="rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+              No class has been created yet. Create class records by session to
+              view upload coverage.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {classCoverage.map((item) => (
               <div
-                key={item.className}
+                key={item.id}
                 className="rounded-2xl border border-primary/10 bg-primary/5 p-5"
               >
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-bold uppercase text-primary/60">
                       {item.className}
+                      <span className="block font-semibold normal-case text-primary/50">
+                        {item.session}
+                      </span>
                     </p>
                     <p className="mt-3 text-3xl font-extrabold text-primary">
                       {item.uploaded} / {item.total}
@@ -436,8 +477,9 @@ function AdminDashboard() {
                   </Link>
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
       </section>
     </div>

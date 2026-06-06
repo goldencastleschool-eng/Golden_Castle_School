@@ -12,8 +12,9 @@ const normalizeClassName = (className = "") =>
 function ClassManagement() {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState("");
   const [className, setClassName] = useState("");
+  const [classSession, setClassSession] = useState("");
   const [editingClassId, setEditingClassId] = useState("");
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [status, setStatus] = useState({ type: "", message: "" });
@@ -46,18 +47,24 @@ function ClassManagement() {
   }, []);
 
   const classStudents = useMemo(() => {
-    if (!selectedClass) {
+    const selectedClassRecord = classes.find(
+      (classRecord) => classRecord._id === selectedClassId
+    );
+
+    if (!selectedClassRecord) {
       return [];
     }
 
     return students.filter(
       (student) =>
-        normalizeClassName(student.class) === normalizeClassName(selectedClass)
+        normalizeClassName(student.class) ===
+          normalizeClassName(selectedClassRecord.name) &&
+        student.current_session === selectedClassRecord.session
     );
-  }, [selectedClass, students]);
+  }, [classes, selectedClassId, students]);
 
   const selectedClassRecord = classes.find(
-    (classRecord) => classRecord.name === selectedClass
+    (classRecord) => classRecord._id === selectedClassId
   );
 
   const handleSubmit = async (event) => {
@@ -67,14 +74,17 @@ function ClassManagement() {
       if (editingClassId) {
         await API.put(`/classes/${editingClassId}`, {
           name: className,
+          session: classSession,
         });
       } else {
         await API.post("/classes", {
           name: className,
+          session: classSession,
         });
       }
 
       setClassName("");
+      setClassSession("");
       setEditingClassId("");
       setStatus({
         type: "success",
@@ -97,6 +107,7 @@ function ClassManagement() {
   const handleEditClass = (classRecord) => {
     setEditingClassId(classRecord._id);
     setClassName(classRecord.name);
+    setClassSession(classRecord.session || "");
   };
 
   const handleDeleteClassRequest = (classRecord) => {
@@ -116,8 +127,8 @@ function ClassManagement() {
         message: "Class deleted successfully.",
       });
 
-      if (selectedClass === deleteTarget.name) {
-        setSelectedClass("");
+      if (selectedClassId === deleteTarget._id) {
+        setSelectedClassId("");
       }
 
       setDeleteTarget(null);
@@ -138,6 +149,7 @@ function ClassManagement() {
   const handleCancelEdit = () => {
     setEditingClassId("");
     setClassName("");
+    setClassSession("");
   };
 
   return (
@@ -190,6 +202,13 @@ function ClassManagement() {
               required
               className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
             />
+            <input
+              value={classSession}
+              onChange={(event) => setClassSession(event.target.value)}
+              placeholder="Session e.g. 2025/2026"
+              required
+              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+            />
             <button
               type="submit"
               className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"
@@ -230,13 +249,19 @@ function ClassManagement() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {classes.map((classRecord) => (
+        {classes.length === 0 ? (
+          <div className="rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+            No class has been created yet. Create a class with a session to
+            start registering students.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {classes.map((classRecord) => (
             <button
               key={classRecord._id}
-              onClick={() => setSelectedClass(classRecord.name)}
+              onClick={() => setSelectedClassId(classRecord._id)}
               className={`rounded-2xl border p-5 text-left transition-all duration-300 ${
-                selectedClass === classRecord.name
+                selectedClassId === classRecord._id
                   ? "border-button bg-button text-secondary"
                   : "border-primary/10 bg-primary/5 text-primary hover:border-button"
               }`}
@@ -244,12 +269,16 @@ function ClassManagement() {
               <p className="text-xl font-extrabold uppercase">
                 {classRecord.name}
               </p>
+              <p className="mt-1 text-sm font-semibold opacity-75">
+                {classRecord.session}
+              </p>
               <p className="mt-2 text-sm opacity-75">
                 {
                   students.filter(
                     (student) =>
                       normalizeClassName(student.class) ===
-                      normalizeClassName(classRecord.name)
+                        normalizeClassName(classRecord.name) &&
+                      student.current_session === classRecord.session
                   ).length
                 }{" "}
                 students
@@ -292,16 +321,17 @@ function ClassManagement() {
                 </span>
               </div>
             </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
         <div className="mb-6 grid grid-cols-1 gap-5 md:grid-cols-[1fr_260px] md:items-end">
           <div>
             <h3 className="text-3xl font-extrabold text-primary">
-              {selectedClass
-                ? `${selectedClass.toUpperCase()} Students`
+              {selectedClassRecord
+                ? `${selectedClassRecord.name.toUpperCase()} Students`
                 : "View Class Students"}
             </h3>
             <p className="mt-2 text-primary/70">
@@ -317,13 +347,13 @@ function ClassManagement() {
             </label>
             <select
               className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
-              value={selectedClass}
-              onChange={(event) => setSelectedClass(event.target.value)}
+              value={selectedClassId}
+              onChange={(event) => setSelectedClassId(event.target.value)}
             >
               <option value="">Choose class</option>
               {classes.map((classRecord) => (
-                <option key={classRecord._id} value={classRecord.name}>
-                  {classRecord.name.toUpperCase()}
+                <option key={classRecord._id} value={classRecord._id}>
+                  {classRecord.name.toUpperCase()} - {classRecord.session}
                 </option>
               ))}
             </select>
@@ -335,7 +365,7 @@ function ClassManagement() {
             Students in Selected Class
           </p>
           <p className="mt-3 text-4xl font-extrabold text-primary">
-            {selectedClass ? classStudents.length : "0"}
+            {selectedClassRecord ? classStudents.length : "0"}
           </p>
         </div>
 
@@ -358,7 +388,7 @@ function ClassManagement() {
                     Loading students...
                   </td>
                 </tr>
-              ) : !selectedClass ? (
+              ) : !selectedClassRecord ? (
                 <tr>
                   <td className="px-5 py-6 text-primary/70" colSpan="5">
                     Select a class to view students.

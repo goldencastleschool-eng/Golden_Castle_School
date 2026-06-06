@@ -75,22 +75,25 @@ function ClassCoverage() {
 
     return students.filter(
       (student) =>
-        normalizeClassName(student.class) === normalizeClassName(classRecord.name)
+        normalizeClassName(student.class) ===
+          normalizeClassName(classRecord.name) &&
+        student.current_session === classRecord.session
     );
   }, [classRecord, students]);
 
   const activeResults = useMemo(() => {
-    if (!classRecord || !access.session || !access.term) {
+    if (!classRecord || !access.term) {
       return [];
     }
 
     return results.filter(
       (result) =>
-        normalizeClassName(result.class) === normalizeClassName(classRecord.name) &&
-        result.session === access.session &&
+        normalizeClassName(result.class) ===
+          normalizeClassName(classRecord.name) &&
+        result.session === classRecord.session &&
         result.term === access.term
     );
-  }, [access.session, access.term, classRecord, results]);
+  }, [access.term, classRecord, results]);
 
   const uploadedStudentIds = useMemo(
     () =>
@@ -157,7 +160,7 @@ function ClassCoverage() {
         <p className="mt-3 max-w-3xl text-secondary/75">
           Result upload status for{" "}
           {access.session && access.term
-            ? `${access.session} - ${access.term}`
+            ? `${classRecord?.session || access.session} - ${access.term}`
             : "the active session and term"}
           . This page follows the class record, so class CRUD changes are reflected
           here automatically.

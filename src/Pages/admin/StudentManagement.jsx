@@ -9,6 +9,7 @@ const initialStudentForm = {
   full_name: "",
   admission_no: "",
   class: "",
+  class_record: "",
   current_session: "",
   gender: "",
   password: "",
@@ -16,6 +17,7 @@ const initialStudentForm = {
 
 function StudentManagement() {
   const [students, setStudents] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [studentForm, setStudentForm] = useState(initialStudentForm);
   const [editingStudentId, setEditingStudentId] = useState("");
@@ -28,8 +30,12 @@ function StudentManagement() {
   const fetchStudents = async () => {
     try {
       setLoadingStudents(true);
-      const response = await API.get("/students");
-      setStudents(response.data || []);
+      const [studentsResponse, classesResponse] = await Promise.all([
+        API.get("/students"),
+        API.get("/classes"),
+      ]);
+      setStudents(studentsResponse.data || []);
+      setClasses(classesResponse.data || []);
     } catch (error) {
       setStatus({
         type: "error",
@@ -46,6 +52,29 @@ function StudentManagement() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+
+    if (name === "current_session") {
+      setStudentForm((currentForm) => ({
+        ...currentForm,
+        current_session: value,
+        class: "",
+        class_record: "",
+      }));
+      return;
+    }
+
+    if (name === "class_record") {
+      const selectedClass = classes.find((classRecord) => classRecord._id === value);
+
+      setStudentForm((currentForm) => ({
+        ...currentForm,
+        class_record: value,
+        class: selectedClass?.name || "",
+        current_session: selectedClass?.session || currentForm.current_session,
+      }));
+      return;
+    }
+
     setStudentForm((currentForm) => ({
       ...currentForm,
       [name]: value,
@@ -93,11 +122,22 @@ function StudentManagement() {
   };
 
   const handleEdit = (student) => {
+    const matchingClassRecord = classes.find(
+      (classRecord) =>
+        classRecord.name === student.class &&
+        classRecord.session === student.current_session
+    );
+
     setEditingStudentId(student._id);
     setStudentForm({
       full_name: student.full_name || "",
       admission_no: student.admission_no || "",
       class: student.class || "",
+      class_record:
+        student.class_record?._id ||
+        student.class_record ||
+        matchingClassRecord?._id ||
+        "",
       current_session: student.current_session || "",
       gender: student.gender || "",
       password: "",
@@ -167,6 +207,10 @@ function StudentManagement() {
     });
   })();
 
+  const availableClasses = classes.filter(
+    (classRecord) => classRecord.session === studentForm.current_session
+  );
+
   return (
     <div className="px-6 py-10 lg:px-12">
       <AdminNotification
@@ -232,20 +276,36 @@ function StudentManagement() {
             />
             <input
               className={inputClass}
-              name="class"
-              value={studentForm.class}
-              onChange={handleChange}
-              placeholder="Class"
-              required
-            />
-            <input
-              className={inputClass}
               name="current_session"
               value={studentForm.current_session}
               onChange={handleChange}
               placeholder="Current session e.g. 2025/2026"
               required
             />
+            <select
+              className={inputClass}
+              name="class_record"
+              value={studentForm.class_record}
+              onChange={handleChange}
+              disabled={!studentForm.current_session}
+              required
+            >
+              <option value="">
+                {studentForm.current_session
+                  ? "Select class"
+                  : "Enter session first"}
+              </option>
+              {availableClasses.map((classRecord) => (
+                <option key={classRecord._id} value={classRecord._id}>
+                  {classRecord.name.toUpperCase()}
+                </option>
+              ))}
+            </select>
+            {studentForm.current_session && availableClasses.length === 0 && (
+              <p className="text-sm font-semibold text-primary/60">
+                No class has been created for this session yet.
+              </p>
+            )}
             <select
               className={inputClass}
               name="gender"
