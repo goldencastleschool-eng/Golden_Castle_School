@@ -12,6 +12,8 @@ import API from "../../api/axios.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 
+const DEFAULT_COVERAGE_SESSION_FILTER = "2025/2026";
+
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
 
@@ -25,6 +27,12 @@ function AdminDashboard() {
     session: "",
     term: "",
   });
+  const [cumulativeAccessForm, setCumulativeAccessForm] = useState({
+    cumulative_session: "",
+  });
+  const [coverageSessionFilter, setCoverageSessionFilter] = useState(
+    DEFAULT_COVERAGE_SESSION_FILTER
+  );
   const [promotionForm, setPromotionForm] = useState({
     fromClassRecord: "",
     fromClass: "",
@@ -32,6 +40,7 @@ function AdminDashboard() {
     fromSession: "",
     toSession: "",
   });
+  const [selectedPromotionStudentIds, setSelectedPromotionStudentIds] = useState([]);
   const [status, setStatus] = useState({ type: "", message: "" });
   const [promoting, setPromoting] = useState(false);
 
@@ -55,6 +64,9 @@ function AdminDashboard() {
         session: accessResponse.data?.session || "",
         term: accessResponse.data?.term || "",
       });
+      setCumulativeAccessForm({
+        cumulative_session: accessResponse.data?.cumulative_session || "",
+      });
     } catch (requestError) {
       setStatus({
         type: "error",
@@ -75,19 +87,35 @@ function AdminDashboard() {
     return classes.length;
   }, [classes]);
 
-  const activeResults = useMemo(() => {
-    if (!accessForm.session || !accessForm.term) {
+  const coverageResults = useMemo(() => {
+    if (!coverageSessionFilter || !accessForm.term) {
       return [];
     }
 
     return results.filter(
       (result) =>
-        result.session === accessForm.session && result.term === accessForm.term
+        result.session === coverageSessionFilter &&
+        result.term === accessForm.term
     );
-  }, [accessForm.session, accessForm.term, results]);
+  }, [accessForm.term, coverageSessionFilter, results]);
+
+  const coverageSessionOptions = useMemo(() => {
+    return [
+      ...new Set([
+        DEFAULT_COVERAGE_SESSION_FILTER,
+        ...classes.map((classRecord) => classRecord.session).filter(Boolean),
+      ]),
+    ].sort();
+  }, [classes]);
+
+  const coverageClasses = useMemo(() => {
+    return classes.filter(
+      (classRecord) => classRecord.session === coverageSessionFilter
+    );
+  }, [classes, coverageSessionFilter]);
 
   const classCoverage = useMemo(() => {
-    return classes.map((classRecord) => {
+    return coverageClasses.map((classRecord) => {
       const className = classRecord.name;
       const classStudents = students.filter(
         (student) =>
@@ -95,7 +123,7 @@ function AdminDashboard() {
           student.current_session === classRecord.session
       );
       const uploadedStudentIds = new Set(
-        activeResults
+        coverageResults
           .filter(
             (result) =>
               normalizeClassName(result.class) === normalizeClassName(className) &&
@@ -111,7 +139,7 @@ function AdminDashboard() {
         uploaded: uploadedStudentIds.size,
       };
     });
-  }, [activeResults, classes, students]);
+  }, [coverageClasses, coverageResults, students]);
 
   const stats = [
     {
@@ -170,6 +198,7 @@ function AdminDashboard() {
         fromClass: selectedClass?.name || "",
         fromSession: selectedClass?.session || "",
       }));
+      setSelectedPromotionStudentIds([]);
       return;
     }
 
@@ -204,13 +233,72 @@ function AdminDashboard() {
     return [...new Set(classes.map((classRecord) => classRecord.name))].sort();
   }, [classes]);
 
+  const allPromotionCandidatesSelected =
+    promotionCandidates.length > 0 &&
+    selectedPromotionStudentIds.length === promotionCandidates.length;
+
+  const handlePromotionStudentToggle = (studentId) => {
+    setSelectedPromotionStudentIds((currentIds) =>
+      currentIds.includes(studentId)
+        ? currentIds.filter((currentId) => currentId !== studentId)
+        : [...currentIds, studentId]
+    );
+  };
+
+  const handleCumulativeAccessChange = (event) => {
+    const { name, value } = event.target;
+    setCumulativeAccessForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
+  };
+
+  const handleCumulativeAccessSubmit = async (event) => {
+    event.preventDefault();
+
+    try {
+      const response = await API.put(
+        "/result-access/cumulative",
+        cumulativeAccessForm
+      );
+      setCumulativeAccessForm({
+        cumulative_session: response.data.cumulative_session || "",
+      });
+      setStatus({
+        type: "success",
+        message: "Student cumulative result access updated successfully.",
+      });
+    } catch (requestError) {
+      setStatus({
+        type: "error",
+        message:
+          requestError.response?.data?.message ||
+          requestError.response?.data?.error ||
+          "Unable to update cumulative result access.",
+      });
+    }
+  };
+
+  const handleSelectAllPromotionStudents = () => {
+    setSelectedPromotionStudentIds(
+      promotionCandidates.map((student) => student._id)
+    );
+  };
+
+  const handleClearPromotionStudents = () => {
+    setSelectedPromotionStudentIds([]);
+  };
+
   const handlePromotionSubmit = async (event) => {
     event.preventDefault();
     setPromoting(true);
     setStatus({ type: "", message: "" });
 
     try {
-      const response = await API.post("/students/promote", promotionForm);
+      const response = await API.post("/students/promote", {
+        ...promotionForm,
+        studentIds: selectedPromotionStudentIds,
+      });
       await fetchDashboardData();
       setStatus({
         type: "success",
@@ -225,6 +313,7 @@ function AdminDashboard() {
         fromSession: "",
         toSession: "",
       });
+      setSelectedPromotionStudentIds([]);
     } catch (requestError) {
       setStatus({
         type: "error",
@@ -339,6 +428,39 @@ function AdminDashboard() {
         </section>
 
         <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+          <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_420px]">
+            <div>
+              <h3 className="text-3xl font-extrabold text-primary">
+                Student Cumulative Result Access
+              </h3>
+              <p className="mt-3 max-w-3xl text-primary/70">
+                Students only see cumulative results that match this approved
+                session. Leave it unset to hide cumulative results from the
+                student portal.
+              </p>
+            </div>
+
+            <form onSubmit={handleCumulativeAccessSubmit} className="space-y-4">
+              <input
+                name="cumulative_session"
+                value={cumulativeAccessForm.cumulative_session}
+                onChange={handleCumulativeAccessChange}
+                placeholder="Approved session e.g. 2025/2026"
+                required
+                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+              />
+              <button
+                type="submit"
+                className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"
+              >
+                Save Cumulative Access
+                <FaArrowRight />
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
           <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_520px]">
             <div>
               <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
@@ -355,10 +477,10 @@ function AdminDashboard() {
 
               <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/5 p-5">
                 <p className="text-sm font-bold uppercase text-primary/60">
-                  Students Matched
+                  Students Selected
                 </p>
                 <p className="mt-3 text-4xl font-extrabold text-primary">
-                  {promotionCandidates.length}
+                  {selectedPromotionStudentIds.length} / {promotionCandidates.length}
                 </p>
               </div>
             </div>
@@ -416,12 +538,81 @@ function AdminDashboard() {
                 />
               </div>
 
+              <div className="rounded-2xl border border-primary/10 bg-primary/5 p-5">
+                <div className="mb-4 flex flex-col justify-between gap-3 md:flex-row md:items-center">
+                  <div>
+                    <p className="text-sm font-bold uppercase text-primary/60">
+                      Batch Students
+                    </p>
+                    <p className="mt-1 text-sm text-primary/60">
+                      Select the students to promote or demote from this class.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSelectAllPromotionStudents}
+                      disabled={
+                        promotionCandidates.length === 0 ||
+                        allPromotionCandidatesSelected
+                      }
+                      className="rounded-xl bg-button px-4 py-2 text-sm font-bold text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearPromotionStudents}
+                      disabled={selectedPromotionStudentIds.length === 0}
+                      className="rounded-xl bg-primary/10 px-4 py-2 text-sm font-bold text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-64 overflow-y-auto rounded-2xl border border-primary/10 bg-secondary">
+                  {promotionCandidates.length === 0 ? (
+                    <p className="px-5 py-4 text-primary/60">
+                      Select a class/session to load students.
+                    </p>
+                  ) : (
+                    promotionCandidates.map((student) => (
+                      <label
+                        key={student._id}
+                        className="flex cursor-pointer items-center gap-4 border-b border-primary/10 px-5 py-4 last:border-b-0"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedPromotionStudentIds.includes(student._id)}
+                          onChange={() => handlePromotionStudentToggle(student._id)}
+                          className="h-5 w-5 accent-button"
+                        />
+                        <span className="min-w-0">
+                          <span className="block font-bold text-primary">
+                            {student.full_name}
+                          </span>
+                          <span className="block text-sm text-primary/60">
+                            {student.admission_no}
+                          </span>
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+
               <button
                 type="submit"
-                disabled={promoting || promotionCandidates.length === 0}
+                disabled={
+                  promoting ||
+                  promotionCandidates.length === 0 ||
+                  selectedPromotionStudentIds.length === 0
+                }
                 className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {promoting ? "Moving students..." : "Move Class"}
+                {promoting ? "Moving students..." : "Move Selected Students"}
                 {!promoting && <FaArrowRight />}
               </button>
             </form>
@@ -429,22 +620,44 @@ function AdminDashboard() {
         </section>
 
         <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
-          <div className="mb-8">
-            <h3 className="text-3xl font-extrabold text-primary">
-              Result Upload Coverage
-            </h3>
-            <p className="mt-2 text-primary/70">
-              Uploaded results out of registered students for{" "}
-              {accessForm.session && accessForm.term
-                ? `${accessForm.session} - ${accessForm.term}`
-                : "the active session and term"}.
-            </p>
+          <div className="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_260px] lg:items-end">
+            <div>
+              <h3 className="text-3xl font-extrabold text-primary">
+                Result Upload Coverage
+              </h3>
+              <p className="mt-2 text-primary/70">
+                Uploaded results out of registered students for{" "}
+                {coverageSessionFilter}
+                {accessForm.term ? ` - ${accessForm.term}` : ""}.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-primary/60">
+                Session
+              </label>
+              <select
+                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                value={coverageSessionFilter}
+                onChange={(event) => setCoverageSessionFilter(event.target.value)}
+              >
+                {coverageSessionOptions.map((session) => (
+                  <option key={session} value={session}>
+                    {session}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {classCoverage.length === 0 ? (
+          {classes.length === 0 ? (
             <div className="rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
               No class has been created yet. Create class records by session to
               view upload coverage.
+            </div>
+          ) : classCoverage.length === 0 ? (
+            <div className="rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+              No class has been created for {coverageSessionFilter} yet.
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

@@ -21,6 +21,11 @@ const studentLinks = [
     path: "/student/results",
     icon: <FaFilePdf />,
   },
+  {
+    label: "Cumulative",
+    path: "/student/cumulative-results",
+    icon: <FaFilePdf />,
+  },
 ];
 
 function StudentLayout() {

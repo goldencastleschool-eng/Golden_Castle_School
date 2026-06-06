@@ -8,6 +8,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   FaChartLine,
   FaClipboardCheck,
+  FaFileLines,
   FaLayerGroup,
   FaRightFromBracket,
   FaUserGraduate,
@@ -52,6 +53,11 @@ const adminLinks = [
     label: "Results",
     path: "/admin/results",
     icon: <FaClipboardCheck />,
+  },
+  {
+    label: "Reports",
+    path: "/admin/reports",
+    icon: <FaFileLines />,
   },
 ];
 

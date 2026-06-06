@@ -6,6 +6,8 @@ import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 
+const DEFAULT_SESSION_FILTER = "2025/2026";
+
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
 
@@ -13,8 +15,9 @@ function ClassManagement() {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState("");
+  const [sessionFilter, setSessionFilter] = useState(DEFAULT_SESSION_FILTER);
   const [className, setClassName] = useState("");
-  const [classSession, setClassSession] = useState("");
+  const [classSession, setClassSession] = useState(DEFAULT_SESSION_FILTER);
   const [editingClassId, setEditingClassId] = useState("");
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [status, setStatus] = useState({ type: "", message: "" });
@@ -46,6 +49,19 @@ function ClassManagement() {
     fetchClassData();
   }, []);
 
+  const sessionOptions = useMemo(() => {
+    return [
+      ...new Set([
+        DEFAULT_SESSION_FILTER,
+        ...classes.map((classRecord) => classRecord.session).filter(Boolean),
+      ]),
+    ].sort();
+  }, [classes]);
+
+  const filteredClasses = useMemo(() => {
+    return classes.filter((classRecord) => classRecord.session === sessionFilter);
+  }, [classes, sessionFilter]);
+
   const classStudents = useMemo(() => {
     const selectedClassRecord = classes.find(
       (classRecord) => classRecord._id === selectedClassId
@@ -67,10 +83,32 @@ function ClassManagement() {
     (classRecord) => classRecord._id === selectedClassId
   );
 
+  const handleSessionFilterChange = (event) => {
+    const nextSession = event.target.value;
+
+    setSessionFilter(nextSession);
+
+    const selectedClassStillVisible = classes.some(
+      (classRecord) =>
+        classRecord._id === selectedClassId &&
+        classRecord.session === nextSession
+    );
+
+    if (!selectedClassStillVisible) {
+      setSelectedClassId("");
+    }
+
+    if (!editingClassId) {
+      setClassSession(nextSession);
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     try {
+      const submittedSession = classSession;
+
       if (editingClassId) {
         await API.put(`/classes/${editingClassId}`, {
           name: className,
@@ -84,7 +122,8 @@ function ClassManagement() {
       }
 
       setClassName("");
-      setClassSession("");
+      setClassSession(submittedSession);
+      setSessionFilter(submittedSession);
       setEditingClassId("");
       setStatus({
         type: "success",
@@ -149,7 +188,7 @@ function ClassManagement() {
   const handleCancelEdit = () => {
     setEditingClassId("");
     setClassName("");
-    setClassSession("");
+    setClassSession(sessionFilter);
   };
 
   return (
@@ -230,14 +269,31 @@ function ClassManagement() {
       </section>
 
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_260px_auto] lg:items-end">
           <div>
             <h3 className="text-3xl font-extrabold text-primary">
               Class Records
             </h3>
             <p className="mt-2 text-primary/70">
-              Select a class to view its registered students.
+              Showing class records for the selected session.
             </p>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-primary/60">
+              Session
+            </label>
+            <select
+              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-3 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              value={sessionFilter}
+              onChange={handleSessionFilterChange}
+            >
+              {sessionOptions.map((session) => (
+                <option key={session} value={session}>
+                  {session}
+                </option>
+              ))}
+            </select>
           </div>
 
           <button
@@ -254,9 +310,13 @@ function ClassManagement() {
             No class has been created yet. Create a class with a session to
             start registering students.
           </div>
+        ) : filteredClasses.length === 0 ? (
+          <div className="rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+            No class has been created for {sessionFilter} yet.
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {classes.map((classRecord) => (
+            {filteredClasses.map((classRecord) => (
             <button
               key={classRecord._id}
               onClick={() => setSelectedClassId(classRecord._id)}
@@ -327,7 +387,7 @@ function ClassManagement() {
       </section>
 
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
-        <div className="mb-6 grid grid-cols-1 gap-5 md:grid-cols-[1fr_260px] md:items-end">
+        <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_260px_260px] lg:items-end">
           <div>
             <h3 className="text-3xl font-extrabold text-primary">
               {selectedClassRecord
@@ -343,6 +403,23 @@ function ClassManagement() {
 
           <div>
             <label className="mb-2 block text-sm font-semibold text-primary/60">
+              Session
+            </label>
+            <select
+              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              value={sessionFilter}
+              onChange={handleSessionFilterChange}
+            >
+              {sessionOptions.map((session) => (
+                <option key={session} value={session}>
+                  {session}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-primary/60">
               Selected Class
             </label>
             <select
@@ -351,9 +428,9 @@ function ClassManagement() {
               onChange={(event) => setSelectedClassId(event.target.value)}
             >
               <option value="">Choose class</option>
-              {classes.map((classRecord) => (
+              {filteredClasses.map((classRecord) => (
                 <option key={classRecord._id} value={classRecord._id}>
-                  {classRecord.name.toUpperCase()} - {classRecord.session}
+                  {classRecord.name.toUpperCase()}
                 </option>
               ))}
             </select>

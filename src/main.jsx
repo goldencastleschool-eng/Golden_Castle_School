@@ -34,12 +34,14 @@ import StudentLogin from "./Pages/auth/StudentLogin.jsx";
 import StudentDashboard from "./Pages/student/StudentDashboard.jsx";
 import StudentLayout from "./Pages/student/StudentLayout.jsx";
 import StudentResult from "./Pages/student/StudentResult.jsx";
+import StudentCumulativeResult from "./Pages/student/StudentCumulativeResult.jsx";
 import AdminDashboard from "./Pages/admin/AdminDashboard.jsx";
 import AdminLayout from "./Pages/admin/AdminLayout.jsx";
 import ClassManagement from "./Pages/admin/ClassManagement.jsx";
 import ClassCoverage from "./Pages/admin/ClassCoverage.jsx";
 import StudentManagement from "./Pages/admin/StudentManagement.jsx";
 import UploadResult from "./Pages/admin/UploadResult.jsx";
+import AdminReport from "./Pages/admin/AdminReport.jsx";
 
 // ROUTE PROTECTION
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
@@ -152,6 +154,10 @@ const router = createBrowserRouter([
             path: "results",
             element: <StudentResult />,
           },
+          {
+            path: "cumulative-results",
+            element: <StudentCumulativeResult />,
+          },
         ],
       },
 
@@ -183,6 +189,10 @@ const router = createBrowserRouter([
           {
             path: "results",
             element: <UploadResult />,
+          },
+          {
+            path: "reports",
+            element: <AdminReport />,
           },
         ],
       },
