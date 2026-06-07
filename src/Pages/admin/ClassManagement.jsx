@@ -73,6 +73,7 @@ function ClassManagement() {
 
     return students.filter(
       (student) =>
+        student.status === "active" &&
         normalizeClassName(student.class) ===
           normalizeClassName(selectedClassRecord.name) &&
         student.current_session === selectedClassRecord.session
@@ -336,6 +337,7 @@ function ClassManagement() {
                 {
                   students.filter(
                     (student) =>
+                      student.status === "active" &&
                       normalizeClassName(student.class) ===
                         normalizeClassName(classRecord.name) &&
                       student.current_session === classRecord.session

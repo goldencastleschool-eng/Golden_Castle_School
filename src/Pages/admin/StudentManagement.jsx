@@ -391,6 +391,7 @@ function StudentManagement() {
                   <th className="px-5 py-4 font-bold">Class</th>
                   <th className="px-5 py-4 font-bold">Session</th>
                   <th className="px-5 py-4 font-bold">Gender</th>
+                  <th className="px-5 py-4 font-bold">Status</th>
                   <th className="px-5 py-4 font-bold">Created</th>
                   <th className="px-5 py-4 font-bold">Actions</th>
                 </tr>
@@ -399,13 +400,13 @@ function StudentManagement() {
               <tbody className="divide-y divide-primary/10">
                 {loadingStudents ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                    <td className="px-5 py-6 text-primary/70" colSpan="9">
                       Loading students...
                     </td>
                   </tr>
                 ) : displayedStudents.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                    <td className="px-5 py-6 text-primary/70" colSpan="9">
                       {studentSearch
                         ? "No student matches your search."
                         : "No students registered yet."}
@@ -429,6 +430,23 @@ function StudentManagement() {
                         {student.current_session || "Not set"}
                       </td>
                       <td className="px-5 py-4">{student.gender || "Not set"}</td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`rounded-full px-4 py-2 text-sm font-bold ${
+                            student.status === "graduated"
+                              ? "bg-green-500/10 text-green-700"
+                              : student.status === "left"
+                                ? "bg-red-500/10 text-red-700"
+                              : "bg-button/10 text-primary"
+                          }`}
+                        >
+                          {student.status === "graduated"
+                            ? "Graduated"
+                            : student.status === "left"
+                              ? "Left School"
+                              : "Active"}
+                        </span>
+                      </td>
                       <td className="px-5 py-4">
                         {student.createdAt
                           ? new Date(student.createdAt).toLocaleDateString()

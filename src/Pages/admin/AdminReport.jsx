@@ -107,6 +107,7 @@ function AdminReport() {
         DEFAULT_REPORT_SESSION,
         ...classes.map((classRecord) => classRecord.session).filter(Boolean),
         ...students.map((student) => student.current_session).filter(Boolean),
+        ...students.map((student) => student.left_session).filter(Boolean),
         ...results.map((result) => result.session).filter(Boolean),
         ...cumulativeResults.map((result) => result.session).filter(Boolean),
       ]),
@@ -124,9 +125,28 @@ function AdminReport() {
   const reportStudents = useMemo(
     () =>
       students.filter(
-        (student) => student.current_session === reportFilter.session
+        (student) =>
+          student.current_session === reportFilter.session &&
+          student.status === "active"
       ),
     [reportFilter.session, students]
+  );
+
+  const leftSchoolStudents = useMemo(
+    () =>
+      students
+        .filter(
+          (student) =>
+            student.status === "left" &&
+            student.left_session === reportFilter.session &&
+            (!reportFilter.term || student.left_term === reportFilter.term)
+        )
+        .sort(
+          (firstStudent, secondStudent) =>
+            new Date(secondStudent.left_at || secondStudent.updatedAt || 0) -
+            new Date(firstStudent.left_at || firstStudent.updatedAt || 0)
+        ),
+    [reportFilter.session, reportFilter.term, students]
   );
 
   const reportResults = useMemo(
@@ -262,6 +282,11 @@ function AdminReport() {
       value: loading ? "..." : reportCumulativeResults.length,
       icon: <FaFileLines />,
     },
+    {
+      title: "Left School",
+      value: loading ? "..." : leftSchoolStudents.length,
+      icon: <FaUserGraduate />,
+    },
   ];
 
   const handleFilterChange = (event) => {
@@ -364,7 +389,7 @@ function AdminReport() {
         </div>
       </section>
 
-      <section className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-5">
+      <section className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-6">
         {statCards.map((card) => (
           <div key={card.title} className="rounded-[2rem] bg-secondary p-7 shadow-xl">
             <div className="flex items-center justify-between gap-5">
@@ -536,6 +561,65 @@ function AdminReport() {
                     <td className="px-5 py-4">
                       {student.createdAt
                         ? new Date(student.createdAt).toLocaleDateString()
+                        : "Not available"}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <div className="mb-6">
+          <h3 className="text-3xl font-extrabold text-primary">
+            Left School Records
+          </h3>
+          <p className="mt-2 text-primary/70">
+            Recent students marked as left school for the selected session and
+            term.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <table className="w-full min-w-[860px] text-left">
+            <thead className="bg-primary/10 text-primary">
+              <tr>
+                <th className="px-5 py-4 font-bold">Student</th>
+                <th className="px-5 py-4 font-bold">Admission No.</th>
+                <th className="px-5 py-4 font-bold">Previous Class</th>
+                <th className="px-5 py-4 font-bold">Session</th>
+                <th className="px-5 py-4 font-bold">Term</th>
+                <th className="px-5 py-4 font-bold">Recorded</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-primary/10">
+              {leftSchoolStudents.length === 0 ? (
+                <tr>
+                  <td className="px-5 py-6 text-primary/70" colSpan="6">
+                    No left school record found for this filter.
+                  </td>
+                </tr>
+              ) : (
+                leftSchoolStudents.slice(0, 15).map((student) => (
+                  <tr key={student._id} className="text-primary/80">
+                    <td className="px-5 py-4 font-bold text-primary">
+                      {student.full_name}
+                    </td>
+                    <td className="px-5 py-4">{student.admission_no}</td>
+                    <td className="px-5 py-4">
+                      {student.left_class || student.class || "Not set"}
+                    </td>
+                    <td className="px-5 py-4">
+                      {student.left_session || "Not set"}
+                    </td>
+                    <td className="px-5 py-4">
+                      {student.left_term || "Not set"}
+                    </td>
+                    <td className="px-5 py-4">
+                      {student.left_at
+                        ? new Date(student.left_at).toLocaleDateString()
                         : "Not available"}
                     </td>
                   </tr>

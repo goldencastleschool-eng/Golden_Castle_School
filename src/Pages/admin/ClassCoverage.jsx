@@ -75,6 +75,7 @@ function ClassCoverage() {
 
     return students.filter(
       (student) =>
+        student.status === "active" &&
         normalizeClassName(student.class) ===
           normalizeClassName(classRecord.name) &&
         student.current_session === classRecord.session

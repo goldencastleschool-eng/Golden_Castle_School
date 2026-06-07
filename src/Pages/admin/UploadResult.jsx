@@ -121,6 +121,7 @@ function UploadResult() {
 
     return students.filter(
       (student) =>
+        student.status === "active" &&
         normalizeClassName(student.class) ===
           normalizeClassName(resultForm.class) &&
         student.current_session === resultForm.session
@@ -146,6 +147,7 @@ function UploadResult() {
 
     return students.filter(
       (student) =>
+        student.status === "active" &&
         normalizeClassName(student.class) ===
           normalizeClassName(cumulativeForm.class) &&
         student.current_session === cumulativeForm.session
