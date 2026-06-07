@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaArrowRight, FaChalkboardUser } from "react-icons/fa6";
+import {
+  FaArrowRight,
+  FaChalkboardUser,
+  FaCircleCheck,
+  FaCircleExclamation,
+  FaXmark,
+} from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
-import AdminNotification from "../../components/common/AdminNotification.jsx";
+import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 
 const DEFAULT_SESSION_FILTER = "2025/2026";
 
@@ -14,39 +20,88 @@ const initialTeacherForm = {
   password: "",
 };
 
-const buildTeacherUsername = (fullName, className) => {
+const buildTeacherUsername = (fullName, suffix = "") => {
   const namePart = fullName
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ".")
-    .replace(/(^\.|\.$)/g, "");
-  const classPart = className
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "")
-    .replace(/(^\.|\.$)/g, "");
+    .replace(/[^a-z0-9]+/g, "");
 
-  return [namePart, classPart].filter(Boolean).join(".");
+  return `${namePart}${suffix}`;
 };
+
+const createUsernameSuffix = () => Math.floor(1000 + Math.random() * 9000).toString();
+
+function ActionMessageModal({ status, onClose }) {
+  if (!status?.message) {
+    return null;
+  }
+
+  const isSuccess = status.type === "success";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-[2rem] bg-secondary p-7 text-primary shadow-2xl">
+        <div
+          className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-xl text-white ${
+            isSuccess ? "bg-green-600" : "bg-red-600"
+          }`}
+        >
+          {isSuccess ? <FaCircleCheck /> : <FaCircleExclamation />}
+        </div>
+        <h3 className="text-2xl font-extrabold">
+          {isSuccess ? "Success" : "Notice"}
+        </h3>
+        <p className="mt-3 text-primary/70">{status.message}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary transition-all duration-300 hover:scale-[1.02]"
+        >
+          Close
+          <FaXmark />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function TeacherManagement() {
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
   const [teacherForm, setTeacherForm] = useState(initialTeacherForm);
+  const [editingTeacherId, setEditingTeacherId] = useState("");
+  const [usernameSuffix, setUsernameSuffix] = useState(createUsernameSuffix);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [resettingTeacherId, setResettingTeacherId] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
 
   const fetchTeacherData = async () => {
     try {
       setLoading(true);
-      const [teachersResponse, classesResponse] = await Promise.all([
+      setStatus({ type: "", message: "" });
+
+      const [teachersRequest, classesRequest] = await Promise.allSettled([
         API.get("/teachers"),
         API.get("/classes"),
       ]);
 
-      setTeachers(teachersResponse.data || []);
-      setClasses(classesResponse.data || []);
+      if (classesRequest.status === "rejected") {
+        throw new Error(
+          classesRequest.reason?.response?.data?.message ||
+            classesRequest.reason?.response?.data?.error ||
+            "Unable to load class records."
+        );
+      }
+
+      setClasses(classesRequest.value.data || []);
+      setTeachers(
+        teachersRequest.status === "fulfilled"
+          ? teachersRequest.value.data || []
+          : []
+      );
     } catch (error) {
       setStatus({
         type: "error",
@@ -87,34 +142,31 @@ function TeacherManagement() {
         ...currentForm,
         session: value,
         assigned_class_record: "",
-        username: buildTeacherUsername(currentForm.full_name, ""),
+        username: editingTeacherId
+          ? currentForm.username
+          : buildTeacherUsername(currentForm.full_name, usernameSuffix),
       }));
       return;
     }
 
     if (name === "assigned_class_record") {
-      const selectedClass = classes.find((classRecord) => classRecord._id === value);
-
       setTeacherForm((currentForm) => ({
         ...currentForm,
         assigned_class_record: value,
-        username: buildTeacherUsername(
-          currentForm.full_name,
-          selectedClass?.name || ""
-        ),
+        username: editingTeacherId
+          ? currentForm.username
+          : buildTeacherUsername(currentForm.full_name, usernameSuffix),
       }));
       return;
     }
 
     if (name === "full_name") {
-      const selectedClass = classes.find(
-        (classRecord) => classRecord._id === teacherForm.assigned_class_record
-      );
-
       setTeacherForm((currentForm) => ({
         ...currentForm,
         full_name: value,
-        username: buildTeacherUsername(value, selectedClass?.name || ""),
+        username: editingTeacherId
+          ? currentForm.username
+          : buildTeacherUsername(value, usernameSuffix),
       }));
       return;
     }
@@ -131,11 +183,26 @@ function TeacherManagement() {
     setStatus({ type: "", message: "" });
 
     try {
-      await API.post("/teachers", teacherForm);
+      const payload = { ...teacherForm };
+
+      if (!payload.password) {
+        delete payload.password;
+      }
+
+      if (editingTeacherId) {
+        await API.put(`/teachers/${editingTeacherId}`, payload);
+      } else {
+        await API.post("/teachers", payload);
+      }
+
       setTeacherForm(initialTeacherForm);
+      setEditingTeacherId("");
+      setUsernameSuffix(createUsernameSuffix());
       setStatus({
         type: "success",
-        message: "Form teacher registered successfully.",
+        message: editingTeacherId
+          ? "Teacher updated successfully."
+          : "Form teacher registered successfully.",
       });
       await fetchTeacherData();
     } catch (error) {
@@ -151,14 +218,104 @@ function TeacherManagement() {
     }
   };
 
+  const handleEdit = (teacher) => {
+    setEditingTeacherId(teacher._id);
+    setTeacherForm({
+      full_name: teacher.full_name || "",
+      username: teacher.username || "",
+      session: teacher.session || DEFAULT_SESSION_FILTER,
+      assigned_class_record:
+        teacher.assigned_class_record?._id ||
+        teacher.assigned_class_record ||
+        "",
+      password: "",
+    });
+    setStatus({ type: "", message: "" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTeacherId("");
+    setTeacherForm(initialTeacherForm);
+    setUsernameSuffix(createUsernameSuffix());
+  };
+
+  const handleDeleteRequest = (teacher) => {
+    setDeleteTarget(teacher);
+  };
+
+  const handleResetPassword = async (teacherId) => {
+    setResettingTeacherId(teacherId);
+    setStatus({ type: "", message: "" });
+
+    try {
+      await API.put(`/teachers/${teacherId}/reset-password`);
+      setStatus({
+        type: "success",
+        message: "Teacher password reset to original registration password.",
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Unable to reset teacher password.",
+      });
+    } finally {
+      setResettingTeacherId("");
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget?._id) {
+      return;
+    }
+
+    setDeleting(true);
+
+    try {
+      await API.delete(`/teachers/${deleteTarget._id}`);
+      setStatus({
+        type: "success",
+        message: "Teacher deleted successfully.",
+      });
+      setDeleteTarget(null);
+      await fetchTeacherData();
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Unable to delete teacher.",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const inputClass =
     "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
   return (
     <div className="px-6 py-10 lg:px-12">
-      <AdminNotification
+      <ActionMessageModal
         status={status}
-        onDismiss={() => setStatus({ type: "", message: "" })}
+        onClose={() => setStatus({ type: "", message: "" })}
+      />
+      <AdminDeleteModal
+        open={Boolean(deleteTarget)}
+        title="Delete Teacher"
+        message="This action will permanently remove this teacher account."
+        details={
+          deleteTarget
+            ? `${deleteTarget.full_name} - ${deleteTarget.username}`
+            : ""
+        }
+        confirmLabel="Delete Teacher"
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
       />
 
       <div className="mb-8">
@@ -178,10 +335,12 @@ function TeacherManagement() {
           <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_520px]">
             <div>
               <h3 className="text-3xl font-extrabold text-primary">
-                Register Form Teacher
+                {editingTeacherId ? "Edit Teacher" : "Register Form Teacher"}
               </h3>
               <p className="mt-3 max-w-2xl text-primary/70">
-                Username is generated from the teacher name and assigned class.
+                {editingTeacherId
+                  ? "Update teacher details. Leave password empty to keep the current password."
+                  : "Username is generated from the teacher full name and a unique 4 digit code."}
               </p>
             </div>
 
@@ -247,7 +406,7 @@ function TeacherManagement() {
                 value={teacherForm.password}
                 onChange={handleChange}
                 placeholder="Teacher password"
-                required
+                required={!editingTeacherId}
               />
 
               <button
@@ -255,9 +414,25 @@ function TeacherManagement() {
                 disabled={submitting || availableClasses.length === 0}
                 className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {submitting ? "Registering teacher..." : "Register Teacher"}
+                {submitting
+                  ? editingTeacherId
+                    ? "Saving teacher..."
+                    : "Registering teacher..."
+                  : editingTeacherId
+                    ? "Save Teacher"
+                    : "Register Teacher"}
                 {!submitting && <FaArrowRight />}
               </button>
+
+              {editingTeacherId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+                >
+                  Cancel Edit
+                </button>
+              )}
             </form>
           </div>
         </section>
@@ -265,15 +440,16 @@ function TeacherManagement() {
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
           <div className="mb-6">
             <h3 className="text-3xl font-extrabold text-primary">
-              Form Teacher Records
+              View Form Teachers
             </h3>
             <p className="mt-2 text-primary/70">
-              Recent form teacher accounts and assigned class records.
+              View registered form teachers, edit records, delete accounts, or
+              reset a teacher password.
             </p>
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-primary/10">
-            <table className="w-full min-w-[860px] text-left">
+            <table className="w-full min-w-[960px] text-left">
               <thead className="bg-primary/10 text-primary">
                 <tr>
                   <th className="px-5 py-4 font-bold">S/N</th>
@@ -281,19 +457,21 @@ function TeacherManagement() {
                   <th className="px-5 py-4 font-bold">Username</th>
                   <th className="px-5 py-4 font-bold">Session</th>
                   <th className="px-5 py-4 font-bold">Assigned Class</th>
+                  <th className="px-5 py-4 font-bold">Password</th>
                   <th className="px-5 py-4 font-bold">Created</th>
+                  <th className="px-5 py-4 font-bold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary/10">
                 {loading ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="6">
+                    <td className="px-5 py-6 text-primary/70" colSpan="8">
                       Loading teachers...
                     </td>
                   </tr>
                 ) : teachers.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="6">
+                    <td className="px-5 py-6 text-primary/70" colSpan="8">
                       No form teacher has been registered yet.
                     </td>
                   </tr>
@@ -312,9 +490,42 @@ function TeacherManagement() {
                         {teacher.assigned_class?.toUpperCase() || "Not set"}
                       </td>
                       <td className="px-5 py-4">
+                        <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-bold text-primary/70">
+                          Protected
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
                         {teacher.createdAt
                           ? new Date(teacher.createdAt).toLocaleDateString()
                           : "Not available"}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(teacher)}
+                            className="rounded-xl bg-button px-4 py-2 text-sm font-bold text-secondary"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRequest(teacher)}
+                            className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-200"
+                          >
+                            Delete
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleResetPassword(teacher._id)}
+                            disabled={resettingTeacherId === teacher._id}
+                            className="rounded-xl bg-primary/10 px-4 py-2 text-sm font-bold text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {resettingTeacherId === teacher._id
+                              ? "Resetting..."
+                              : "Reset Password"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

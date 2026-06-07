@@ -36,6 +36,8 @@ import StudentLayout from "./Pages/student/StudentLayout.jsx";
 import StudentResult from "./Pages/student/StudentResult.jsx";
 import StudentCumulativeResult from "./Pages/student/StudentCumulativeResult.jsx";
 import StudentSettings from "./Pages/student/StudentSettings.jsx";
+import TeacherLayout from "./Pages/teacher/TeacherLayout.jsx";
+import TeacherBroadsheets from "./Pages/teacher/TeacherBroadsheets.jsx";
 import AdminDashboard from "./Pages/admin/AdminDashboard.jsx";
 import AdminLayout from "./Pages/admin/AdminLayout.jsx";
 import ClassManagement from "./Pages/admin/ClassManagement.jsx";
@@ -134,6 +136,10 @@ const router = createBrowserRouter([
         element: <AdminLogin />,
   },
   {
+        path: "secure-admin-login",
+        element: <AdminLogin adminOnly />,
+  },
+  {
         path: "student-login",
         element: <StudentLogin />,
   },
@@ -162,6 +168,22 @@ const router = createBrowserRouter([
           {
             path: "settings",
             element: <StudentSettings />,
+          },
+        ],
+      },
+
+      // TEACHER DASHBOARD
+      {
+        path: "teacher",
+        element: (
+          <ProtectedRoute role="teacher">
+            <TeacherLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: <TeacherBroadsheets />,
           },
         ],
       },

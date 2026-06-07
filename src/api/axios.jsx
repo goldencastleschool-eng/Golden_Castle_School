@@ -26,9 +26,13 @@ API.interceptors.response.use(
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
+      const redirectPath = window.location.pathname.startsWith("/admin")
+        ? "/secure-admin-login"
+        : "/login";
+
       // Prevent redirect loop on login page
       if (!window.location.pathname.includes("/login")) {
-        window.location.href = "/login";
+        window.location.href = redirectPath;
       }
     }
 

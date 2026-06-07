@@ -21,11 +21,11 @@ export default function ProtectedRoute({ children, role }) {
 
   // 3. If loading is done and they are definitely not authenticated, redirect
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />; 
+    return <Navigate to={role === "admin" ? "/secure-admin-login" : "/login"} replace />;
   }
 
   if (role && user?.role !== role) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={role === "admin" ? "/secure-admin-login" : "/login"} replace />;
   }
 
   // 4. Otherwise, let them through

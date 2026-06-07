@@ -4,6 +4,7 @@ import {
   FaGraduationCap,
   FaIdCard,
   FaLock,
+  FaChalkboardUser,
   FaUser,
   FaUserShield,
 } from "react-icons/fa6";
@@ -22,16 +23,38 @@ const roleOptions = [
     icon: <FaGraduationCap />,
   },
   {
-    label: "Admin",
-    value: "admin",
-    icon: <FaUserShield />,
+    label: "Teacher",
+    value: "teacher",
+    icon: <FaChalkboardUser />,
   },
 ];
 
-function Login() {
+const adminRoleOption = {
+  label: "Admin",
+  value: "admin",
+  icon: <FaUserShield />,
+};
+
+const getLoginErrorMessage = (requestError) => {
+  const responseData = requestError.response?.data;
+
+  if (typeof responseData === "string") {
+    return requestError.response?.status === 404
+      ? "Teacher login is not available on the backend yet. Please deploy the latest backend."
+      : "Login failed. Please try again.";
+  }
+
+  return (
+    responseData?.message ||
+    responseData?.error ||
+    "Login failed. Please check your credentials."
+  );
+};
+
+function Login({ adminOnly = false }) {
   const navigate = useNavigate();
   const { setUser } = useAuth();
-  const [role, setRole] = useState("student");
+  const [role, setRole] = useState(adminOnly ? "admin" : "student");
   const [formData, setFormData] = useState({
     identifier: "",
     password: "",
@@ -40,6 +63,8 @@ function Login() {
   const [error, setError] = useState("");
 
   const isStudent = role === "student";
+  const isTeacher = role === "teacher";
+  const availableRoleOptions = adminOnly ? [adminRoleOption] : roleOptions;
 
   const handleRoleChange = (nextRole) => {
     setRole(nextRole);
@@ -64,42 +89,49 @@ function Login() {
     setError("");
 
     try {
-      const endpoint = isStudent ? "/auth/student/login" : "/auth/admin/login";
+      const endpoint = isStudent
+        ? "/auth/student/login"
+        : isTeacher
+          ? "/auth/teacher/login"
+          : "/auth/admin/login";
+      const identifier = formData.identifier.trim();
       const payload = isStudent
         ? {
-            admission_no: formData.identifier,
+            admission_no: identifier,
             password: formData.password,
           }
         : {
-            username: formData.identifier,
+            username: identifier,
             password: formData.password,
           };
 
       const response = await API.post(endpoint, payload);
-      const { student, admin, token } = response.data;
+      const { student, admin, teacher, token } = response.data;
 
       if (token) {
         localStorage.setItem("token", token);
       }
-      console.log(student, admin, token)
-      const account = isStudent ? {
-        ...student, 
-        role: "student",
-        }
-        : admin;
+      const account = isStudent
+        ? {
+            ...student,
+            role: "student",
+          }
+        : isTeacher
+          ? {
+              ...teacher,
+              role: "teacher",
+            }
+          : admin;
 
       localStorage.setItem( "user",JSON.stringify(account));
 
       setUser(account);
-      navigate(isStudent ? "/student" : "/admin");
+      navigate(isStudent ? "/student" : isTeacher ? "/teacher" : "/admin");
     } catch (requestError) {
       if (!requestError.response) {
         setError("Network error. Please make sure the backend is running.");
       } else {
-        setError(
-          requestError.response?.data?.message ||
-            "Login failed. Please check your credentials."
-        );
+        setError(getLoginErrorMessage(requestError));
       }
     } finally {
       setLoading(false);
@@ -121,11 +153,19 @@ function Login() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20"></div>
           <div className="absolute bottom-10 left-10 z-10 text-primary">
             <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-2xl text-secondary">
-              {isStudent ? <FaGraduationCap /> : <FaUserShield />}
+              {isStudent ? (
+                <FaGraduationCap />
+              ) : isTeacher ? (
+                <FaChalkboardUser />
+              ) : (
+                <FaUserShield />
+              )}
             </div>
             <h2 className="mb-4 text-4xl font-extrabold">Welcome Back</h2>
             <p className="max-w-md leading-relaxed text-primary/80">
-              Choose your portal role and sign in securely to continue.
+              {adminOnly
+                ? "Sign in through the secure administrator access point."
+                : "Choose your portal role and sign in securely to continue."}
             </p>
           </div>
         </div>
@@ -134,15 +174,21 @@ function Login() {
           <div className="w-full max-w-md">
             <div className="mb-8">
               <h2 className="text-4xl font-extrabold text-primary sm:text-5xl">
-                Portal Login
+                {adminOnly ? "Secure Admin Login" : "Portal Login"}
               </h2>
               <p className="mt-4 text-base leading-relaxed text-primary/70 sm:text-lg">
-                Sign in as a student or administrator.
+                {adminOnly
+                  ? "Administrator access is available only through this secure URL."
+                  : "Sign in as a student or teacher."}
               </p>
             </div>
 
-            <div className="mb-8 grid grid-cols-2 gap-3 rounded-2xl bg-primary/5 p-2">
-              {roleOptions.map((option) => (
+            <div
+              className={`mb-8 grid grid-cols-1 gap-3 rounded-2xl bg-primary/5 p-2 ${
+                adminOnly ? "" : "sm:grid-cols-2"
+              }`}
+            >
+              {availableRoleOptions.map((option) => (
                 <button
                   key={option.value}
                   type="button"
@@ -218,7 +264,9 @@ function Login() {
               >
                 {loading
                   ? "Signing in..."
-                  : `Login as ${isStudent ? "Student" : "Admin"}`}
+                  : `Login as ${
+                      isStudent ? "Student" : isTeacher ? "Teacher" : "Admin"
+                    }`}
                 {!loading && (
                   <FaArrowRight className="transition duration-300 group-hover:translate-x-1" />
                 )}

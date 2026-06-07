@@ -11,12 +11,21 @@ const initialResultForm = {
   term: "",
   class: "",
   class_record: "",
+  assigned_teacher: "",
   pdf: null,
 };
 
 const initialCumulativeForm = {
   studentId: "",
   session: "",
+  class: "",
+  class_record: "",
+  pdf: null,
+};
+
+const initialBroadsheetForm = {
+  session: "",
+  term: "",
   class: "",
   class_record: "",
   pdf: null,
@@ -29,16 +38,25 @@ function UploadResult() {
   const [students, setStudents] = useState([]);
   const [results, setResults] = useState([]);
   const [cumulativeResults, setCumulativeResults] = useState([]);
+  const [classBroadsheets, setClassBroadsheets] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [resultForm, setResultForm] = useState(initialResultForm);
   const [cumulativeForm, setCumulativeForm] = useState(initialCumulativeForm);
+  const [broadsheetForm, setBroadsheetForm] = useState(initialBroadsheetForm);
+  const [broadsheetAccessForm, setBroadsheetAccessForm] = useState({
+    broadsheet_session: "",
+    broadsheet_term: "",
+  });
   const [editingResultId, setEditingResultId] = useState("");
   const [editingCumulativeResultId, setEditingCumulativeResultId] = useState("");
   const [resultSearch, setResultSearch] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
   const [uploading, setUploading] = useState(false);
   const [uploadingCumulative, setUploadingCumulative] = useState(false);
+  const [uploadingBroadsheet, setUploadingBroadsheet] = useState(false);
+  const [savingBroadsheetAccess, setSavingBroadsheetAccess] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -52,6 +70,11 @@ function UploadResult() {
     setCumulativeResults(response.data || []);
   };
 
+  const fetchClassBroadsheets = async () => {
+    const response = await API.get("/class-broadsheets");
+    setClassBroadsheets(response.data || []);
+  };
+
   useEffect(() => {
     const fetchPageData = async () => {
       try {
@@ -62,11 +85,17 @@ function UploadResult() {
           resultsRequest,
           cumulativeResultsRequest,
           classesRequest,
+          broadsheetsRequest,
+          teachersRequest,
+          accessRequest,
         ] = await Promise.allSettled([
           API.get("/students"),
           API.get("/results"),
           API.get("/cumulative-results"),
           API.get("/classes"),
+          API.get("/class-broadsheets"),
+          API.get("/teachers"),
+          API.get("/result-access"),
         ]);
 
         if (studentsRequest.status === "rejected") {
@@ -98,6 +127,23 @@ function UploadResult() {
             ? cumulativeResultsRequest.value.data || []
             : []
         );
+        setClassBroadsheets(
+          broadsheetsRequest.status === "fulfilled"
+            ? broadsheetsRequest.value.data || []
+            : []
+        );
+        setTeachers(
+          teachersRequest.status === "fulfilled"
+            ? teachersRequest.value.data || []
+            : []
+        );
+        if (accessRequest.status === "fulfilled") {
+          setBroadsheetAccessForm({
+            broadsheet_session:
+              accessRequest.value.data?.broadsheet_session || "",
+            broadsheet_term: accessRequest.value.data?.broadsheet_term || "",
+          });
+        }
       } catch (error) {
         setStatus({
           type: "error",
@@ -139,6 +185,28 @@ function UploadResult() {
       (classRecord) => classRecord.session === cumulativeForm.session
     );
   }, [classes, cumulativeForm.session]);
+
+  const broadsheetAvailableClasses = useMemo(() => {
+    return classes.filter(
+      (classRecord) => classRecord.session === broadsheetForm.session
+    );
+  }, [classes, broadsheetForm.session]);
+
+  const broadsheetAvailableTeachers = useMemo(() => {
+    if (!broadsheetForm.class_record || !broadsheetForm.session) {
+      return [];
+    }
+
+    return teachers.filter((teacher) => {
+      const teacherClassId =
+        teacher.assigned_class_record?._id || teacher.assigned_class_record;
+
+      return (
+        teacher.session === broadsheetForm.session &&
+        teacherClassId === broadsheetForm.class_record
+      );
+    });
+  }, [broadsheetForm.class_record, broadsheetForm.session, teachers]);
 
   const cumulativeFilteredStudents = useMemo(() => {
     if (!cumulativeForm.class || !cumulativeForm.session) {
@@ -183,6 +251,10 @@ function UploadResult() {
   const displayedCumulativeResults = useMemo(() => {
     return cumulativeResults.slice(0, 15);
   }, [cumulativeResults]);
+
+  const displayedClassBroadsheets = useMemo(() => {
+    return classBroadsheets.slice(0, 15);
+  }, [classBroadsheets]);
 
   const handleChange = (event) => {
     const { name, value, files } = event.target;
@@ -245,6 +317,47 @@ function UploadResult() {
     setCumulativeForm((currentForm) => ({
       ...currentForm,
       [name]: files ? files[0] : value,
+    }));
+  };
+
+  const handleBroadsheetChange = (event) => {
+    const { name, value, files } = event.target;
+
+    if (name === "session") {
+      setBroadsheetForm((currentForm) => ({
+        ...currentForm,
+        session: value,
+        class: "",
+        class_record: "",
+        assigned_teacher: "",
+      }));
+      return;
+    }
+
+    if (name === "class_record") {
+      const selectedClass = classes.find((classRecord) => classRecord._id === value);
+
+      setBroadsheetForm((currentForm) => ({
+        ...currentForm,
+        class_record: value,
+        class: selectedClass?.name || "",
+        assigned_teacher: "",
+      }));
+      return;
+    }
+
+    setBroadsheetForm((currentForm) => ({
+      ...currentForm,
+      [name]: files ? files[0] : value,
+    }));
+  };
+
+  const handleBroadsheetAccessChange = (event) => {
+    const { name, value } = event.target;
+
+    setBroadsheetAccessForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
     }));
   };
 
@@ -341,6 +454,76 @@ function UploadResult() {
     }
   };
 
+  const handleBroadsheetSubmit = async (event) => {
+    event.preventDefault();
+    setUploadingBroadsheet(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const formData = new FormData();
+      formData.append("session", broadsheetForm.session);
+      formData.append("term", broadsheetForm.term);
+      formData.append("class_record", broadsheetForm.class_record);
+      formData.append("assigned_teacher", broadsheetForm.assigned_teacher);
+      formData.append("pdf", broadsheetForm.pdf);
+
+      await API.post("/class-broadsheets/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setBroadsheetForm(initialBroadsheetForm);
+      event.target.reset();
+      await fetchClassBroadsheets();
+      setStatus({
+        type: "success",
+        message: "Class broadsheet uploaded successfully.",
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Unable to upload class broadsheet.",
+      });
+    } finally {
+      setUploadingBroadsheet(false);
+    }
+  };
+
+  const handleBroadsheetAccessSubmit = async (event) => {
+    event.preventDefault();
+    setSavingBroadsheetAccess(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const response = await API.put(
+        "/result-access/broadsheet",
+        broadsheetAccessForm
+      );
+      setBroadsheetAccessForm({
+        broadsheet_session: response.data.broadsheet_session || "",
+        broadsheet_term: response.data.broadsheet_term || "",
+      });
+      setStatus({
+        type: "success",
+        message: "Teacher broadsheet access updated successfully.",
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Unable to update teacher broadsheet access.",
+      });
+    } finally {
+      setSavingBroadsheetAccess(false);
+    }
+  };
+
   const handleEdit = (result) => {
     setEditingResultId(result._id);
     setResultForm({
@@ -400,6 +583,8 @@ function UploadResult() {
     try {
       if (deleteTarget.deleteType === "cumulative") {
         await API.delete(`/cumulative-results/${deleteTarget._id}`);
+      } else if (deleteTarget.deleteType === "broadsheet") {
+        await API.delete(`/class-broadsheets/${deleteTarget._id}`);
       } else {
         await API.delete(`/results/${deleteTarget._id}`);
       }
@@ -408,11 +593,15 @@ function UploadResult() {
         message:
           deleteTarget.deleteType === "cumulative"
             ? "Cumulative result deleted successfully."
+            : deleteTarget.deleteType === "broadsheet"
+              ? "Class broadsheet deleted successfully."
             : "Result deleted successfully.",
       });
       setDeleteTarget(null);
       if (deleteTarget.deleteType === "cumulative") {
         await fetchCumulativeResults();
+      } else if (deleteTarget.deleteType === "broadsheet") {
+        await fetchClassBroadsheets();
       } else {
         await fetchResults();
       }
@@ -443,21 +632,27 @@ function UploadResult() {
         title={
           deleteTarget?.deleteType === "cumulative"
             ? "Delete Cumulative Result"
+            : deleteTarget?.deleteType === "broadsheet"
+              ? "Delete Class Broadsheet"
             : "Delete Result"
         }
         message={
           deleteTarget?.deleteType === "cumulative"
             ? "This action will permanently remove this uploaded cumulative result PDF record from the system."
+            : deleteTarget?.deleteType === "broadsheet"
+              ? "This action will permanently remove this uploaded class broadsheet PDF record from the system."
             : "This action will permanently remove this uploaded result PDF record from the system."
         }
         details={
           deleteTarget
-            ? `${deleteTarget.student?.full_name || "Unknown student"} - ${deleteTarget.class} - ${deleteTarget.session}${deleteTarget.term ? ` - ${deleteTarget.term}` : ""}`
+            ? `${deleteTarget.student?.full_name || deleteTarget.class || "Unknown record"} - ${deleteTarget.session}${deleteTarget.term ? ` - ${deleteTarget.term}` : ""}`
             : ""
         }
         confirmLabel={
           deleteTarget?.deleteType === "cumulative"
             ? "Delete Cumulative Result"
+            : deleteTarget?.deleteType === "broadsheet"
+              ? "Delete Class Broadsheet"
             : "Delete Result"
         }
         loading={deleting}
@@ -696,6 +891,163 @@ function UploadResult() {
         </form>
       </section>
 
+      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl lg:p-10">
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_420px]">
+          <div>
+            <h3 className="text-3xl font-extrabold text-primary">
+              Upload Class Broadsheet PDF
+            </h3>
+            <p className="mt-3 text-primary/70">
+              Upload a class broadsheet to a selected form teacher destination.
+            </p>
+
+            <form onSubmit={handleBroadsheetSubmit} className="mt-7">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <input
+                  className={inputClass}
+                  name="session"
+                  value={broadsheetForm.session}
+                  onChange={handleBroadsheetChange}
+                  placeholder="Session e.g. 2025/2026"
+                  required
+                />
+
+                <select
+                  className={inputClass}
+                  name="term"
+                  value={broadsheetForm.term}
+                  onChange={handleBroadsheetChange}
+                  required
+                >
+                  <option value="">Select term</option>
+                  <option value="First Term">First Term</option>
+                  <option value="Second Term">Second Term</option>
+                  <option value="Third Term">Third Term</option>
+                </select>
+
+                <select
+                  className={inputClass}
+                  name="class_record"
+                  value={broadsheetForm.class_record}
+                  onChange={handleBroadsheetChange}
+                  disabled={!broadsheetForm.session}
+                  required
+                >
+                  <option value="">
+                    {broadsheetForm.session ? "Select class" : "Enter session first"}
+                  </option>
+                  {broadsheetAvailableClasses.map((classRecord) => (
+                    <option key={classRecord._id} value={classRecord._id}>
+                      {classRecord.name.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  className={inputClass}
+                  name="assigned_teacher"
+                  value={broadsheetForm.assigned_teacher}
+                  onChange={handleBroadsheetChange}
+                  disabled={!broadsheetForm.class_record}
+                  required
+                >
+                  <option value="">
+                    {broadsheetForm.class_record
+                      ? "Select form teacher destination"
+                      : "Select class first"}
+                  </option>
+                  {broadsheetAvailableTeachers.map((teacher) => (
+                    <option key={teacher._id} value={teacher._id}>
+                      {teacher.full_name} - {teacher.username}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  className={inputClass}
+                  name="pdf"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleBroadsheetChange}
+                  required
+                />
+              </div>
+
+              {broadsheetForm.session && broadsheetAvailableClasses.length === 0 && (
+                <p className="mt-4 text-sm font-semibold text-primary/60">
+                  No class has been created for this session yet.
+                </p>
+              )}
+              {broadsheetForm.class_record &&
+                broadsheetAvailableTeachers.length === 0 && (
+                  <p className="mt-4 text-sm font-semibold text-primary/60">
+                    No form teacher is assigned to this class/session yet.
+                  </p>
+                )}
+
+              <button
+                type="submit"
+                disabled={
+                  uploadingBroadsheet ||
+                  !broadsheetForm.class_record ||
+                  !broadsheetForm.assigned_teacher ||
+                  !broadsheetForm.pdf
+                }
+                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {uploadingBroadsheet
+                  ? "Uploading broadsheet..."
+                  : "Upload Class Broadsheet"}
+                {!uploadingBroadsheet && <FaArrowRight />}
+              </button>
+            </form>
+          </div>
+
+          <form
+            onSubmit={handleBroadsheetAccessSubmit}
+            className="rounded-2xl bg-primary/5 p-6"
+          >
+            <h4 className="text-2xl font-extrabold text-primary">
+              Teacher Broadsheet Access
+            </h4>
+            <p className="mt-2 text-primary/70">
+              Control the session and term teachers can access in their portal.
+            </p>
+
+            <div className="mt-6 space-y-4">
+              <input
+                className={inputClass}
+                name="broadsheet_session"
+                value={broadsheetAccessForm.broadsheet_session}
+                onChange={handleBroadsheetAccessChange}
+                placeholder="Approved session e.g. 2025/2026"
+                required
+              />
+              <select
+                className={inputClass}
+                name="broadsheet_term"
+                value={broadsheetAccessForm.broadsheet_term}
+                onChange={handleBroadsheetAccessChange}
+                required
+              >
+                <option value="">Approved term</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              disabled={savingBroadsheetAccess}
+              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {savingBroadsheetAccess ? "Saving access..." : "Save Broadsheet Access"}
+            </button>
+          </form>
+        </div>
+      </section>
+
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
         <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px] lg:items-end">
           <div>
@@ -723,6 +1075,7 @@ function UploadResult() {
                 <th className="px-5 py-4 font-bold">S/N</th>
                 <th className="px-5 py-4 font-bold">Student</th>
                 <th className="px-5 py-4 font-bold">Class</th>
+                <th className="px-5 py-4 font-bold">Form Teacher</th>
                 <th className="px-5 py-4 font-bold">Session</th>
                 <th className="px-5 py-4 font-bold">Term</th>
                 <th className="px-5 py-4 font-bold">Actions</th>
@@ -731,7 +1084,7 @@ function UploadResult() {
             <tbody className="divide-y divide-primary/10">
               {displayedResults.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-6 text-primary/70" colSpan="6">
+                  <td className="px-5 py-6 text-primary/70" colSpan="7">
                     {resultSearch
                       ? "No result record matches your search."
                       : "No result records yet."}
@@ -784,7 +1137,7 @@ function UploadResult() {
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-primary/10">
-          <table className="w-full min-w-[760px] text-left">
+          <table className="w-full min-w-[860px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
                 <th className="px-5 py-4 font-bold">S/N</th>
@@ -833,6 +1186,72 @@ function UploadResult() {
                           Delete
                         </button>
                       </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <div className="mb-6">
+          <h3 className="text-3xl font-extrabold text-primary">
+            Recent Class Broadsheets
+          </h3>
+          <p className="mt-2 text-primary/70">
+            Showing the 15 most recent class broadsheet uploads.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <table className="w-full min-w-[860px] text-left">
+            <thead className="bg-primary/10 text-primary">
+              <tr>
+                <th className="px-5 py-4 font-bold">S/N</th>
+                <th className="px-5 py-4 font-bold">Class</th>
+                <th className="px-5 py-4 font-bold">Form Teacher</th>
+                <th className="px-5 py-4 font-bold">Session</th>
+                <th className="px-5 py-4 font-bold">Term</th>
+                <th className="px-5 py-4 font-bold">Uploaded</th>
+                <th className="px-5 py-4 font-bold">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-primary/10">
+              {displayedClassBroadsheets.length === 0 ? (
+                <tr>
+                  <td className="px-5 py-6 text-primary/70" colSpan="7">
+                    No class broadsheet uploads yet.
+                  </td>
+                </tr>
+              ) : (
+                displayedClassBroadsheets.map((broadsheet, index) => (
+                  <tr key={broadsheet._id} className="text-primary/80">
+                    <td className="px-5 py-4 font-bold text-primary">
+                      {index + 1}
+                    </td>
+                    <td className="px-5 py-4 font-semibold text-primary">
+                      {broadsheet.class?.toUpperCase() || "Not set"}
+                    </td>
+                    <td className="px-5 py-4">
+                      {broadsheet.assigned_teacher?.full_name || "Not set"}
+                    </td>
+                    <td className="px-5 py-4">{broadsheet.session}</td>
+                    <td className="px-5 py-4">{broadsheet.term}</td>
+                    <td className="px-5 py-4">
+                      {broadsheet.createdAt
+                        ? new Date(broadsheet.createdAt).toLocaleDateString()
+                        : "Not available"}
+                    </td>
+                    <td className="px-5 py-4">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRequest(broadsheet, "broadsheet")}
+                        className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-200"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))

@@ -6,11 +6,6 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import Header from "./components/common/Header.jsx";
 import Footer from "./components/common/Footer.jsx";
 
-import AdminLogin from './Pages/auth/AdminLogin.jsx'
-
-
-
-
 function App() {
   return (
     <div className="min-h-screen flex flex-col">
