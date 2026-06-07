@@ -70,7 +70,20 @@ function StudentLayout() {
             </div>
           </div>
 
-          <nav className="mt-8 flex gap-3 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
+            <div className="mt-8 rounded-2xl border border-primary/10 bg-primary/5 p-5">
+            <p className="text-sm font-semibold text-primary/60">
+              Signed in as
+            </p>
+            <p className="mt-2 text-lg font-extrabold text-primary">
+              {user?.full_name || "Student"}
+            </p>
+            <p className="mt-1 text-sm text-primary/60">
+              {user?.admission_no || "Admission number"}
+            </p>
+          </div>
+
+
+          <nav className="mt-8 flex gap-3 overflow-x-auto pb-2 flex-col lg:flex-col lg:overflow-visible lg:pb-0">
             {studentLinks.map((link) => (
               <NavLink
                 key={link.path}
@@ -84,18 +97,7 @@ function StudentLayout() {
             ))}
           </nav>
 
-          <div className="mt-8 rounded-2xl border border-primary/10 bg-primary/5 p-5">
-            <p className="text-sm font-semibold text-primary/60">
-              Signed in as
-            </p>
-            <p className="mt-2 text-lg font-extrabold text-primary">
-              {user?.full_name || "Student"}
-            </p>
-            <p className="mt-1 text-sm text-primary/60">
-              {user?.admission_no || "Admission number"}
-            </p>
-          </div>
-
+      
           <button
             onClick={handleLogout}
             className="mt-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"

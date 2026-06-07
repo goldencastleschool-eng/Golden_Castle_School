@@ -45,7 +45,7 @@ function StudentDashboard() {
       <section className="relative overflow-hidden bg-secondary px-6 py-12 lg:px-12">
         <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-button/20 blur-3xl"></div>
 
-        <div className="relative max-w-5xl">
+        <div className="hidden md:block relative max-w-5xl">
           <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-primary/10 bg-primary/10 px-5 py-3 text-primary">
             <FaGraduationCap className="text-button" />
             <span className="font-semibold">Student Result Portal</span>

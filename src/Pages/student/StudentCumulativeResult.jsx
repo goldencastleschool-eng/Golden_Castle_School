@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { FaDownload, FaFilePdf } from "react-icons/fa6";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FaFilePdf } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import PdfViewer from "../../components/common/PdfViewer.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 function StudentCumulativeResult() {
@@ -81,49 +82,49 @@ function StudentCumulativeResult() {
     }
   }, [user?.id]);
 
-  useEffect(() => {
-    const loadPdf = async () => {
-      if (!selectedResultId) return;
+  const loadPdf = useCallback(async () => {
+    if (!selectedResultId) return;
 
-      try {
-        setLoadingViewer(true);
-        setError("");
+    try {
+      setLoadingViewer(true);
+      setError("");
 
-        const response = await API.get(
-          `/cumulative-results/${selectedResultId}/view`,
-          {
-            responseType: "blob",
-          }
-        );
+      const response = await API.get(
+        `/cumulative-results/${selectedResultId}/view`,
+        {
+          responseType: "blob",
+        }
+      );
 
-        const objectUrl = URL.createObjectURL(response.data);
+      const objectUrl = URL.createObjectURL(response.data);
 
-        setViewerUrl((oldUrl) => {
-          if (oldUrl) {
-            URL.revokeObjectURL(oldUrl);
-          }
+      setViewerUrl((oldUrl) => {
+        if (oldUrl) {
+          URL.revokeObjectURL(oldUrl);
+        }
 
-          return objectUrl;
+        return objectUrl;
+      });
+
+      setTimeout(() => {
+        viewerRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
         });
-
-        setTimeout(() => {
-          viewerRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }, 100);
-      } catch (err) {
-        setError(
-          err.response?.data?.message ||
-            "Unable to load cumulative result PDF."
-        );
-      } finally {
-        setLoadingViewer(false);
-      }
-    };
-
-    loadPdf();
+      }, 100);
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Unable to load cumulative result PDF."
+      );
+    } finally {
+      setLoadingViewer(false);
+    }
   }, [selectedResultId]);
+
+  useEffect(() => {
+    loadPdf();
+  }, [loadPdf]);
 
   useEffect(() => {
     return () => {
@@ -187,7 +188,7 @@ function StudentCumulativeResult() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[360px_1fr]">
+      <div className="grid grid-cols-1 gap-8">
         <aside className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
           <h3 className="text-2xl font-extrabold text-primary">
             Cumulative Records
@@ -247,35 +248,18 @@ function StudentCumulativeResult() {
               </p>
             </div>
 
-            {selectedResult && (
-              <button
-                onClick={handleDownload}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-button px-5 py-3 font-bold text-secondary shadow-lg transition duration-300 hover:scale-105"
-              >
-                <FaDownload />
-                Download PDF
-              </button>
-            )}
+            <div className="hidden md:block"></div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-primary/10 bg-primary/5">
-            {loadingViewer ? (
-              <div className="flex min-h-[500px] items-center justify-center text-primary/70">
-                Loading PDF...
-              </div>
-            ) : viewerUrl ? (
-              <iframe
-                title="Student Cumulative Result PDF"
-                src={`${viewerUrl}#toolbar=1&navpanes=0`}
-                className="h-[75vh] min-h-[600px] w-full bg-white"
-                loading="lazy"
-              />
-            ) : (
-              <div className="flex min-h-[500px] items-center justify-center text-primary/70">
-                Select a cumulative result to view.
-              </div>
-            )}
-          </div>
+          <PdfViewer
+            title="Student Cumulative Result PDF"
+            viewerUrl={viewerUrl}
+            loading={loadingViewer}
+            emptyMessage="Select a cumulative result to view."
+            onDownload={handleDownload}
+            onReload={loadPdf}
+            downloadDisabled={!selectedResult}
+          />
         </section>
       </div>
     </div>

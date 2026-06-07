@@ -332,7 +332,7 @@ function TeacherManagement() {
 
       <div className="grid grid-cols-1 gap-8">
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
-          <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_520px]">
+          <div className="grid grid-cols-1 gap-8 ">
             <div>
               <h3 className="text-3xl font-extrabold text-primary">
                 {editingTeacherId ? "Edit Teacher" : "Register Form Teacher"}

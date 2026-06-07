@@ -524,8 +524,8 @@ function ClassManagement() {
       </section>
 
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
-        <div className="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-[1fr_220px_220px_170px_auto_auto] xl:items-end">
-          <div>
+
+         <div className="mb-5">
             <h3 className="text-3xl font-extrabold text-primary">
               {selectedClassRecord
                 ? `${selectedClassRecord.name.toUpperCase()} Students`
@@ -537,6 +537,8 @@ function ClassManagement() {
                 : "Choose a class from the records above or the selector."}
             </p>
           </div>
+
+        <div className="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-[1fr_220px_170px_auto_auto] xl:items-end">
 
           <div>
             <label className="mb-2 block text-sm font-semibold text-primary/60">

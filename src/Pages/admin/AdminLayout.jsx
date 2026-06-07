@@ -146,17 +146,6 @@ function AdminLayout() {
               </p>
             </div>
             </div>
-
-            {/* =================================
-              LOGOUT BUTTON
-          ================================= */}
-          <button
-            onClick={handleLogout}
-            className="flex  cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] lg:hidden"
-          >
-            <FaRightFromBracket />
-            Logout
-          </button>
           </div>
 
           {/* =================================
@@ -168,7 +157,7 @@ function AdminLayout() {
               Desktop:
               Vertical sidebar menu
           ================================= */}
-          <nav className="mt-8 flex gap-3 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
+          <nav className="mt-8 flex gap-3 overflow-x-auto pb-2 flex-col lg:flex-col lg:overflow-visible lg:pb-0">
 
             {adminLinks.map((link) => (
               <NavLink
@@ -190,7 +179,7 @@ function AdminLayout() {
           ================================= */}
           <button
             onClick={handleLogout}
-            className="hidden lg:block mt-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            className=" mt-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"
           >
             <FaRightFromBracket />
             Logout

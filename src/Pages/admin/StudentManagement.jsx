@@ -448,7 +448,7 @@ function StudentManagement() {
         </form>
 
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
-          <div className="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-[1fr_240px_240px_180px] xl:items-end">
+          <div className="mb-6 grid grid-cols-1 gap-5  xl:items-end">
             <div>
               <h3 className="text-3xl font-extrabold text-primary">
                 View Students

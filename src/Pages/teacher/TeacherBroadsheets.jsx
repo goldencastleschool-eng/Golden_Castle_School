@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { FaDownload, FaFilePdf } from "react-icons/fa6";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FaFilePdf } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import PdfViewer from "../../components/common/PdfViewer.jsx";
 
 function TeacherBroadsheets() {
   const [broadsheets, setBroadsheets] = useState([]);
@@ -48,51 +49,51 @@ function TeacherBroadsheets() {
     fetchBroadsheets();
   }, []);
 
-  useEffect(() => {
-    const loadPdf = async () => {
-      if (!selectedBroadsheetId) {
-        return;
-      }
+  const loadPdf = useCallback(async () => {
+    if (!selectedBroadsheetId) {
+      return;
+    }
 
-      try {
-        setLoadingViewer(true);
-        setError("");
+    try {
+      setLoadingViewer(true);
+      setError("");
 
-        const response = await API.get(
-          `/class-broadsheets/${selectedBroadsheetId}/view`,
-          {
-            responseType: "blob",
-          }
-        );
+      const response = await API.get(
+        `/class-broadsheets/${selectedBroadsheetId}/view`,
+        {
+          responseType: "blob",
+        }
+      );
 
-        const objectUrl = URL.createObjectURL(response.data);
+      const objectUrl = URL.createObjectURL(response.data);
 
-        setViewerUrl((oldUrl) => {
-          if (oldUrl) {
-            URL.revokeObjectURL(oldUrl);
-          }
+      setViewerUrl((oldUrl) => {
+        if (oldUrl) {
+          URL.revokeObjectURL(oldUrl);
+        }
 
-          return objectUrl;
+        return objectUrl;
+      });
+
+      setTimeout(() => {
+        viewerRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
         });
-
-        setTimeout(() => {
-          viewerRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }, 100);
-      } catch (requestError) {
-        setError(
-          requestError.response?.data?.message ||
-            "Unable to load this broadsheet PDF."
-        );
-      } finally {
-        setLoadingViewer(false);
-      }
-    };
-
-    loadPdf();
+      }, 100);
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.message ||
+          "Unable to load this broadsheet PDF."
+      );
+    } finally {
+      setLoadingViewer(false);
+    }
   }, [selectedBroadsheetId]);
+
+  useEffect(() => {
+    loadPdf();
+  }, [loadPdf]);
 
   useEffect(() => {
     return () => {
@@ -158,7 +159,7 @@ function TeacherBroadsheets() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[360px_1fr]">
+      <div className="grid grid-cols-1 gap-8">
         <aside className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
           <h3 className="text-2xl font-extrabold text-primary">
             Approved Records
@@ -218,34 +219,18 @@ function TeacherBroadsheets() {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={handleDownload}
-              disabled={!selectedBroadsheet}
-              className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <FaDownload />
-              Download
-            </button>
+            <div className="hidden md:block"></div>
           </div>
 
-          <div className="min-h-[70vh] overflow-hidden rounded-2xl border border-primary/10 bg-primary/5">
-            {loadingViewer ? (
-              <div className="flex min-h-[70vh] items-center justify-center text-primary/70">
-                Loading PDF...
-              </div>
-            ) : viewerUrl ? (
-              <iframe
-                src={viewerUrl}
-                title="Class broadsheet PDF preview"
-                className="h-[80vh] w-full"
-              />
-            ) : (
-              <div className="flex min-h-[70vh] items-center justify-center text-primary/70">
-                No broadsheet selected.
-              </div>
-            )}
-          </div>
+          <PdfViewer
+            title="Class Broadsheet PDF"
+            viewerUrl={viewerUrl}
+            loading={loadingViewer}
+            emptyMessage="No broadsheet selected."
+            onDownload={handleDownload}
+            onReload={loadPdf}
+            downloadDisabled={!selectedBroadsheet}
+          />
         </section>
       </div>
     </div>
