@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { FaArrowRight, FaLayerGroup } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
@@ -11,11 +10,27 @@ const DEFAULT_SESSION_FILTER = "2025/2026";
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
 
+const isActiveStudent = (student) =>
+  !student.status || student.status === "active";
+
+const escapeHtml = (value = "") =>
+  value
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
 function ClassManagement() {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [selectedClassId, setSelectedClassId] = useState("");
   const [sessionFilter, setSessionFilter] = useState(DEFAULT_SESSION_FILTER);
+  const [studentViewSessionFilter, setStudentViewSessionFilter] = useState(
+    DEFAULT_SESSION_FILTER
+  );
+  const [studentViewClassId, setStudentViewClassId] = useState("");
+  const [studentNameSort, setStudentNameSort] = useState("az");
   const [className, setClassName] = useState("");
   const [classSession, setClassSession] = useState(DEFAULT_SESSION_FILTER);
   const [editingClassId, setEditingClassId] = useState("");
@@ -62,9 +77,17 @@ function ClassManagement() {
     return classes.filter((classRecord) => classRecord.session === sessionFilter);
   }, [classes, sessionFilter]);
 
+  const studentViewClasses = useMemo(() => {
+    return classes.filter(
+      (classRecord) => classRecord.session === studentViewSessionFilter
+    );
+  }, [classes, studentViewSessionFilter]);
+
   const classStudents = useMemo(() => {
     const selectedClassRecord = classes.find(
-      (classRecord) => classRecord._id === selectedClassId
+      (classRecord) =>
+        classRecord._id === studentViewClassId &&
+        classRecord.session === studentViewSessionFilter
     );
 
     if (!selectedClassRecord) {
@@ -73,35 +96,43 @@ function ClassManagement() {
 
     return students.filter(
       (student) =>
-        student.status === "active" &&
+        isActiveStudent(student) &&
         normalizeClassName(student.class) ===
           normalizeClassName(selectedClassRecord.name) &&
         student.current_session === selectedClassRecord.session
     );
-  }, [classes, selectedClassId, students]);
+  }, [classes, studentViewClassId, studentViewSessionFilter, students]);
 
   const selectedClassRecord = classes.find(
-    (classRecord) => classRecord._id === selectedClassId
+    (classRecord) =>
+      classRecord._id === studentViewClassId &&
+      classRecord.session === studentViewSessionFilter
   );
+
+  const sortedClassStudents = useMemo(() => {
+    return [...classStudents].sort((firstStudent, secondStudent) => {
+      const firstName = (firstStudent.full_name || "").toLowerCase();
+      const secondName = (secondStudent.full_name || "").toLowerCase();
+
+      return studentNameSort === "za"
+        ? secondName.localeCompare(firstName)
+        : firstName.localeCompare(secondName);
+    });
+  }, [classStudents, studentNameSort]);
 
   const handleSessionFilterChange = (event) => {
     const nextSession = event.target.value;
 
     setSessionFilter(nextSession);
 
-    const selectedClassStillVisible = classes.some(
-      (classRecord) =>
-        classRecord._id === selectedClassId &&
-        classRecord.session === nextSession
-    );
-
-    if (!selectedClassStillVisible) {
-      setSelectedClassId("");
-    }
-
     if (!editingClassId) {
       setClassSession(nextSession);
     }
+  };
+
+  const handleStudentViewSessionChange = (event) => {
+    setStudentViewSessionFilter(event.target.value);
+    setStudentViewClassId("");
   };
 
   const handleSubmit = async (event) => {
@@ -167,8 +198,8 @@ function ClassManagement() {
         message: "Class deleted successfully.",
       });
 
-      if (selectedClassId === deleteTarget._id) {
-        setSelectedClassId("");
+      if (studentViewClassId === deleteTarget._id) {
+        setStudentViewClassId("");
       }
 
       setDeleteTarget(null);
@@ -190,6 +221,135 @@ function ClassManagement() {
     setEditingClassId("");
     setClassName("");
     setClassSession(sessionFilter);
+  };
+
+  const buildClassStudentRows = () =>
+    sortedClassStudents.map((student, index) => ({
+      sn: index + 1,
+      name: student.full_name || "",
+      admissionNo: student.admission_no || "",
+      className: student.class || selectedClassRecord?.name || "",
+      session: student.current_session || selectedClassRecord?.session || "",
+      gender: student.gender || "Not set",
+      created: student.createdAt
+        ? new Date(student.createdAt).toLocaleDateString()
+        : "Not available",
+    }));
+
+  const handleExportClassStudents = () => {
+    if (!selectedClassRecord || sortedClassStudents.length === 0) {
+      setStatus({
+        type: "error",
+        message: "Select a class with students before exporting.",
+      });
+      return;
+    }
+
+    const headers = [
+      "S/N",
+      "Student",
+      "Admission No.",
+      "Class",
+      "Session",
+      "Gender",
+      "Created",
+    ];
+    const rows = buildClassStudentRows().map((student) => [
+      student.sn,
+      student.name,
+      student.admissionNo,
+      student.className,
+      student.session,
+      student.gender,
+      student.created,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) =>
+        row
+          .map((value) => `"${value.toString().replace(/"/g, '""')}"`)
+          .join(",")
+      )
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selectedClassRecord.name}-${selectedClassRecord.session}-students.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrintClassStudents = () => {
+    if (!selectedClassRecord || sortedClassStudents.length === 0) {
+      setStatus({
+        type: "error",
+        message: "Select a class with students before printing.",
+      });
+      return;
+    }
+
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+
+    if (!printWindow) {
+      setStatus({
+        type: "error",
+        message: "Unable to open print window. Allow popups and try again.",
+      });
+      return;
+    }
+
+    const rows = buildClassStudentRows()
+      .map(
+        (student) => `
+          <tr>
+            <td>${escapeHtml(student.sn)}</td>
+            <td>${escapeHtml(student.name)}</td>
+            <td>${escapeHtml(student.admissionNo)}</td>
+            <td>${escapeHtml(student.className)}</td>
+            <td>${escapeHtml(student.session)}</td>
+            <td>${escapeHtml(student.gender)}</td>
+            <td>${escapeHtml(student.created)}</td>
+          </tr>
+        `
+      )
+      .join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${escapeHtml(selectedClassRecord.name.toUpperCase())} Class Students</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #111; padding: 24px; }
+            h1 { margin: 0 0 6px; font-size: 24px; }
+            p { margin: 0 0 18px; color: #555; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+            th { background: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          <h1>${escapeHtml(selectedClassRecord.name.toUpperCase())} Students</h1>
+          <p>Session: ${escapeHtml(selectedClassRecord.session)} | Total: ${sortedClassStudents.length}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>S/N</th>
+                <th>Student</th>
+                <th>Admission No.</th>
+                <th>Class</th>
+                <th>Session</th>
+                <th>Gender</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   return (
@@ -318,14 +478,9 @@ function ClassManagement() {
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {filteredClasses.map((classRecord) => (
-            <button
+            <div
               key={classRecord._id}
-              onClick={() => setSelectedClassId(classRecord._id)}
-              className={`rounded-2xl border p-5 text-left transition-all duration-300 ${
-                selectedClassId === classRecord._id
-                  ? "border-button bg-button text-secondary"
-                  : "border-primary/10 bg-primary/5 text-primary hover:border-button"
-              }`}
+              className="rounded-2xl border border-primary/10 bg-primary/5 p-5 text-left text-primary transition-all duration-300 hover:border-button"
             >
               <p className="text-xl font-extrabold uppercase">
                 {classRecord.name}
@@ -337,7 +492,7 @@ function ClassManagement() {
                 {
                   students.filter(
                     (student) =>
-                      student.status === "active" &&
+                      isActiveStudent(student) &&
                       normalizeClassName(student.class) ===
                         normalizeClassName(classRecord.name) &&
                       student.current_session === classRecord.session
@@ -347,49 +502,29 @@ function ClassManagement() {
               </p>
 
               <div className="mt-4 flex gap-2">
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleEditClass(classRecord);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.stopPropagation();
-                      handleEditClass(classRecord);
-                    }
-                  }}
+                <button
+                  type="button"
+                  onClick={() => handleEditClass(classRecord)}
                   className="rounded-xl bg-primary/20 px-4 py-2 text-sm font-bold"
                 >
                   Edit
-                </span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleDeleteClassRequest(classRecord);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.stopPropagation();
-                      handleDeleteClassRequest(classRecord);
-                    }
-                  }}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteClassRequest(classRecord)}
                   className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-100"
                 >
                   Delete
-                </span>
+                </button>
               </div>
-            </button>
+            </div>
             ))}
           </div>
         )}
       </section>
 
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
-        <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_260px_260px] lg:items-end">
+        <div className="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-[1fr_220px_220px_170px_auto_auto] xl:items-end">
           <div>
             <h3 className="text-3xl font-extrabold text-primary">
               {selectedClassRecord
@@ -409,8 +544,8 @@ function ClassManagement() {
             </label>
             <select
               className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
-              value={sessionFilter}
-              onChange={handleSessionFilterChange}
+              value={studentViewSessionFilter}
+              onChange={handleStudentViewSessionChange}
             >
               {sessionOptions.map((session) => (
                 <option key={session} value={session}>
@@ -426,25 +561,63 @@ function ClassManagement() {
             </label>
             <select
               className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
-              value={selectedClassId}
-              onChange={(event) => setSelectedClassId(event.target.value)}
+              value={studentViewClassId}
+              onChange={(event) => setStudentViewClassId(event.target.value)}
             >
               <option value="">Choose class</option>
-              {filteredClasses.map((classRecord) => (
+              {studentViewClasses.map((classRecord) => (
                 <option key={classRecord._id} value={classRecord._id}>
                   {classRecord.name.toUpperCase()}
                 </option>
               ))}
             </select>
           </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-primary/60">
+              Sort
+            </label>
+            <select
+              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              value={studentNameSort}
+              onChange={(event) => setStudentNameSort(event.target.value)}
+            >
+              <option value="az">Name A-Z</option>
+              <option value="za">Name Z-A</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleExportClassStudents}
+            disabled={!selectedClassRecord || sortedClassStudents.length === 0}
+            className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-lg transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Export Excel
+          </button>
+
+          <button
+            type="button"
+            onClick={handlePrintClassStudents}
+            disabled={!selectedClassRecord || sortedClassStudents.length === 0}
+            className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Print
+          </button>
         </div>
+
+        {studentViewSessionFilter && studentViewClasses.length === 0 && (
+          <div className="mb-6 rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+            No class has been created for {studentViewSessionFilter} yet.
+          </div>
+        )}
 
         <div className="mb-6 rounded-2xl bg-primary/5 p-5">
           <p className="text-sm font-semibold text-primary/50">
             Students in Selected Class
           </p>
           <p className="mt-3 text-4xl font-extrabold text-primary">
-            {selectedClassRecord ? classStudents.length : "0"}
+            {selectedClassRecord ? sortedClassStudents.length : "0"}
           </p>
         </div>
 
@@ -473,14 +646,14 @@ function ClassManagement() {
                     Select a class to view students.
                   </td>
                 </tr>
-              ) : classStudents.length === 0 ? (
+              ) : sortedClassStudents.length === 0 ? (
                 <tr>
                   <td className="px-5 py-6 text-primary/70" colSpan="5">
                     No students registered in this class yet.
                   </td>
                 </tr>
               ) : (
-                classStudents.map((student) => (
+                sortedClassStudents.map((student) => (
                   <tr
                     key={student._id}
                     className="text-primary/80 transition duration-300 hover:bg-primary/5"

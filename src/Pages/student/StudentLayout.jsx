@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   FaBookOpen,
   FaFilePdf,
+  FaGear,
   FaGraduationCap,
   FaRightFromBracket,
 } from "react-icons/fa6";
@@ -25,6 +26,11 @@ const studentLinks = [
     label: "Cumulative",
     path: "/student/cumulative-results",
     icon: <FaFilePdf />,
+  },
+  {
+    label: "Settings",
+    path: "/student/settings",
+    icon: <FaGear />,
   },
 ];
 

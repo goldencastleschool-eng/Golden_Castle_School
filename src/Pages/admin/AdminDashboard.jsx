@@ -36,14 +36,20 @@ function AdminDashboard() {
   const [coverageSessionFilter, setCoverageSessionFilter] = useState(
     DEFAULT_COVERAGE_SESSION_FILTER
   );
+  const [populationSessionFilter, setPopulationSessionFilter] = useState(
+    DEFAULT_COVERAGE_SESSION_FILTER
+  );
   const [promotionForm, setPromotionForm] = useState({
+    sourceSession: DEFAULT_COVERAGE_SESSION_FILTER,
     fromClassRecord: "",
     fromClass: "",
-    toClass: "",
     fromSession: "",
+    toClassRecord: "",
+    toClass: "",
     toSession: "",
   });
   const [leftSchoolActionForm, setLeftSchoolActionForm] = useState({
+    sourceSession: DEFAULT_COVERAGE_SESSION_FILTER,
     fromClassRecord: "",
     fromClass: "",
     fromSession: "",
@@ -106,10 +112,6 @@ function AdminDashboard() {
     fetchDashboardData();
   }, []);
 
-  const classCount = useMemo(() => {
-    return classes.length;
-  }, [classes]);
-
   const coverageResults = useMemo(() => {
     if (!coverageSessionFilter || !accessForm.term) {
       return [];
@@ -131,11 +133,100 @@ function AdminDashboard() {
     ].sort();
   }, [classes]);
 
+  const populationSessionOptions = useMemo(() => {
+    return [
+      ...new Set([
+        DEFAULT_COVERAGE_SESSION_FILTER,
+        ...classes.map((classRecord) => classRecord.session).filter(Boolean),
+        ...students.map((student) => student.current_session).filter(Boolean),
+        ...students.map((student) => student.graduation_session).filter(Boolean),
+        ...students.map((student) => student.left_session).filter(Boolean),
+      ]),
+    ].sort();
+  }, [classes, students]);
+
   const coverageClasses = useMemo(() => {
     return classes.filter(
       (classRecord) => classRecord.session === coverageSessionFilter
     );
   }, [classes, coverageSessionFilter]);
+
+  const activeSessionStudents = useMemo(() => {
+    return students.filter(
+      (student) =>
+        isActiveStudent(student) &&
+        student.current_session === populationSessionFilter
+    );
+  }, [populationSessionFilter, students]);
+
+  const activeSessionClasses = useMemo(() => {
+    return classes.filter(
+      (classRecord) => classRecord.session === populationSessionFilter
+    );
+  }, [classes, populationSessionFilter]);
+
+  const graduatedSessionStudents = useMemo(() => {
+    return students.filter(
+      (student) =>
+        student.status === "graduated" &&
+        (student.graduation_session || student.current_session) ===
+          populationSessionFilter
+    );
+  }, [populationSessionFilter, students]);
+
+  const leftSchoolSessionStudents = useMemo(() => {
+    return students.filter(
+      (student) =>
+        student.status === "left" &&
+        (student.left_session || student.current_session) ===
+          populationSessionFilter
+    );
+  }, [populationSessionFilter, students]);
+
+  const activeGenderSummary = useMemo(() => {
+    return activeSessionStudents.reduce(
+      (summary, student) => {
+        const gender = student.gender || "Not Set";
+
+        return {
+          ...summary,
+          [gender]: (summary[gender] || 0) + 1,
+        };
+      },
+      {}
+    );
+  }, [activeSessionStudents]);
+
+  const promotionSessionOptions = useMemo(() => {
+    return [
+      ...new Set([
+        DEFAULT_COVERAGE_SESSION_FILTER,
+        ...classes.map((classRecord) => classRecord.session).filter(Boolean),
+      ]),
+    ].sort();
+  }, [classes]);
+
+  const promotionSourceClasses = useMemo(() => {
+    return classes.filter(
+      (classRecord) => classRecord.session === promotionForm.sourceSession
+    );
+  }, [classes, promotionForm.sourceSession]);
+
+  const promotionDestinationClasses = useMemo(() => {
+    if (!promotionForm.toSession) {
+      return [];
+    }
+
+    return classes.filter(
+      (classRecord) => classRecord.session === promotionForm.toSession
+    );
+  }, [classes, promotionForm.toSession]);
+
+  const leftSchoolSourceClasses = useMemo(() => {
+    return classes.filter(
+      (classRecord) => classRecord.session === leftSchoolActionForm.sourceSession
+    );
+  }, [classes, leftSchoolActionForm.sourceSession]);
 
   const classCoverage = useMemo(() => {
     return coverageClasses.map((classRecord) => {
@@ -167,14 +258,34 @@ function AdminDashboard() {
 
   const stats = [
     {
-      title: "Total Students",
-      value: loading ? "..." : students.length,
+      title: "Active Students",
+      value: loading ? "..." : activeSessionStudents.length,
       icon: <FaUsers />,
     },
     {
       title: "Active Classes",
-      value: loading ? "..." : classCount,
+      value: loading ? "..." : activeSessionClasses.length,
       icon: <FaBookOpen />,
+    },
+    {
+      title: "Graduated",
+      value: loading ? "..." : graduatedSessionStudents.length,
+      icon: <FaGraduationCap />,
+    },
+    {
+      title: "Left School",
+      value: loading ? "..." : leftSchoolSessionStudents.length,
+      icon: <FaUsers />,
+    },
+    {
+      title: "Male",
+      value: loading ? "..." : activeGenderSummary.Male || 0,
+      icon: <FaUsers />,
+    },
+    {
+      title: "Female",
+      value: loading ? "..." : activeGenderSummary.Female || 0,
+      icon: <FaUsers />,
     },
   ];
 
@@ -213,6 +324,18 @@ function AdminDashboard() {
   const handlePromotionChange = (event) => {
     const { name, value } = event.target;
 
+    if (name === "sourceSession") {
+      setPromotionForm((currentForm) => ({
+        ...currentForm,
+        sourceSession: value,
+        fromClassRecord: "",
+        fromClass: "",
+        fromSession: value,
+      }));
+      setSelectedPromotionStudentIds([]);
+      return;
+    }
+
     if (name === "fromClassRecord") {
       const selectedClass = classes.find((classRecord) => classRecord._id === value);
 
@@ -223,6 +346,28 @@ function AdminDashboard() {
         fromSession: selectedClass?.session || "",
       }));
       setSelectedPromotionStudentIds([]);
+      return;
+    }
+
+    if (name === "toSession") {
+      setPromotionForm((currentForm) => ({
+        ...currentForm,
+        toSession: value,
+        toClassRecord: "",
+        toClass: "",
+      }));
+      return;
+    }
+
+    if (name === "toClassRecord") {
+      const selectedClass = classes.find((classRecord) => classRecord._id === value);
+
+      setPromotionForm((currentForm) => ({
+        ...currentForm,
+        toClassRecord: value,
+        toClass: selectedClass?.name || "",
+        toSession: selectedClass?.session || currentForm.toSession,
+      }));
       return;
     }
 
@@ -357,10 +502,6 @@ function AdminDashboard() {
     leftSchoolStudents,
   ]);
 
-  const classNameOptions = useMemo(() => {
-    return [...new Set(classes.map((classRecord) => classRecord.name))].sort();
-  }, [classes]);
-
   const allPromotionCandidatesSelected =
     promotionCandidates.length > 0 &&
     selectedPromotionStudentIds.length === promotionCandidates.length;
@@ -379,6 +520,18 @@ function AdminDashboard() {
 
   const handleLeftSchoolChange = (event) => {
     const { name, value } = event.target;
+
+    if (name === "sourceSession") {
+      setLeftSchoolActionForm((currentForm) => ({
+        ...currentForm,
+        sourceSession: value,
+        fromClassRecord: "",
+        fromClass: "",
+        fromSession: value,
+      }));
+      setSelectedLeftSchoolStudentIds([]);
+      return;
+    }
 
     if (name === "fromClassRecord") {
       const selectedClass = classes.find((classRecord) => classRecord._id === value);
@@ -495,10 +648,12 @@ function AdminDashboard() {
           `${promotionCandidates.length} student(s) promoted successfully.`,
       });
       setPromotionForm({
+        sourceSession: DEFAULT_COVERAGE_SESSION_FILTER,
         fromClassRecord: "",
         fromClass: "",
-        toClass: "",
         fromSession: "",
+        toClassRecord: "",
+        toClass: "",
         toSession: "",
       });
       setSelectedPromotionStudentIds([]);
@@ -576,6 +731,7 @@ function AdminDashboard() {
           `${selectedLeftSchoolStudentIds.length} student(s) marked as left school.`,
       });
       setLeftSchoolActionForm({
+        sourceSession: DEFAULT_COVERAGE_SESSION_FILTER,
         fromClassRecord: "",
         fromClass: "",
         fromSession: "",
@@ -655,7 +811,34 @@ function AdminDashboard() {
       </section>
 
       <section className="px-6 py-10 lg:px-12">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px] lg:items-end">
+          <div>
+            <h3 className="text-3xl font-extrabold text-secondary">
+              Active Population Summary
+            </h3>
+            <p className="mt-2 text-sm font-semibold text-secondary/75">
+              Showing active population data for {populationSessionFilter}.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-secondary/75">
+              Session
+            </label>
+            <select
+              value={populationSessionFilter}
+              onChange={(event) => setPopulationSessionFilter(event.target.value)}
+              className="w-full rounded-2xl border border-secondary/10 bg-secondary px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+            >
+              {populationSessionOptions.map((session) => (
+                <option key={session} value={session}>
+                  {session}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           {stats.map((stat) => (
             <div
               key={stat.title}
@@ -785,55 +968,93 @@ function AdminDashboard() {
             <form onSubmit={handlePromotionSubmit} className="space-y-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <select
-                  name="fromClassRecord"
-                  value={promotionForm.fromClassRecord}
+                  name="sourceSession"
+                  value={promotionForm.sourceSession}
                   onChange={handlePromotionChange}
                   required
                   className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 >
-                  <option value="">From class/session</option>
-                  {classes.map((classRecord) => (
-                    <option key={classRecord._id} value={classRecord._id}>
-                      {classRecord.name.toUpperCase()} - {classRecord.session}
+                  <option value="">Source session</option>
+                  {promotionSessionOptions.map((session) => (
+                    <option key={session} value={session}>
+                      {session}
                     </option>
                   ))}
                 </select>
 
                 <select
-                  name="toClass"
-                  value={promotionForm.toClass}
+                  name="fromClassRecord"
+                  value={promotionForm.fromClassRecord}
                   onChange={handlePromotionChange}
                   required
+                  disabled={!promotionForm.sourceSession}
                   className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 >
-                  <option value="">To class</option>
-                  {classNameOptions.map((className) => (
-                    <option key={className} value={className}>
-                      {className.toUpperCase()}
+                  <option value="">
+                    {promotionForm.sourceSession
+                      ? "Source class"
+                      : "Select source session first"}
+                  </option>
+                  {promotionSourceClasses.map((classRecord) => (
+                    <option key={classRecord._id} value={classRecord._id}>
+                      {classRecord.name.toUpperCase()}
                     </option>
                   ))}
                 </select>
               </div>
 
+              {promotionForm.sourceSession &&
+                promotionSourceClasses.length === 0 && (
+                  <p className="rounded-2xl bg-primary/5 px-5 py-4 text-sm font-semibold text-primary/60">
+                    No active class has been created for{" "}
+                    {promotionForm.sourceSession} yet.
+                  </p>
+                )}
+
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <input
-                  name="fromSession"
-                  value={promotionForm.fromSession}
-                  onChange={handlePromotionChange}
-                  placeholder="From session e.g. 2025/2026"
-                  readOnly
-                  required
-                  className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
-                />
-                <input
+                <select
                   name="toSession"
                   value={promotionForm.toSession}
                   onChange={handlePromotionChange}
-                  placeholder="To session e.g. 2026/2027"
                   required
+                  className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                >
+                  <option value="">Destination session</option>
+                  {promotionSessionOptions.map((session) => (
+                    <option key={session} value={session}>
+                      {session}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  name="toClassRecord"
+                  value={promotionForm.toClassRecord}
+                  onChange={handlePromotionChange}
+                  required
+                  disabled={!promotionForm.toSession}
                   className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
-                />
+                >
+                  <option value="">
+                    {promotionForm.toSession
+                      ? "Destination class"
+                      : "Select destination session first"}
+                  </option>
+                  {promotionDestinationClasses.map((classRecord) => (
+                    <option key={classRecord._id} value={classRecord._id}>
+                      {classRecord.name.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              {promotionForm.toSession &&
+                promotionDestinationClasses.length === 0 && (
+                  <p className="rounded-2xl bg-primary/5 px-5 py-4 text-sm font-semibold text-primary/60">
+                    No destination class has been created for{" "}
+                    {promotionForm.toSession} yet.
+                  </p>
+                )}
 
               <div className="rounded-2xl border border-primary/10 bg-primary/5 p-5">
                 <div className="mb-4 flex flex-col justify-between gap-3 md:flex-row md:items-center">
@@ -907,7 +1128,9 @@ function AdminDashboard() {
                   graduating ||
                   markingLeftSchool ||
                   promotionCandidates.length === 0 ||
-                  selectedPromotionStudentIds.length === 0
+                  selectedPromotionStudentIds.length === 0 ||
+                  !promotionForm.toSession ||
+                  !promotionForm.toClassRecord
                 }
                 className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
@@ -1050,28 +1273,46 @@ function AdminDashboard() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <select
-                  name="fromClassRecord"
-                  value={leftSchoolActionForm.fromClassRecord}
+                  name="sourceSession"
+                  value={leftSchoolActionForm.sourceSession}
                   onChange={handleLeftSchoolChange}
                   className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 >
-                  <option value="">Class/session student left from</option>
-                  {classes.map((classRecord) => (
-                    <option key={classRecord._id} value={classRecord._id}>
-                      {classRecord.name.toUpperCase()} - {classRecord.session}
+                  <option value="">Source session</option>
+                  {promotionSessionOptions.map((session) => (
+                    <option key={session} value={session}>
+                      {session}
                     </option>
                   ))}
                 </select>
 
-                <input
-                  name="fromSession"
-                  value={leftSchoolActionForm.fromSession}
+                <select
+                  name="fromClassRecord"
+                  value={leftSchoolActionForm.fromClassRecord}
                   onChange={handleLeftSchoolChange}
-                  placeholder="From session e.g. 2025/2026"
-                  readOnly
-                  className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
-                />
+                  disabled={!leftSchoolActionForm.sourceSession}
+                  className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                >
+                  <option value="">
+                    {leftSchoolActionForm.sourceSession
+                      ? "Source class"
+                      : "Select source session first"}
+                  </option>
+                  {leftSchoolSourceClasses.map((classRecord) => (
+                    <option key={classRecord._id} value={classRecord._id}>
+                      {classRecord.name.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              {leftSchoolActionForm.sourceSession &&
+                leftSchoolSourceClasses.length === 0 && (
+                  <p className="rounded-2xl bg-primary/5 px-5 py-4 text-sm font-semibold text-primary/60">
+                    No active class has been created for{" "}
+                    {leftSchoolActionForm.sourceSession} yet.
+                  </p>
+                )}
 
               <div className="rounded-2xl border border-primary/10 bg-primary/5 p-5">
                 <div className="mb-4 flex flex-col justify-between gap-3 md:flex-row md:items-center">

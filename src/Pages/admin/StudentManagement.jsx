@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaArrowRight, FaUserGraduate } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
@@ -15,6 +15,14 @@ const initialStudentForm = {
   password: "",
 };
 
+const DEFAULT_SESSION_FILTER = "2025/2026";
+
+const normalizeClassName = (className = "") =>
+  className.toString().trim().toLowerCase().replace(/\s+/g, "");
+
+const isActiveStudent = (student) =>
+  !student.status || student.status === "active";
+
 function StudentManagement() {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -22,10 +30,17 @@ function StudentManagement() {
   const [studentForm, setStudentForm] = useState(initialStudentForm);
   const [editingStudentId, setEditingStudentId] = useState("");
   const [studentSearch, setStudentSearch] = useState("");
+  const [studentViewSessionFilter, setStudentViewSessionFilter] = useState(
+    DEFAULT_SESSION_FILTER
+  );
+  const [studentViewClassId, setStudentViewClassId] = useState("");
+  const [studentNameSort, setStudentNameSort] = useState("az");
   const [status, setStatus] = useState({ type: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [passwordResetTargetId, setPasswordResetTargetId] = useState("");
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const fetchStudents = async () => {
     try {
@@ -181,6 +196,31 @@ function StudentManagement() {
     }
   };
 
+  const handlePasswordReset = async (studentId) => {
+    setPasswordResetTargetId(studentId);
+    setResettingPassword(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      await API.put(`/students/${studentId}/reset-password`);
+      setStatus({
+        type: "success",
+        message: "Student password reset to original registration password.",
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Unable to reset student password.",
+      });
+    } finally {
+      setResettingPassword(false);
+      setPasswordResetTargetId("");
+    }
+  };
+
   const inputClass =
     "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
@@ -206,6 +246,60 @@ function StudentManagement() {
       return searchableText.includes(searchValue);
     });
   })();
+
+  const sessionOptions = useMemo(() => {
+    return [
+      ...new Set([
+        DEFAULT_SESSION_FILTER,
+        ...classes.map((classRecord) => classRecord.session).filter(Boolean),
+        ...students.map((student) => student.current_session).filter(Boolean),
+      ]),
+    ].sort();
+  }, [classes, students]);
+
+  const studentViewClasses = useMemo(() => {
+    return classes.filter(
+      (classRecord) => classRecord.session === studentViewSessionFilter
+    );
+  }, [classes, studentViewSessionFilter]);
+
+  const selectedViewClass = useMemo(() => {
+    return classes.find(
+      (classRecord) =>
+        classRecord._id === studentViewClassId &&
+        classRecord.session === studentViewSessionFilter
+    );
+  }, [classes, studentViewClassId, studentViewSessionFilter]);
+
+  const viewedClassStudents = useMemo(() => {
+    if (!selectedViewClass) {
+      return [];
+    }
+
+    return students.filter(
+      (student) =>
+        isActiveStudent(student) &&
+        normalizeClassName(student.class) ===
+          normalizeClassName(selectedViewClass.name) &&
+        student.current_session === selectedViewClass.session
+    );
+  }, [selectedViewClass, students]);
+
+  const sortedViewedClassStudents = useMemo(() => {
+    return [...viewedClassStudents].sort((firstStudent, secondStudent) => {
+      const firstName = (firstStudent.full_name || "").toLowerCase();
+      const secondName = (secondStudent.full_name || "").toLowerCase();
+
+      return studentNameSort === "za"
+        ? secondName.localeCompare(firstName)
+        : firstName.localeCompare(secondName);
+    });
+  }, [studentNameSort, viewedClassStudents]);
+
+  const handleStudentViewSessionChange = (event) => {
+    setStudentViewSessionFilter(event.target.value);
+    setStudentViewClassId("");
+  };
 
   const availableClasses = classes.filter(
     (classRecord) => classRecord.session === studentForm.current_session
@@ -352,6 +446,162 @@ function StudentManagement() {
             </button>
           )}
         </form>
+
+        <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+          <div className="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-[1fr_240px_240px_180px] xl:items-end">
+            <div>
+              <h3 className="text-3xl font-extrabold text-primary">
+                View Students
+              </h3>
+              <p className="mt-2 text-primary/70">
+                Select a session and class to view active students in that
+                class.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-primary/60">
+                Session
+              </label>
+              <select
+                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                value={studentViewSessionFilter}
+                onChange={handleStudentViewSessionChange}
+              >
+                {sessionOptions.map((session) => (
+                  <option key={session} value={session}>
+                    {session}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-primary/60">
+                Class
+              </label>
+              <select
+                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                value={studentViewClassId}
+                onChange={(event) => setStudentViewClassId(event.target.value)}
+              >
+                <option value="">Choose class</option>
+                {studentViewClasses.map((classRecord) => (
+                  <option key={classRecord._id} value={classRecord._id}>
+                    {classRecord.name.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-primary/60">
+                Sort
+              </label>
+              <select
+                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                value={studentNameSort}
+                onChange={(event) => setStudentNameSort(event.target.value)}
+              >
+                <option value="az">Name A-Z</option>
+                <option value="za">Name Z-A</option>
+              </select>
+            </div>
+          </div>
+
+          {studentViewSessionFilter && studentViewClasses.length === 0 && (
+            <div className="mb-6 rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+              No class has been created for {studentViewSessionFilter} yet.
+            </div>
+          )}
+
+          <div className="mb-6 rounded-2xl bg-primary/5 p-5">
+            <p className="text-sm font-semibold text-primary/50">
+              Active Students in Selected Class
+            </p>
+            <p className="mt-3 text-4xl font-extrabold text-primary">
+              {selectedViewClass ? sortedViewedClassStudents.length : "0"}
+            </p>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-primary/10">
+            <table className="w-full min-w-[960px] text-left">
+              <thead className="bg-primary/10 text-primary">
+                <tr>
+                  <th className="px-5 py-4 font-bold">S/N</th>
+                  <th className="px-5 py-4 font-bold">Student</th>
+                  <th className="px-5 py-4 font-bold">Admission No.</th>
+                  <th className="px-5 py-4 font-bold">Class</th>
+                  <th className="px-5 py-4 font-bold">Session</th>
+                  <th className="px-5 py-4 font-bold">Gender</th>
+                  <th className="px-5 py-4 font-bold">Password</th>
+                  <th className="px-5 py-4 font-bold">Reset</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-primary/10">
+                {loadingStudents ? (
+                  <tr>
+                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                      Loading students...
+                    </td>
+                  </tr>
+                ) : !selectedViewClass ? (
+                  <tr>
+                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                      Select a session and class to view students.
+                    </td>
+                  </tr>
+                ) : sortedViewedClassStudents.length === 0 ? (
+                  <tr>
+                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                      No active student found in this class.
+                    </td>
+                  </tr>
+                ) : (
+                  sortedViewedClassStudents.map((student, index) => (
+                    <tr
+                      key={student._id}
+                      className="text-primary/80 transition duration-300 hover:bg-primary/5"
+                    >
+                      <td className="px-5 py-4 font-bold text-primary">
+                        {index + 1}
+                      </td>
+                      <td className="px-5 py-4 font-semibold text-primary">
+                        {student.full_name}
+                      </td>
+                      <td className="px-5 py-4">{student.admission_no}</td>
+                      <td className="px-5 py-4">{student.class}</td>
+                      <td className="px-5 py-4">
+                        {student.current_session || "Not set"}
+                      </td>
+                      <td className="px-5 py-4">{student.gender || "Not set"}</td>
+                      <td className="px-5 py-4">
+                        <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-bold text-primary/70">
+                          Protected
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <button
+                          type="button"
+                          onClick={() => handlePasswordReset(student._id)}
+                          disabled={
+                            resettingPassword &&
+                            passwordResetTargetId === student._id
+                          }
+                          className="rounded-xl bg-button px-4 py-2 text-sm font-bold text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {resettingPassword && passwordResetTargetId === student._id
+                            ? "Resetting..."
+                            : "Reset to Original"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
           <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px_auto] lg:items-end">
