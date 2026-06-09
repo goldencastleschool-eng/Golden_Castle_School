@@ -61,7 +61,7 @@ return ( <section className="relative w-full bg-background py-20 px-6 lg:px-16 o
       </div>
 
       {/* Bottom Content */}
-      <div className="bg-secondary p-8">
+      <div className="hidden md:block bg-secondary p-8">
 
         <div className="flex items-center gap-3 mb-4">
 
@@ -73,7 +73,7 @@ return ( <section className="relative w-full bg-background py-20 px-6 lg:px-16 o
 
         </div>
 
-        <p className="hidden md:block text-primary/70 leading-relaxed text-lg">
+        <p className="text-primary/70 leading-relaxed text-lg">
           Our 2nd Graduation Ceremony was a proud occasion that
           recognized the hard work, dedication, and accomplishments
           of our graduating students. It was a day filled with joy,
