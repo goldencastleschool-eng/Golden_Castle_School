@@ -77,7 +77,7 @@ export default function ProgramGridCards() {
           GRID SYSTEM
       ========================= */}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-8">
 
         {programs.map((program, index) => (
           <motion.div
@@ -99,26 +99,26 @@ export default function ProgramGridCards() {
               y: -10,
               scale: 1.02,
             }}
-            className="group relative overflow-hidden bg-secondary rounded-[2rem] p-10 shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer"
+            className="group relative overflow-hidden bg-secondary rounded-2xl p-6 shadow-xl transition-all duration-500 hover:shadow-2xl sm:rounded-[2rem] sm:p-10 cursor-pointer"
           >
 
             {/* Background Glow */}
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-button/10 rounded-full blur-3xl group-hover:bg-button/20 transition-all duration-500"></div>
 
             {/* Icon */}
-            <div className="relative z-10 w-20 h-20 rounded-3xl bg-button text-secondary flex items-center justify-center text-4xl shadow-lg mb-8 group-hover:rotate-6 transition duration-500">
+            <div className="relative z-10 mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-button text-3xl text-secondary shadow-lg transition duration-500 group-hover:rotate-6 sm:mb-8 sm:h-20 sm:w-20 sm:rounded-3xl sm:text-4xl">
 
               {program.icon}
             </div>
 
             {/* Title */}
-            <h3 className="relative z-10 text-2xl font-bold text-primary leading-snug">
+            <h3 className="relative z-10 text-xl font-bold text-primary leading-snug sm:text-2xl">
 
               {program.title}
             </h3>
 
             {/* Hover Line */}
-            <div className="relative z-10 mt-6 w-14 h-1 bg-button rounded-full group-hover:w-24 transition-all duration-500"></div>
+            <div className="relative z-10 mt-5 h-1 w-14 rounded-full bg-button transition-all duration-500 group-hover:w-24 sm:mt-6"></div>
           </motion.div>
         ))}
       </div>

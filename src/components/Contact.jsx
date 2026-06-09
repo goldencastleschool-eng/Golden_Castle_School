@@ -45,8 +45,22 @@ export default function Location() {
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7 }}
             viewport={{ once: true }}
-            className="relative overflow-hidden rounded-[2rem] shadow-2xl"
+            className="relative min-h-[420px] overflow-hidden rounded-[2rem] bg-secondary/10 shadow-2xl sm:min-h-[500px]"
           >
+
+            <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
+              <div>
+                <FaMapMarkerAlt className="mx-auto text-5xl text-button" />
+
+                <p className="mt-4 text-lg font-semibold text-secondary">
+                  Golden Castle International School, Oba
+                </p>
+
+                <p className="mt-2 text-secondary/70">
+                  Anambra State, Nigeria
+                </p>
+              </div>
+            </div>
 
             {/* Map */}
             <iframe
@@ -57,7 +71,7 @@ export default function Location() {
               loading="lazy"
               allowFullScreen
               referrerPolicy="no-referrer-when-downgrade"
-              className="min-h-[500px] w-full border-0"
+              className="relative z-10 min-h-[420px] w-full border-0 sm:min-h-[500px]"
             ></iframe>
 
             {/* Floating Info Card */}

@@ -4,7 +4,6 @@ import { FaPlayCircle } from "react-icons/fa";
 export default function GraduationVideo() {
 return ( <section className="relative w-full bg-background py-20 px-6 lg:px-16 overflow-hidden">
 
-```
   {/* Background Glow */}
   <div className="absolute top-0 left-0 w-72 h-72 bg-button/10 rounded-full blur-3xl"></div>
 
@@ -48,10 +47,18 @@ return ( <section className="relative w-full bg-background py-20 px-6 lg:px-16 o
     >
 
       {/* Video */}
-      <div className="aspect-video w-full">
+      <div className="relative aspect-video w-full bg-secondary/10">
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center">
+          <FaPlayCircle className="text-button text-5xl" />
+
+          <p className="max-w-xl text-secondary/70">
+            Graduation ceremony video
+          </p>
+        </div>
 
         <iframe
-          className="w-full h-full"
+          className="relative z-10 w-full h-full"
           src="https://www.youtube.com/embed/6tIbBWeX4J0"
           title="Golden Castle International School 2nd Graduation Ceremony"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

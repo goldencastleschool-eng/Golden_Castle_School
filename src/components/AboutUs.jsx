@@ -103,12 +103,12 @@ export default function Values() {
           </div>
 
           {/* Right Content - Values */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-4 sm:gap-6">
 
             {values.map((value, index) => (
               <div
                 key={index}
-                className="group relative bg-secondary text-primary rounded-3xl p-8 shadow-xl hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 overflow-hidden"
+                className="group relative bg-secondary text-primary rounded-2xl p-5 shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl sm:rounded-3xl sm:p-8 overflow-hidden"
               >
 
                 {/* Hover Glow */}
@@ -117,12 +117,12 @@ export default function Values() {
                 <div className="relative z-10 flex flex-col items-center text-center gap-5">
 
                   {/* Icon */}
-                  <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-4xl text-primary group-hover:scale-110 transition duration-300">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-3xl text-primary transition duration-300 group-hover:scale-110 sm:h-20 sm:w-20 sm:text-4xl">
                     {value.icon}
                   </div>
 
                   {/* Title */}
-                  <h2 className="text-2xl font-bold tracking-wide">
+                  <h2 className="text-lg font-bold tracking-wide sm:text-2xl">
                     {value.title}
                   </h2>
 

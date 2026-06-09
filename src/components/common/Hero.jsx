@@ -20,7 +20,7 @@ import HeroSkeleton from "./Skeleton";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen overflow-hidden bg-background">
+    <section className="relative min-h-[700px] overflow-hidden bg-background sm:min-h-screen">
 
       {/* =========================
           BACKGROUND SLIDER
@@ -44,7 +44,7 @@ export default function Hero() {
           HERO CONTENT
       ========================= */}
 
-      <div className="absolute inset-0 z-10 flex items-center">
+      <div className="absolute inset-0 z-10 flex items-center pb-10 sm:pb-0">
 
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-10">
 
@@ -105,7 +105,7 @@ export default function Hero() {
                 ACTION BUTTONS
             ========================= */}
 
-            <div className="mt-8 flex flex-col gap-4 sm:mt-10 sm:flex-row">
+            <div className="mt-8 flex flex-wrap items-center gap-4 sm:mt-10">
 
               {/* LOGIN BUTTON */}
 

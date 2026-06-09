@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-motion
+
 export default function TeamCards() {
   const staffData = [
     {
@@ -52,10 +52,10 @@ export default function TeamCards() {
             initial={{ opacity: 0, y: 80 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{
-              duration: 0.6,
-              delay: index * 0.2,
+              duration: 0.45,
+              delay: index * 0.08,
             }}
-            viewport={{ once: true }}
+            viewport={{ once: true, amount: 0.2 }}
             whileHover={{
               y: -10,
               scale: 1.03,
