@@ -131,25 +131,23 @@ export default function Hero() {
 
               {/* ENROLL BUTTON */}
 
-              <button
-                type="button"
+              <NavLink
+                to="/programs"
                 className="
                   group inline-flex items-center justify-center gap-3
-                  rounded-2xl border border-primary/30
-                  bg-primary/10
+                  rounded-2xl bg-button
                   px-6 py-4
-                  font-semibold text-primary
-                  backdrop-blur-md
+                  font-semibold text-secondary
+                  shadow-2xl
                   transition-all duration-300
-                  hover:border-button
-                  hover:bg-button
-                  hover:text-secondary
+                  hover:scale-105
+                  hover:shadow-button/30
                 "
               >
-                <span>Enroll Now</span>
+                <span>Explore now</span>
 
-                <FaArrowRightFromBracket className="transition duration-300 group-hover:translate-x-1" />
-              </button>
+                <FaRegUser className="transition duration-300 group-hover:rotate-12" />
+              </NavLink>
             </div>
 
           </motion.div>

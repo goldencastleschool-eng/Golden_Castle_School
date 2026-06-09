@@ -1,4 +1,6 @@
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
+import emailjs from "@emailjs/browser";
 
 import {
   FaMapMarkerAlt,
@@ -7,6 +9,64 @@ import {
 } from "react-icons/fa";
 
 export default function Location() {
+  const formRef = useRef(null);
+  const [status, setStatus] = useState({
+    message: "",
+    type: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const emailConfig = {
+    serviceId: import.meta.env.VITE_EMAILJS_SERVICE_ID,
+    templateId: import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+    publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
+  };
+
+  const isEmailConfigured = Object.values(emailConfig).every(Boolean);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!isEmailConfigured) {
+      setStatus({
+        type: "error",
+        message: "Email service is not configured yet. Please add the EmailJS settings.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStatus({
+      type: "",
+      message: "",
+    });
+
+    try {
+      await emailjs.sendForm(
+        emailConfig.serviceId,
+        emailConfig.templateId,
+        formRef.current,
+        {
+          publicKey: emailConfig.publicKey,
+        }
+      );
+
+      formRef.current.reset();
+      setStatus({
+        type: "success",
+        message: "Message sent successfully. We will get back to you soon.",
+      });
+    } catch (error) {
+      console.error("EmailJS send failed:", error);
+      setStatus({
+        type: "error",
+        message: "Message could not be sent. Please try again or contact us directly.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section className="relative w-full bg-background overflow-hidden py-10 px-5 sm:px-8 lg:px-16">
 
@@ -167,7 +227,13 @@ export default function Location() {
               </div>
 
               {/* Form */}
-              <form className="space-y-6">
+              <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+
+                <input
+                  type="hidden"
+                  name="to_email"
+                  value={import.meta.env.VITE_CONTACT_RECEIVER_EMAIL || "goldencastlegci@gmail.com"}
+                />
 
                 {/* Name */}
                 <div>
@@ -177,7 +243,10 @@ export default function Location() {
 
                   <input
                     type="text"
+                    name="from_name"
                     placeholder="Enter your full name"
+                    required
+                    autoComplete="name"
                     className="w-full bg-primary/5 border border-primary/10 rounded-2xl px-5 py-4 text-primary outline-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
                   />
                 </div>
@@ -190,7 +259,10 @@ export default function Location() {
 
                   <input
                     type="email"
+                    name="reply_to"
                     placeholder="Enter your email address"
+                    required
+                    autoComplete="email"
                     className="w-full bg-primary/5 border border-primary/10 rounded-2xl px-5 py-4 text-primary outline-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
                   />
                 </div>
@@ -203,20 +275,37 @@ export default function Location() {
 
                   <textarea
                     rows="6"
+                    name="message"
                     placeholder="Write your message here..."
+                    required
                     className="w-full bg-primary/5 border border-primary/10 rounded-2xl px-5 py-4 text-primary outline-none resize-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
                   ></textarea>
                 </div>
 
+                {status.message && (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className={`rounded-2xl border px-5 py-4 font-semibold ${
+                      status.type === "success"
+                        ? "border-green-300/40 bg-green-500/10 text-green-100"
+                        : "border-button/40 bg-button/10 text-primary"
+                    }`}
+                  >
+                    {status.message}
+                  </div>
+                )}
+
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  className="group w-full bg-button text-secondary font-bold py-4 rounded-2xl shadow-xl hover:scale-[1.02] hover:shadow-button/30 transition-all duration-300 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="group w-full bg-button text-secondary font-bold py-4 rounded-2xl shadow-xl hover:scale-[1.02] hover:shadow-button/30 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
                 >
 
                   <span className="flex items-center justify-center gap-3">
 
-                    Send Message
+                    {isSubmitting ? "Sending..." : "Send Message"}
 
                     <FaEnvelope className="group-hover:translate-x-1 transition duration-300" />
                   </span>

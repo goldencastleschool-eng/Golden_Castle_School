@@ -73,8 +73,8 @@ function TeacherManagement() {
   const [usernameSuffix, setUsernameSuffix] = useState(createUsernameSuffix);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleting, setDeleting] = useState(false);
+  const [deactivateTarget, setDeactivateTarget] = useState(null);
+  const [deactivating, setDeactivating] = useState(false);
   const [resettingTeacherId, setResettingTeacherId] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
 
@@ -239,8 +239,8 @@ function TeacherManagement() {
     setUsernameSuffix(createUsernameSuffix());
   };
 
-  const handleDeleteRequest = (teacher) => {
-    setDeleteTarget(teacher);
+  const handleDeactivateRequest = (teacher) => {
+    setDeactivateTarget(teacher);
   };
 
   const handleResetPassword = async (teacherId) => {
@@ -266,20 +266,23 @@ function TeacherManagement() {
     }
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteTarget?._id) {
+  const handleDeactivateConfirm = async () => {
+    if (!deactivateTarget?._id) {
       return;
     }
 
-    setDeleting(true);
+    setDeactivating(true);
 
     try {
-      await API.delete(`/teachers/${deleteTarget._id}`);
+      await API.put(`/teachers/${deactivateTarget._id}/deactivate`, {
+        reason: "Teacher no longer assigned to this class",
+      });
       setStatus({
         type: "success",
-        message: "Teacher deleted successfully.",
+        message:
+          "Teacher deactivated successfully. Previous records remain linked.",
       });
-      setDeleteTarget(null);
+      setDeactivateTarget(null);
       await fetchTeacherData();
     } catch (error) {
       setStatus({
@@ -287,10 +290,10 @@ function TeacherManagement() {
         message:
           error.response?.data?.message ||
           error.response?.data?.error ||
-          "Unable to delete teacher.",
+          "Unable to deactivate teacher.",
       });
     } finally {
-      setDeleting(false);
+      setDeactivating(false);
     }
   };
 
@@ -304,18 +307,18 @@ function TeacherManagement() {
         onClose={() => setStatus({ type: "", message: "" })}
       />
       <AdminDeleteModal
-        open={Boolean(deleteTarget)}
-        title="Delete Teacher"
-        message="This action will permanently remove this teacher account."
+        open={Boolean(deactivateTarget)}
+        title="Deactivate Form Teacher"
+        message="This will remove the teacher from the active class assignment so another form teacher can be assigned. Previous class results and broadsheets will remain linked to this teacher."
         details={
-          deleteTarget
-            ? `${deleteTarget.full_name} - ${deleteTarget.username}`
+          deactivateTarget
+            ? `${deactivateTarget.full_name} - ${deactivateTarget.username}`
             : ""
         }
-        confirmLabel="Delete Teacher"
-        loading={deleting}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={handleDeleteConfirm}
+        confirmLabel="Deactivate Teacher"
+        loading={deactivating}
+        onCancel={() => setDeactivateTarget(null)}
+        onConfirm={handleDeactivateConfirm}
       />
 
       <div className="mb-8">
@@ -443,8 +446,8 @@ function TeacherManagement() {
               View Form Teachers
             </h3>
             <p className="mt-2 text-primary/70">
-              View registered form teachers, edit records, delete accounts, or
-              reset a teacher password.
+              View registered form teachers, edit records, deactivate accounts,
+              or reset a teacher password.
             </p>
           </div>
 
@@ -457,6 +460,7 @@ function TeacherManagement() {
                   <th className="px-5 py-4 font-bold">Username</th>
                   <th className="px-5 py-4 font-bold">Session</th>
                   <th className="px-5 py-4 font-bold">Assigned Class</th>
+                  <th className="px-5 py-4 font-bold">Status</th>
                   <th className="px-5 py-4 font-bold">Password</th>
                   <th className="px-5 py-4 font-bold">Created</th>
                   <th className="px-5 py-4 font-bold">Actions</th>
@@ -465,13 +469,13 @@ function TeacherManagement() {
               <tbody className="divide-y divide-primary/10">
                 {loading ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                    <td className="px-5 py-6 text-primary/70" colSpan="9">
                       Loading teachers...
                     </td>
                   </tr>
                 ) : teachers.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                    <td className="px-5 py-6 text-primary/70" colSpan="9">
                       No form teacher has been registered yet.
                     </td>
                   </tr>
@@ -488,6 +492,17 @@ function TeacherManagement() {
                       <td className="px-5 py-4">{teacher.session}</td>
                       <td className="px-5 py-4">
                         {teacher.assigned_class?.toUpperCase() || "Not set"}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`rounded-full px-4 py-2 text-sm font-bold ${
+                            teacher.status === "inactive"
+                              ? "bg-red-500/20 text-red-200"
+                              : "bg-green-500/20 text-green-100"
+                          }`}
+                        >
+                          {teacher.status === "inactive" ? "Inactive" : "Active"}
+                        </span>
                       </td>
                       <td className="px-5 py-4">
                         <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-bold text-primary/70">
@@ -510,10 +525,11 @@ function TeacherManagement() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteRequest(teacher)}
-                            className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-200"
+                            onClick={() => handleDeactivateRequest(teacher)}
+                            disabled={teacher.status === "inactive"}
+                            className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            Delete
+                            Deactivate
                           </button>
                           <button
                             type="button"

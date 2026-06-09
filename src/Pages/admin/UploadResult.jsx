@@ -238,6 +238,7 @@ function UploadResult() {
         teacher.assigned_class_record?._id || teacher.assigned_class_record;
 
       return (
+        teacher.status !== "inactive" &&
         teacher.session === broadsheetForm.session &&
         teacherClassId === broadsheetForm.class_record
       );
@@ -260,6 +261,7 @@ function UploadResult() {
         teacher.assigned_class_record?._id || teacher.assigned_class_record;
 
       return (
+        teacher.status !== "inactive" &&
         teacher.session === classResultForm.session &&
         teacherClassId === classResultForm.class_record
       );

@@ -232,6 +232,15 @@ function AdminDashboard() {
   const activeSessionTeachers = useMemo(() => {
     return teachers.filter(
       (teacher) => teacher.session === populationSessionFilter
+        && teacher.status !== "inactive"
+    );
+  }, [populationSessionFilter, teachers]);
+
+  const inactiveSessionTeachers = useMemo(() => {
+    return teachers.filter(
+      (teacher) =>
+        teacher.session === populationSessionFilter &&
+        teacher.status === "inactive"
     );
   }, [populationSessionFilter, teachers]);
 
@@ -350,8 +359,13 @@ function AdminDashboard() {
       icon: <FaBookOpen />,
     },
     {
-      title: "Form Teachers",
+      title: "Active Form Teachers",
       value: loading ? "..." : activeSessionTeachers.length,
+      icon: <FaUsers />,
+    },
+    {
+      title: "Deactivated Form Teachers",
+      value: loading ? "..." : inactiveSessionTeachers.length,
       icon: <FaUsers />,
     },
     {
