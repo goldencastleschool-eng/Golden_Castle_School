@@ -27,21 +27,21 @@ const faqs = [
   {
     question: "What are the school hours?",
     answer:
-      "School activities typically begin at 8:00 AM and end at 3:00 PM. However, schedules may vary for Nursery, Basic, Secondary, extracurricular programs, and boarding students.",
+      "School activities typically begin at 7:00 AM and end at 3:30 PM. However, schedules may vary for Nursery, Basic, Secondary, extracurricular programs, and boarding students.",
   },
 
   {
     question:
       "Do you provide school bus transportation or parking passes?",
     answer:
-      "Yes. We offer transportation services for students within selected routes. Parents can contact the school administration for route availability, fees, and registration details. Visitor parking is also available on campus when required.",
+      "Yes. We offer transportation services for students within selected routes. Parents can contact the school administration for route availability, fees, and registration details. Visitor parking is also available when required.",
   },
 
   {
     question:
-      "What safety and security measures do you have on campus?",
+      "What safety and security measures do you have ?",
     answer:
-      "The safety of our students is a top priority. Our campus is secured with trained security personnel, controlled access points, visitor screening procedures, emergency response plans, and continuous staff supervision to ensure a safe learning environment.",
+      "The safety of our students is a top priority. Our school is secured with trained security personnel, controlled access points, visitor screening procedures, emergency response plans, and continuous staff supervision to ensure a safe learning environment.",
   },
 
   {

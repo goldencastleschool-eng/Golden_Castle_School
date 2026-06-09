@@ -5,22 +5,22 @@ export default function TeamCards() {
     {
       id: 1,
       image:
-        "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779360083/WhatsApp_Image_2026-05-21_at_11.40.24_AM_1_gsozsa.jpg",
-      name: "Mrs. Esther James",
+        "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1780991798/WhatsApp_Image_2026-06-09_at_8.55.57_AM_hxqhey.jpg",
+      name: "Mrs. Chinwendu Ibekwe",
       title: "The Proprietress",
     },
     {
       id: 2,
       image:
         "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779130822/WhatsApp_Image_2026-05-18_at_7.10.03_PM_emrfti.jpg",
-      name: "Dr. Rosemary Mbaeze",
+      name: "Dr. Mrs. Roselin Mbaeze",
       title: "The Principal",
     },
     {
       id: 3,
       image:
         "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779130815/WhatsApp_Image_2026-05-18_at_7.10.03_PM_1_zbdoew.jpg",
-      name: "Mr. Charles Ndoh",
+      name: "Mr. Charles Ndobu",
       title: "The Vice Principal",
     },
     

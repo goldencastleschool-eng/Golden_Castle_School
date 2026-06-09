@@ -21,7 +21,7 @@ return ( <section className="relative w-full bg-background py-20 px-6 lg:px-16 o
 
       <div className="w-24 h-1.5 bg-button mx-auto mt-4 rounded-full"></div>
 
-      <p className="max-w-3xl mx-auto mt-6 text-secondary/70 text-lg leading-relaxed">
+      <p className="hidden md: block max-w-3xl mx-auto mt-6 text-secondary/70 text-lg leading-relaxed">
         Relive the memorable moments from the 2nd Graduation Ceremony
         of Golden Castle International School as we celebrate excellence,
         achievement, and the successful completion of another important

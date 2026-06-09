@@ -28,6 +28,16 @@ const initialBroadsheetForm = {
   term: "",
   class: "",
   class_record: "",
+  assigned_teacher: "",
+  pdf: null,
+};
+
+const initialClassResultForm = {
+  session: "",
+  term: "",
+  class: "",
+  class_record: "",
+  assigned_teacher: "",
   pdf: null,
 };
 
@@ -39,15 +49,21 @@ function UploadResult() {
   const [results, setResults] = useState([]);
   const [cumulativeResults, setCumulativeResults] = useState([]);
   const [classBroadsheets, setClassBroadsheets] = useState([]);
+  const [classResults, setClassResults] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [resultForm, setResultForm] = useState(initialResultForm);
   const [cumulativeForm, setCumulativeForm] = useState(initialCumulativeForm);
   const [broadsheetForm, setBroadsheetForm] = useState(initialBroadsheetForm);
+  const [classResultForm, setClassResultForm] = useState(initialClassResultForm);
   const [broadsheetAccessForm, setBroadsheetAccessForm] = useState({
     broadsheet_session: "",
     broadsheet_term: "",
+  });
+  const [classResultAccessForm, setClassResultAccessForm] = useState({
+    class_result_session: "",
+    class_result_term: "",
   });
   const [editingResultId, setEditingResultId] = useState("");
   const [editingCumulativeResultId, setEditingCumulativeResultId] = useState("");
@@ -56,7 +72,9 @@ function UploadResult() {
   const [uploading, setUploading] = useState(false);
   const [uploadingCumulative, setUploadingCumulative] = useState(false);
   const [uploadingBroadsheet, setUploadingBroadsheet] = useState(false);
+  const [uploadingClassResult, setUploadingClassResult] = useState(false);
   const [savingBroadsheetAccess, setSavingBroadsheetAccess] = useState(false);
+  const [savingClassResultAccess, setSavingClassResultAccess] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -75,6 +93,11 @@ function UploadResult() {
     setClassBroadsheets(response.data || []);
   };
 
+  const fetchClassResults = async () => {
+    const response = await API.get("/class-results");
+    setClassResults(response.data || []);
+  };
+
   useEffect(() => {
     const fetchPageData = async () => {
       try {
@@ -86,6 +109,7 @@ function UploadResult() {
           cumulativeResultsRequest,
           classesRequest,
           broadsheetsRequest,
+          classResultsRequest,
           teachersRequest,
           accessRequest,
         ] = await Promise.allSettled([
@@ -94,6 +118,7 @@ function UploadResult() {
           API.get("/cumulative-results"),
           API.get("/classes"),
           API.get("/class-broadsheets"),
+          API.get("/class-results"),
           API.get("/teachers"),
           API.get("/result-access"),
         ]);
@@ -132,6 +157,11 @@ function UploadResult() {
             ? broadsheetsRequest.value.data || []
             : []
         );
+        setClassResults(
+          classResultsRequest.status === "fulfilled"
+            ? classResultsRequest.value.data || []
+            : []
+        );
         setTeachers(
           teachersRequest.status === "fulfilled"
             ? teachersRequest.value.data || []
@@ -142,6 +172,12 @@ function UploadResult() {
             broadsheet_session:
               accessRequest.value.data?.broadsheet_session || "",
             broadsheet_term: accessRequest.value.data?.broadsheet_term || "",
+          });
+          setClassResultAccessForm({
+            class_result_session:
+              accessRequest.value.data?.class_result_session || "",
+            class_result_term:
+              accessRequest.value.data?.class_result_term || "",
           });
         }
       } catch (error) {
@@ -208,6 +244,28 @@ function UploadResult() {
     });
   }, [broadsheetForm.class_record, broadsheetForm.session, teachers]);
 
+  const classResultAvailableClasses = useMemo(() => {
+    return classes.filter(
+      (classRecord) => classRecord.session === classResultForm.session
+    );
+  }, [classes, classResultForm.session]);
+
+  const classResultAvailableTeachers = useMemo(() => {
+    if (!classResultForm.class_record || !classResultForm.session) {
+      return [];
+    }
+
+    return teachers.filter((teacher) => {
+      const teacherClassId =
+        teacher.assigned_class_record?._id || teacher.assigned_class_record;
+
+      return (
+        teacher.session === classResultForm.session &&
+        teacherClassId === classResultForm.class_record
+      );
+    });
+  }, [classResultForm.class_record, classResultForm.session, teachers]);
+
   const cumulativeFilteredStudents = useMemo(() => {
     if (!cumulativeForm.class || !cumulativeForm.session) {
       return [];
@@ -255,6 +313,10 @@ function UploadResult() {
   const displayedClassBroadsheets = useMemo(() => {
     return classBroadsheets.slice(0, 15);
   }, [classBroadsheets]);
+
+  const displayedClassResults = useMemo(() => {
+    return classResults.slice(0, 15);
+  }, [classResults]);
 
   const handleChange = (event) => {
     const { name, value, files } = event.target;
@@ -356,6 +418,47 @@ function UploadResult() {
     const { name, value } = event.target;
 
     setBroadsheetAccessForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
+  };
+
+  const handleClassResultChange = (event) => {
+    const { name, value, files } = event.target;
+
+    if (name === "session") {
+      setClassResultForm((currentForm) => ({
+        ...currentForm,
+        session: value,
+        class: "",
+        class_record: "",
+        assigned_teacher: "",
+      }));
+      return;
+    }
+
+    if (name === "class_record") {
+      const selectedClass = classes.find((classRecord) => classRecord._id === value);
+
+      setClassResultForm((currentForm) => ({
+        ...currentForm,
+        class_record: value,
+        class: selectedClass?.name || "",
+        assigned_teacher: "",
+      }));
+      return;
+    }
+
+    setClassResultForm((currentForm) => ({
+      ...currentForm,
+      [name]: files ? files[0] : value,
+    }));
+  };
+
+  const handleClassResultAccessChange = (event) => {
+    const { name, value } = event.target;
+
+    setClassResultAccessForm((currentForm) => ({
       ...currentForm,
       [name]: value,
     }));
@@ -524,6 +627,76 @@ function UploadResult() {
     }
   };
 
+  const handleClassResultSubmit = async (event) => {
+    event.preventDefault();
+    setUploadingClassResult(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const formData = new FormData();
+      formData.append("session", classResultForm.session);
+      formData.append("term", classResultForm.term);
+      formData.append("class_record", classResultForm.class_record);
+      formData.append("assigned_teacher", classResultForm.assigned_teacher);
+      formData.append("pdf", classResultForm.pdf);
+
+      await API.post("/class-results/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setClassResultForm(initialClassResultForm);
+      event.target.reset();
+      await fetchClassResults();
+      setStatus({
+        type: "success",
+        message: "Class result uploaded successfully.",
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Unable to upload class result.",
+      });
+    } finally {
+      setUploadingClassResult(false);
+    }
+  };
+
+  const handleClassResultAccessSubmit = async (event) => {
+    event.preventDefault();
+    setSavingClassResultAccess(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const response = await API.put(
+        "/result-access/class-result",
+        classResultAccessForm
+      );
+      setClassResultAccessForm({
+        class_result_session: response.data.class_result_session || "",
+        class_result_term: response.data.class_result_term || "",
+      });
+      setStatus({
+        type: "success",
+        message: "Teacher class result access updated successfully.",
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Unable to update teacher class result access.",
+      });
+    } finally {
+      setSavingClassResultAccess(false);
+    }
+  };
+
   const handleEdit = (result) => {
     setEditingResultId(result._id);
     setResultForm({
@@ -585,6 +758,8 @@ function UploadResult() {
         await API.delete(`/cumulative-results/${deleteTarget._id}`);
       } else if (deleteTarget.deleteType === "broadsheet") {
         await API.delete(`/class-broadsheets/${deleteTarget._id}`);
+      } else if (deleteTarget.deleteType === "class-result") {
+        await API.delete(`/class-results/${deleteTarget._id}`);
       } else {
         await API.delete(`/results/${deleteTarget._id}`);
       }
@@ -595,6 +770,8 @@ function UploadResult() {
             ? "Cumulative result deleted successfully."
             : deleteTarget.deleteType === "broadsheet"
               ? "Class broadsheet deleted successfully."
+            : deleteTarget.deleteType === "class-result"
+              ? "Class result deleted successfully."
             : "Result deleted successfully.",
       });
       setDeleteTarget(null);
@@ -602,6 +779,8 @@ function UploadResult() {
         await fetchCumulativeResults();
       } else if (deleteTarget.deleteType === "broadsheet") {
         await fetchClassBroadsheets();
+      } else if (deleteTarget.deleteType === "class-result") {
+        await fetchClassResults();
       } else {
         await fetchResults();
       }
@@ -634,6 +813,8 @@ function UploadResult() {
             ? "Delete Cumulative Result"
             : deleteTarget?.deleteType === "broadsheet"
               ? "Delete Class Broadsheet"
+            : deleteTarget?.deleteType === "class-result"
+              ? "Delete Class Result"
             : "Delete Result"
         }
         message={
@@ -641,6 +822,8 @@ function UploadResult() {
             ? "This action will permanently remove this uploaded cumulative result PDF record from the system."
             : deleteTarget?.deleteType === "broadsheet"
               ? "This action will permanently remove this uploaded class broadsheet PDF record from the system."
+            : deleteTarget?.deleteType === "class-result"
+              ? "This action will permanently remove this uploaded class result PDF record from the system."
             : "This action will permanently remove this uploaded result PDF record from the system."
         }
         details={
@@ -653,6 +836,8 @@ function UploadResult() {
             ? "Delete Cumulative Result"
             : deleteTarget?.deleteType === "broadsheet"
               ? "Delete Class Broadsheet"
+            : deleteTarget?.deleteType === "class-result"
+              ? "Delete Class Result"
             : "Delete Result"
         }
         loading={deleting}
@@ -1048,6 +1233,166 @@ function UploadResult() {
         </div>
       </section>
 
+      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl lg:p-10">
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_420px]">
+          <div>
+            <h3 className="text-3xl font-extrabold text-primary">
+              Upload Class Result PDF
+            </h3>
+            <p className="mt-3 text-primary/70">
+              Upload a class result to the form teacher who owns that class for
+              the selected session and term.
+            </p>
+
+            <form onSubmit={handleClassResultSubmit} className="mt-7">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <input
+                  className={inputClass}
+                  name="session"
+                  value={classResultForm.session}
+                  onChange={handleClassResultChange}
+                  placeholder="Session e.g. 2025/2026"
+                  required
+                />
+
+                <select
+                  className={inputClass}
+                  name="term"
+                  value={classResultForm.term}
+                  onChange={handleClassResultChange}
+                  required
+                >
+                  <option value="">Select term</option>
+                  <option value="First Term">First Term</option>
+                  <option value="Second Term">Second Term</option>
+                  <option value="Third Term">Third Term</option>
+                </select>
+
+                <select
+                  className={inputClass}
+                  name="class_record"
+                  value={classResultForm.class_record}
+                  onChange={handleClassResultChange}
+                  disabled={!classResultForm.session}
+                  required
+                >
+                  <option value="">
+                    {classResultForm.session ? "Select class" : "Enter session first"}
+                  </option>
+                  {classResultAvailableClasses.map((classRecord) => (
+                    <option key={classRecord._id} value={classRecord._id}>
+                      {classRecord.name.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  className={inputClass}
+                  name="assigned_teacher"
+                  value={classResultForm.assigned_teacher}
+                  onChange={handleClassResultChange}
+                  disabled={!classResultForm.class_record}
+                  required
+                >
+                  <option value="">
+                    {classResultForm.class_record
+                      ? "Select form teacher owner"
+                      : "Select class first"}
+                  </option>
+                  {classResultAvailableTeachers.map((teacher) => (
+                    <option key={teacher._id} value={teacher._id}>
+                      {teacher.full_name} - {teacher.username}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  className={inputClass}
+                  name="pdf"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleClassResultChange}
+                  required
+                />
+              </div>
+
+              {classResultForm.session && classResultAvailableClasses.length === 0 && (
+                <p className="mt-4 text-sm font-semibold text-primary/60">
+                  No class has been created for this session yet.
+                </p>
+              )}
+              {classResultForm.class_record &&
+                classResultAvailableTeachers.length === 0 && (
+                  <p className="mt-4 text-sm font-semibold text-primary/60">
+                    No form teacher is assigned to this class/session yet.
+                  </p>
+                )}
+
+              <button
+                type="submit"
+                disabled={
+                  uploadingClassResult ||
+                  !classResultForm.class_record ||
+                  !classResultForm.assigned_teacher ||
+                  !classResultForm.pdf
+                }
+                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {uploadingClassResult
+                  ? "Uploading class result..."
+                  : "Upload Class Result"}
+                {!uploadingClassResult && <FaArrowRight />}
+              </button>
+            </form>
+          </div>
+
+          <form
+            onSubmit={handleClassResultAccessSubmit}
+            className="rounded-2xl bg-primary/5 p-6"
+          >
+            <h4 className="text-2xl font-extrabold text-primary">
+              Teacher Class Result Access
+            </h4>
+            <p className="mt-2 text-primary/70">
+              Control the class result session and term teachers can access.
+            </p>
+
+            <div className="mt-6 space-y-4">
+              <input
+                className={inputClass}
+                name="class_result_session"
+                value={classResultAccessForm.class_result_session}
+                onChange={handleClassResultAccessChange}
+                placeholder="Approved session e.g. 2025/2026"
+                required
+              />
+              <select
+                className={inputClass}
+                name="class_result_term"
+                value={classResultAccessForm.class_result_term}
+                onChange={handleClassResultAccessChange}
+                required
+              >
+                <option value="">Approved term</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              disabled={savingClassResultAccess}
+              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {savingClassResultAccess
+                ? "Saving access..."
+                : "Save Class Result Access"}
+            </button>
+          </form>
+        </div>
+      </section>
+
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
         <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px] lg:items-end">
           <div>
@@ -1186,6 +1531,72 @@ function UploadResult() {
                           Delete
                         </button>
                       </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <div className="mb-6">
+          <h3 className="text-3xl font-extrabold text-primary">
+            Recent Class Results
+          </h3>
+          <p className="mt-2 text-primary/70">
+            Showing the 15 most recent class result uploads.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <table className="w-full min-w-[860px] text-left">
+            <thead className="bg-primary/10 text-primary">
+              <tr>
+                <th className="px-5 py-4 font-bold">S/N</th>
+                <th className="px-5 py-4 font-bold">Class</th>
+                <th className="px-5 py-4 font-bold">Form Teacher</th>
+                <th className="px-5 py-4 font-bold">Session</th>
+                <th className="px-5 py-4 font-bold">Term</th>
+                <th className="px-5 py-4 font-bold">Uploaded</th>
+                <th className="px-5 py-4 font-bold">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-primary/10">
+              {displayedClassResults.length === 0 ? (
+                <tr>
+                  <td className="px-5 py-6 text-primary/70" colSpan="7">
+                    No class result uploads yet.
+                  </td>
+                </tr>
+              ) : (
+                displayedClassResults.map((classResult, index) => (
+                  <tr key={classResult._id} className="text-primary/80">
+                    <td className="px-5 py-4 font-bold text-primary">
+                      {index + 1}
+                    </td>
+                    <td className="px-5 py-4 font-semibold text-primary">
+                      {classResult.class?.toUpperCase() || "Not set"}
+                    </td>
+                    <td className="px-5 py-4">
+                      {classResult.assigned_teacher?.full_name || "Not set"}
+                    </td>
+                    <td className="px-5 py-4">{classResult.session}</td>
+                    <td className="px-5 py-4">{classResult.term}</td>
+                    <td className="px-5 py-4">
+                      {classResult.createdAt
+                        ? new Date(classResult.createdAt).toLocaleDateString()
+                        : "Not available"}
+                    </td>
+                    <td className="px-5 py-4">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRequest(classResult, "class-result")}
+                        className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-200"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))

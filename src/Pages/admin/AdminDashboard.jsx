@@ -25,6 +25,9 @@ function AdminDashboard() {
   const [students, setStudents] = useState([]);
   const [results, setResults] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [classBroadsheets, setClassBroadsheets] = useState([]);
+  const [classResults, setClassResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [accessForm, setAccessForm] = useState({
     session: "",
@@ -78,23 +81,81 @@ function AdminDashboard() {
       setLoading(true);
       setStatus({ type: "", message: "" });
 
-      const [studentsResponse, resultsResponse, classesResponse, accessResponse] =
-        await Promise.all([
-          API.get("/students"),
-          API.get("/results"),
-          API.get("/classes"),
-          API.get("/result-access"),
-        ]);
+      const [
+        studentsResponse,
+        resultsResponse,
+        classesResponse,
+        accessResponse,
+        teachersResponse,
+        broadsheetsResponse,
+        classResultsResponse,
+      ] = await Promise.allSettled([
+        API.get("/students"),
+        API.get("/results"),
+        API.get("/classes"),
+        API.get("/result-access"),
+        API.get("/teachers"),
+        API.get("/class-broadsheets"),
+        API.get("/class-results"),
+      ]);
 
-      setStudents(studentsResponse.data || []);
-      setResults(resultsResponse.data || []);
-      setClasses(classesResponse.data || []);
+      if (studentsResponse.status === "rejected") {
+        throw new Error(
+          studentsResponse.reason?.response?.data?.message ||
+            studentsResponse.reason?.response?.data?.error ||
+            "Unable to load student records."
+        );
+      }
+
+      if (resultsResponse.status === "rejected") {
+        throw new Error(
+          resultsResponse.reason?.response?.data?.message ||
+            resultsResponse.reason?.response?.data?.error ||
+            "Unable to load result records."
+        );
+      }
+
+      if (classesResponse.status === "rejected") {
+        throw new Error(
+          classesResponse.reason?.response?.data?.message ||
+            classesResponse.reason?.response?.data?.error ||
+            "Unable to load class records."
+        );
+      }
+
+      setStudents(studentsResponse.value.data || []);
+      setResults(resultsResponse.value.data || []);
+      setClasses(classesResponse.value.data || []);
+      setTeachers(
+        teachersResponse.status === "fulfilled"
+          ? teachersResponse.value.data || []
+          : []
+      );
+      setClassBroadsheets(
+        broadsheetsResponse.status === "fulfilled"
+          ? broadsheetsResponse.value.data || []
+          : []
+      );
+      setClassResults(
+        classResultsResponse.status === "fulfilled"
+          ? classResultsResponse.value.data || []
+          : []
+      );
       setAccessForm({
-        session: accessResponse.data?.session || "",
-        term: accessResponse.data?.term || "",
+        session:
+          accessResponse.status === "fulfilled"
+            ? accessResponse.value.data?.session || ""
+            : "",
+        term:
+          accessResponse.status === "fulfilled"
+            ? accessResponse.value.data?.term || ""
+            : "",
       });
       setCumulativeAccessForm({
-        cumulative_session: accessResponse.data?.cumulative_session || "",
+        cumulative_session:
+          accessResponse.status === "fulfilled"
+            ? accessResponse.value.data?.cumulative_session || ""
+            : "",
       });
     } catch (requestError) {
       setStatus({
@@ -141,9 +202,12 @@ function AdminDashboard() {
         ...students.map((student) => student.current_session).filter(Boolean),
         ...students.map((student) => student.graduation_session).filter(Boolean),
         ...students.map((student) => student.left_session).filter(Boolean),
+        ...teachers.map((teacher) => teacher.session).filter(Boolean),
+        ...classBroadsheets.map((broadsheet) => broadsheet.session).filter(Boolean),
+        ...classResults.map((classResult) => classResult.session).filter(Boolean),
       ]),
     ].sort();
-  }, [classes, students]);
+  }, [classBroadsheets, classResults, classes, students, teachers]);
 
   const coverageClasses = useMemo(() => {
     return classes.filter(
@@ -164,6 +228,24 @@ function AdminDashboard() {
       (classRecord) => classRecord.session === populationSessionFilter
     );
   }, [classes, populationSessionFilter]);
+
+  const activeSessionTeachers = useMemo(() => {
+    return teachers.filter(
+      (teacher) => teacher.session === populationSessionFilter
+    );
+  }, [populationSessionFilter, teachers]);
+
+  const sessionClassBroadsheets = useMemo(() => {
+    return classBroadsheets.filter(
+      (broadsheet) => broadsheet.session === populationSessionFilter
+    );
+  }, [classBroadsheets, populationSessionFilter]);
+
+  const sessionClassResults = useMemo(() => {
+    return classResults.filter(
+      (classResult) => classResult.session === populationSessionFilter
+    );
+  }, [classResults, populationSessionFilter]);
 
   const graduatedSessionStudents = useMemo(() => {
     return students.filter(
@@ -266,6 +348,21 @@ function AdminDashboard() {
       title: "Active Classes",
       value: loading ? "..." : activeSessionClasses.length,
       icon: <FaBookOpen />,
+    },
+    {
+      title: "Form Teachers",
+      value: loading ? "..." : activeSessionTeachers.length,
+      icon: <FaUsers />,
+    },
+    {
+      title: "Class Broadsheets",
+      value: loading ? "..." : sessionClassBroadsheets.length,
+      icon: <FaBookOpen />,
+    },
+    {
+      title: "Class Results",
+      value: loading ? "..." : sessionClassResults.length,
+      icon: <FaChartLine />,
     },
     {
       title: "Graduated",
@@ -838,7 +935,7 @@ function AdminDashboard() {
             </select>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {stats.map((stat) => (
             <div
               key={stat.title}

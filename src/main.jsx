@@ -38,6 +38,7 @@ import StudentCumulativeResult from "./Pages/student/StudentCumulativeResult.jsx
 import StudentSettings from "./Pages/student/StudentSettings.jsx";
 import TeacherLayout from "./Pages/teacher/TeacherLayout.jsx";
 import TeacherBroadsheets from "./Pages/teacher/TeacherBroadsheets.jsx";
+import TeacherClassResults from "./Pages/teacher/TeacherClassResults.jsx";
 import AdminDashboard from "./Pages/admin/AdminDashboard.jsx";
 import AdminLayout from "./Pages/admin/AdminLayout.jsx";
 import ClassManagement from "./Pages/admin/ClassManagement.jsx";
@@ -184,6 +185,10 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <TeacherBroadsheets />,
+          },
+          {
+            path: "class-results",
+            element: <TeacherClassResults />,
           },
         ],
       },

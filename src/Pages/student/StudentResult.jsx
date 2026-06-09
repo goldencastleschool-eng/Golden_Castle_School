@@ -96,15 +96,13 @@ function StudentResult() {
       setError("");
 
       const response = await API.get(
-        `/results/${selectedResultId}/view`,
-        {
+          `/results/${selectedResultId}/view`,
+          {
           responseType: "blob",
         }
       );
 
-      const objectUrl = URL.createObjectURL(
-        response.data
-      );
+      const objectUrl = URL.createObjectURL(response.data);
 
       setViewerUrl((oldUrl) => {
         if (oldUrl) {
@@ -297,7 +295,7 @@ function StudentResult() {
             <div className="hidden md:block"></div>
           </div>
 
-          <PdfViewer
+            <PdfViewer
             title="Student Result PDF"
             viewerUrl={viewerUrl}
             loading={loadingViewer}

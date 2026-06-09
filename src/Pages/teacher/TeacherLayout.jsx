@@ -15,6 +15,11 @@ const teacherLinks = [
     icon: <FaFilePdf />,
     end: true,
   },
+  {
+    label: "Class Results",
+    path: "/teacher/class-results",
+    icon: <FaFilePdf />,
+  },
 ];
 
 function TeacherLayout() {
