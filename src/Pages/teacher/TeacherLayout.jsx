@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   FaBookOpen,
   FaFilePdf,
+  FaGear,
   FaRightFromBracket,
 } from "react-icons/fa6";
 
@@ -19,6 +20,11 @@ const teacherLinks = [
     label: "Class Results",
     path: "/teacher/class-results",
     icon: <FaFilePdf />,
+  },
+  {
+    label: "Settings",
+    path: "/teacher/settings",
+    icon: <FaGear />,
   },
 ];
 

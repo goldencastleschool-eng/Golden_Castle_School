@@ -39,6 +39,7 @@ import StudentSettings from "./Pages/student/StudentSettings.jsx";
 import TeacherLayout from "./Pages/teacher/TeacherLayout.jsx";
 import TeacherBroadsheets from "./Pages/teacher/TeacherBroadsheets.jsx";
 import TeacherClassResults from "./Pages/teacher/TeacherClassResults.jsx";
+import TeacherSettings from "./Pages/teacher/TeacherSettings.jsx";
 import AdminDashboard from "./Pages/admin/AdminDashboard.jsx";
 import AdminLayout from "./Pages/admin/AdminLayout.jsx";
 import ClassManagement from "./Pages/admin/ClassManagement.jsx";
@@ -189,6 +190,10 @@ const router = createBrowserRouter([
           {
             path: "class-results",
             element: <TeacherClassResults />,
+          },
+          {
+            path: "settings",
+            element: <TeacherSettings />,
           },
         ],
       },
