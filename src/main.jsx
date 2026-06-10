@@ -47,6 +47,7 @@ import ClassCoverage from "./Pages/admin/ClassCoverage.jsx";
 import StudentManagement from "./Pages/admin/StudentManagement.jsx";
 import TeacherManagement from "./Pages/admin/TeacherManagement.jsx";
 import UploadResult from "./Pages/admin/UploadResult.jsx";
+import FeeManagement from "./Pages/admin/FeeManagement.jsx";
 
 // ROUTE PROTECTION
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
@@ -226,6 +227,10 @@ const router = createBrowserRouter([
           {
             path: "classes/:classId/coverage",
             element: <ClassCoverage />,
+          },
+          {
+            path: "fees",
+            element: <FeeManagement />,
           },
           {
             path: "results",

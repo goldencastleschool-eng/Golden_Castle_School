@@ -10,6 +10,7 @@ import {
   FaClipboardCheck,
   FaChalkboardUser,
   FaLayerGroup,
+  FaReceipt,
   FaRightFromBracket,
   FaUserGraduate,
   FaUserShield,
@@ -53,6 +54,11 @@ const adminLinks = [
     label: "Classes",
     path: "/admin/classes",
     icon: <FaLayerGroup />,
+  },
+  {
+    label: "Fees",
+    path: "/admin/fees",
+    icon: <FaReceipt />,
   },
   {
     label: "Results",
