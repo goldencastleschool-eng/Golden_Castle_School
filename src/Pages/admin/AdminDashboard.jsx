@@ -50,6 +50,7 @@ function AdminDashboard() {
     toClassRecord: "",
     toClass: "",
     toSession: "",
+    targetFeeTerm: "",
   });
   const [leftSchoolActionForm, setLeftSchoolActionForm] = useState({
     sourceSession: DEFAULT_COVERAGE_SESSION_FILTER,
@@ -466,6 +467,7 @@ function AdminDashboard() {
         toSession: value,
         toClassRecord: "",
         toClass: "",
+        targetFeeTerm: "",
       }));
       return;
     }
@@ -766,6 +768,7 @@ function AdminDashboard() {
         toClassRecord: "",
         toClass: "",
         toSession: "",
+        targetFeeTerm: "",
       });
       setSelectedPromotionStudentIds([]);
     } catch (requestError) {
@@ -1158,6 +1161,22 @@ function AdminDashboard() {
                   ))}
                 </select>
               </div>
+
+              <select
+                name="targetFeeTerm"
+                value={promotionForm.targetFeeTerm}
+                onChange={handlePromotionChange}
+                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              >
+                <option value="">Create returning fee record for term</option>
+                <option value="First Term">First Term</option>
+                <option value="Second Term">Second Term</option>
+                <option value="Third Term">Third Term</option>
+              </select>
+              <p className="rounded-2xl bg-primary/5 px-5 py-4 text-sm font-semibold text-primary/60">
+                Optional: choose a term to mark moved students as Returning/Old
+                for fee tracking in the destination class.
+              </p>
 
               {promotionForm.toSession &&
                 promotionDestinationClasses.length === 0 && (

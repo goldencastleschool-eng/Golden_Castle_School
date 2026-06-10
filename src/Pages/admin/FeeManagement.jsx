@@ -24,11 +24,26 @@ const initialFeeForm = {
   note: "",
 };
 
+const newStudentFeeItems = [
+  { name: "Admission Form", amount: "10000" },
+  { name: "Registration Fee", amount: "59000" },
+  { name: "School Uniforms", amount: "16000" },
+  { name: "P.E Wear", amount: "6000" },
+  { name: "Cardigan", amount: "5000" },
+  { name: "Stockings & Tie", amount: "4000" },
+  { name: "Books", amount: "35000" },
+];
+
+const returningStudentFeeItems = [
+  { name: "School Fee", amount: "43000" },
+];
+
 const initialStructureForm = {
   session: DEFAULT_SESSION,
   class_record: "",
   term: "",
-  amount: "",
+  new_items: newStudentFeeItems,
+  returning_items: returningStudentFeeItems,
 };
 
 const formatCurrency = (amount) =>
@@ -50,14 +65,51 @@ const normalizeClassName = (className = "") =>
 const isActiveStudent = (student) =>
   !student.status || student.status === "active";
 
+const escapeHtml = (value = "") =>
+  value
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
 const getRecordId = (record) => record?._id || record || "";
 
-const findFeeStructure = (feeStructures, classRecordId, session, term) =>
+const getStudentFeeEnrollment = (student, session, term = "") => {
+  const enrollments = Array.isArray(student?.fee_enrollments)
+    ? student.fee_enrollments
+    : [];
+
+  return enrollments.find(
+    (enrollment) =>
+      enrollment.session === session &&
+      (!term || enrollment.term === term)
+  );
+};
+
+const getStudentFeeCategory = (student, session, term) =>
+  getStudentFeeEnrollment(student, session, term)?.fee_category || "returning";
+
+const formatFeeCategory = (feeCategory = "") =>
+  feeCategory === "new" ? "Newly Admitted" : "Returning/Old";
+
+const getStructureTotal = (items = []) =>
+  items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+const findFeeStructure = (
+  feeStructures,
+  classRecordId,
+  session,
+  term,
+  feeCategory
+) =>
   feeStructures.find(
     (feeStructure) =>
       getRecordId(feeStructure.class_record) === classRecordId &&
       feeStructure.session === session &&
-      feeStructure.term === term
+      feeStructure.term === term &&
+      (feeStructure.fee_category || "returning") === feeCategory
   );
 
 function FeeManagement() {
@@ -183,12 +235,25 @@ function FeeManagement() {
       classes.find((classRecord) => classRecord._id === feeForm.class_record),
     [classes, feeForm.class_record]
   );
+  const selectedFormStudent = useMemo(
+    () => students.find((student) => student._id === feeForm.student),
+    [feeForm.student, students]
+  );
+  const selectedFormEnrollment =
+    selectedFormStudent && feeForm.session && feeForm.term
+      ? getStudentFeeEnrollment(selectedFormStudent, feeForm.session, feeForm.term)
+      : null;
+  const selectedFormFeeCategory =
+    selectedFormStudent && feeForm.session && feeForm.term
+      ? selectedFormEnrollment?.fee_category || "returning"
+      : "";
 
   const selectedFormStructure = findFeeStructure(
     feeStructures,
     feeForm.class_record,
     feeForm.session,
-    feeForm.term
+    feeForm.term,
+    selectedFormFeeCategory
   );
 
   const selectedStudentPaidForTerm = useMemo(() => {
@@ -214,11 +279,24 @@ function FeeManagement() {
     selectedStudentPaidForTerm + Number(feeForm.amount || 0);
 
   const selectedStudentProjectedBalance = selectedFormStructure
-    ? Math.max(
-        Number(selectedFormStructure.amount || 0) - selectedStudentProjectedPaid,
-        0
-      )
-    : 0;
+      ? Math.max(
+          Number(selectedFormStructure.amount || 0) - selectedStudentProjectedPaid,
+          0
+        )
+      : 0;
+  const selectedStructureClass = classes.find(
+    (classRecord) => classRecord._id === structureForm.class_record
+  );
+  const structureCategoryStatus = ["new", "returning"].map((feeCategory) => ({
+    feeCategory,
+    structure: findFeeStructure(
+      feeStructures,
+      structureForm.class_record,
+      structureForm.session,
+      structureForm.term,
+      feeCategory
+    ),
+  }));
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -266,20 +344,78 @@ function FeeManagement() {
     }));
   };
 
+  const handleStructureItemChange = (categoryKey, index, field, value) => {
+    setStructureForm((currentForm) => ({
+      ...currentForm,
+      [categoryKey]: currentForm[categoryKey].map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: value,
+            }
+          : item
+      ),
+    }));
+  };
+
+  const handleAddStructureItem = (categoryKey) => {
+    setStructureForm((currentForm) => ({
+      ...currentForm,
+      [categoryKey]: [
+        ...currentForm[categoryKey],
+        {
+          name: "",
+          amount: "",
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveStructureItem = (categoryKey, index) => {
+    setStructureForm((currentForm) => ({
+      ...currentForm,
+      [categoryKey]:
+        currentForm[categoryKey].length > 1
+          ? currentForm[categoryKey].filter((_, itemIndex) => itemIndex !== index)
+          : currentForm[categoryKey],
+    }));
+  };
+
   const handleStructureSubmit = async (event) => {
     event.preventDefault();
     setStatus({ type: "", message: "" });
 
     const payload = {
-      ...structureForm,
-      amount: Number(structureForm.amount),
+      class_record: structureForm.class_record,
+      session: structureForm.session,
+      term: structureForm.term,
+      new_items: structureForm.new_items.map((item) => ({
+        name: item.name,
+        amount: Number(item.amount),
+      })),
+      returning_items: structureForm.returning_items.map((item) => ({
+        name: item.name,
+        amount: Number(item.amount),
+      })),
     };
 
     try {
       if (editingStructureId) {
-        await API.put(`/fee-structures/${editingStructureId}`, payload);
+        const editingCategory = structureForm.editing_fee_category;
+        const items =
+          editingCategory === "new"
+            ? payload.new_items
+            : payload.returning_items;
+
+        await API.put(`/fee-structures/${editingStructureId}`, {
+          class_record: payload.class_record,
+          session: payload.session,
+          term: payload.term,
+          fee_category: editingCategory,
+          items,
+        });
       } else {
-        await API.post("/fee-structures", payload);
+        await API.put("/fee-structures/bulk", payload);
       }
 
       setStructureForm({
@@ -307,11 +443,32 @@ function FeeManagement() {
 
   const handleEditStructure = (feeStructure) => {
     setEditingStructureId(feeStructure._id);
+    const editedItems =
+      feeStructure.items?.length > 0
+        ? feeStructure.items.map((item) => ({
+            name: item.name || "",
+            amount: item.amount?.toString() || "",
+          }))
+        : [
+            {
+              name: "School Fee",
+              amount: feeStructure.amount?.toString() || "",
+            },
+          ];
+
     setStructureForm({
       session: feeStructure.session || DEFAULT_SESSION,
       class_record: getRecordId(feeStructure.class_record),
       term: feeStructure.term || "",
-      amount: feeStructure.amount || "",
+      editing_fee_category: feeStructure.fee_category || "returning",
+      new_items:
+        feeStructure.fee_category === "new"
+          ? editedItems
+          : newStudentFeeItems,
+      returning_items:
+        feeStructure.fee_category === "returning"
+          ? editedItems
+          : returningStudentFeeItems,
     });
     setStatus({ type: "", message: "" });
   };
@@ -335,11 +492,11 @@ function FeeManagement() {
       return;
     }
 
-    if (!selectedFormStructure) {
+    if (!selectedFormFeeCategory || !selectedFormStructure) {
       setStatus({
         type: "error",
         message:
-          "Create a matching payment structure for this class, session, and term before recording payment.",
+          "Create a matching payment structure for this class, session, term, and student category before recording payment.",
       });
       setSubmitting(false);
       return;
@@ -400,7 +557,7 @@ function FeeManagement() {
     setFeeForm({
       student: student._id || student,
       session: fee.session || DEFAULT_SESSION,
-      class_record: matchingClass?._id || "",
+      class_record: getRecordId(fee.class_record) || matchingClass?._id || "",
       term: fee.term || "",
       amount: fee.amount || "",
       payment_date: toDateInputValue(fee.payment_date),
@@ -498,17 +655,22 @@ function FeeManagement() {
 
     return fees.filter((fee) => {
       const student = fee.student || {};
+      const feeClassRecordId = getRecordId(fee.class_record);
       const matchesSession = !filters.session || fee.session === filters.session;
       const matchesTerm = !filters.term || fee.term === filters.term;
       const matchesClass =
         !selectedClass ||
-        normalizeClassName(student.class) === normalizeClassName(selectedClass.name);
+        feeClassRecordId === selectedClass._id ||
+        normalizeClassName(fee.class || student.class) ===
+          normalizeClassName(selectedClass.name);
       const searchableText = [
         student.full_name,
         student.admission_no,
+        fee.class,
         student.class,
         fee.session,
         fee.term,
+        formatFeeCategory(fee.fee_category),
         fee.receipt_no,
         fee.payment_method,
       ]
@@ -525,20 +687,111 @@ function FeeManagement() {
     });
   }, [classes, fees, filters]);
 
-  const totalPaid = filteredFees.reduce(
-    (sum, fee) => sum + Number(fee.amount || 0),
-    0
-  );
-
   const selectedFilterClass = classes.find(
     (classRecord) => classRecord._id === filters.class_record
   );
-  const selectedFilterStructure = findFeeStructure(
+  const selectedFilterStructures = feeStructures.filter(
+    (feeStructure) =>
+      getRecordId(feeStructure.class_record) === filters.class_record &&
+      feeStructure.session === filters.session &&
+      feeStructure.term === filters.term
+  );
+
+  const dashboardRows = useMemo(() => {
+    return feeStructures
+      .filter((feeStructure) => {
+        const structureClassId = getRecordId(feeStructure.class_record);
+
+        return (
+            (!filters.session || feeStructure.session === filters.session) &&
+            (!filters.term || feeStructure.term === filters.term) &&
+            (!filters.class_record || structureClassId === filters.class_record) &&
+          feeStructure.class_record
+        );
+      })
+      .flatMap((feeStructure) => {
+        const classRecord = feeStructure.class_record;
+        const classStudents = students.filter((student) => {
+          const studentClassRecordId =
+            student.class_record?._id || student.class_record || "";
+
+          return (
+            isActiveStudent(student) &&
+            student.current_session === classRecord.session &&
+            (studentClassRecordId === classRecord._id ||
+              normalizeClassName(student.class) ===
+                normalizeClassName(classRecord.name))
+          );
+        }).filter(
+          (student) =>
+            getStudentFeeCategory(
+              student,
+              feeStructure.session,
+              feeStructure.term
+            ) === (feeStructure.fee_category || "returning")
+        );
+
+        return classStudents.map((student) => {
+          const paid = fees
+            .filter((fee) => {
+              const feeStudentId = fee.student?._id || fee.student;
+
+              return (
+                feeStudentId === student._id &&
+                fee.session === feeStructure.session &&
+                fee.term === feeStructure.term
+              );
+            })
+            .reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
+          const expected = Number(feeStructure.amount || 0);
+
+          return {
+            student,
+            classRecord,
+            session: feeStructure.session,
+            term: feeStructure.term,
+            expected,
+            paid,
+            balance: Math.max(expected - paid, 0),
+          };
+        });
+      });
+  }, [
     feeStructures,
+    fees,
     filters.class_record,
     filters.session,
-    filters.term
+    filters.term,
+    students,
+  ]);
+
+  const dashboardTotalExpected = dashboardRows.reduce(
+    (sum, row) => sum + Number(row.expected || 0),
+    0
   );
+  const dashboardTotalPaid = dashboardRows.reduce(
+    (sum, row) => sum + Number(row.paid || 0),
+    0
+  );
+  const dashboardTotalBalance = dashboardRows.reduce(
+    (sum, row) => sum + Number(row.balance || 0),
+    0
+  );
+  const fullyPaidCount = dashboardRows.filter(
+    (row) => row.expected > 0 && row.paid >= row.expected
+  ).length;
+  const partiallyPaidCount = dashboardRows.filter(
+    (row) => row.paid > 0 && row.paid < row.expected
+  ).length;
+  const debtorCount = dashboardRows.filter((row) => row.balance > 0).length;
+  const recentPayments = filteredFees
+    .slice()
+    .sort(
+      (firstFee, secondFee) =>
+        new Date(secondFee.payment_date || secondFee.createdAt || 0) -
+        new Date(firstFee.payment_date || firstFee.createdAt || 0)
+    )
+    .slice(0, 6);
 
   const balanceRows = useMemo(() => {
     if (!selectedFilterClass || !filters.session || !filters.term) {
@@ -573,10 +826,23 @@ function FeeManagement() {
             );
           })
           .reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
-        const expected = Number(selectedFilterStructure?.amount || 0);
+        const feeCategory = getStudentFeeCategory(
+          student,
+          filters.session,
+          filters.term
+        );
+        const expectedStructure = findFeeStructure(
+          feeStructures,
+          filters.class_record,
+          filters.session,
+          filters.term,
+          feeCategory
+        );
+        const expected = Number(expectedStructure?.amount || 0);
 
         return {
           student,
+          feeCategory,
           expected,
           paid,
           balance: Math.max(expected - paid, 0),
@@ -584,10 +850,11 @@ function FeeManagement() {
       });
   }, [
     fees,
+    filters.class_record,
     filters.session,
     filters.term,
+    feeStructures,
     selectedFilterClass,
-    selectedFilterStructure,
     students,
   ]);
   const totalExpected = balanceRows.reduce(
@@ -602,6 +869,139 @@ function FeeManagement() {
     (sum, row) => sum + Number(row.balance || 0),
     0
   );
+
+  const handlePrintQueriedClassPayments = () => {
+    if (!selectedFilterClass || !filters.session || !filters.term) {
+      setStatus({
+        type: "error",
+        message: "Select a session, term, and class before printing payment records.",
+      });
+      return;
+    }
+
+    if (balanceRows.length === 0) {
+      setStatus({
+        type: "error",
+        message: "No student payment records are available for this class query.",
+      });
+      return;
+    }
+
+    const printWindow = window.open("", "_blank", "width=1100,height=800");
+
+    if (!printWindow) {
+      setStatus({
+        type: "error",
+        message: "Unable to open print window. Allow popups and try again.",
+      });
+      return;
+    }
+
+    const balanceTableRows = balanceRows
+      .map(
+        (row, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(row.student.full_name || "")}</td>
+            <td>${escapeHtml(row.student.admission_no || "")}</td>
+            <td>${escapeHtml(formatFeeCategory(row.feeCategory))}</td>
+            <td>${escapeHtml(formatCurrency(row.expected))}</td>
+            <td>${escapeHtml(formatCurrency(row.paid))}</td>
+            <td>${escapeHtml(formatCurrency(row.balance))}</td>
+          </tr>
+        `
+      )
+      .join("");
+
+    const paymentTableRows = filteredFees
+      .filter((fee) => fee.session === filters.session && fee.term === filters.term)
+      .map(
+        (fee, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(fee.student?.full_name || "Deleted student")}</td>
+            <td>${escapeHtml(fee.student?.admission_no || "Not available")}</td>
+            <td>${escapeHtml(formatFeeCategory(fee.fee_category))}</td>
+            <td>${escapeHtml(formatCurrency(fee.amount))}</td>
+            <td>${escapeHtml(formatDate(fee.payment_date))}</td>
+            <td>${escapeHtml(fee.payment_method || "Not set")}</td>
+            <td>${escapeHtml(fee.receipt_no || "Not set")}</td>
+          </tr>
+        `
+      )
+      .join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${escapeHtml(selectedFilterClass.name.toUpperCase())} Payment Records</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #111; padding: 24px; }
+            h1 { margin: 0 0 6px; font-size: 24px; }
+            h2 { margin: 28px 0 10px; font-size: 18px; }
+            p { margin: 0 0 12px; color: #555; }
+            .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0; }
+            .summary div { border: 1px solid #ddd; padding: 12px; }
+            .label { color: #555; font-size: 12px; text-transform: uppercase; }
+            .value { display: block; margin-top: 6px; font-weight: 700; font-size: 18px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ddd; padding: 9px; text-align: left; font-size: 13px; }
+            th { background: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          <h1>${escapeHtml(selectedFilterClass.name.toUpperCase())} Payment Records</h1>
+          <p>Session: ${escapeHtml(filters.session)} | Term: ${escapeHtml(filters.term)}</p>
+          <div class="summary">
+            <div><span class="label">Expected Total</span><span class="value">${escapeHtml(formatCurrency(totalExpected))}</span></div>
+            <div><span class="label">Paid Total</span><span class="value">${escapeHtml(formatCurrency(totalTrackedPaid))}</span></div>
+            <div><span class="label">Balance Total</span><span class="value">${escapeHtml(formatCurrency(totalBalance))}</span></div>
+          </div>
+
+          <h2>Student Balance Summary</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>S/N</th>
+                <th>Student</th>
+                <th>Admission No.</th>
+                <th>Fee Category</th>
+                <th>Expected</th>
+                <th>Paid</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>${balanceTableRows}</tbody>
+          </table>
+
+          <h2>Payment Entries</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>S/N</th>
+                <th>Student</th>
+                <th>Admission No.</th>
+                <th>Fee Category</th>
+                <th>Amount</th>
+                <th>Date Paid</th>
+                <th>Method</th>
+                <th>Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                paymentTableRows ||
+                '<tr><td colspan="8">No payment entry found for this query.</td></tr>'
+              }
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
   return (
     <div className="px-6 py-10 lg:px-12">
@@ -631,7 +1031,7 @@ function FeeManagement() {
         message="This action will remove the expected fee setup for this class, session, and term."
         details={
           structureDeleteTarget
-            ? `${structureDeleteTarget.class_record?.name?.toUpperCase() || "Class"} - ${structureDeleteTarget.session} - ${structureDeleteTarget.term}`
+            ? `${structureDeleteTarget.class_record?.name?.toUpperCase() || "Class"} - ${structureDeleteTarget.session} - ${structureDeleteTarget.term} - ${formatFeeCategory(structureDeleteTarget.fee_category)}`
             : ""
         }
         confirmLabel="Delete Structure"
@@ -672,6 +1072,8 @@ function FeeManagement() {
                       <th className="px-5 py-4 font-bold">Class</th>
                       <th className="px-5 py-4 font-bold">Session</th>
                       <th className="px-5 py-4 font-bold">Term</th>
+                      <th className="px-5 py-4 font-bold">Fee Category</th>
+                      <th className="px-5 py-4 font-bold">Items</th>
                       <th className="px-5 py-4 font-bold">Expected Fee</th>
                       <th className="px-5 py-4 font-bold">Actions</th>
                     </tr>
@@ -679,7 +1081,7 @@ function FeeManagement() {
                   <tbody className="divide-y divide-primary/10">
                     {feeStructures.length === 0 ? (
                       <tr>
-                        <td className="px-5 py-6 text-primary/70" colSpan="5">
+                        <td className="px-5 py-6 text-primary/70" colSpan="7">
                           No payment structure has been created yet.
                         </td>
                       </tr>
@@ -692,6 +1094,19 @@ function FeeManagement() {
                           </td>
                           <td className="px-5 py-4">{feeStructure.session}</td>
                           <td className="px-5 py-4">{feeStructure.term}</td>
+                          <td className="px-5 py-4">
+                            {formatFeeCategory(feeStructure.fee_category)}
+                          </td>
+                          <td className="px-5 py-4">
+                            {feeStructure.items?.length > 0
+                              ? feeStructure.items
+                                  .map(
+                                    (item) =>
+                                      `${item.name}: ${formatCurrency(item.amount)}`
+                                  )
+                                  .join(", ")
+                              : "Not itemized"}
+                          </td>
                           <td className="px-5 py-4 font-bold text-primary">
                             {formatCurrency(feeStructure.amount)}
                           </td>
@@ -761,21 +1176,132 @@ function FeeManagement() {
                 <option value="Second Term">Second Term</option>
                 <option value="Third Term">Third Term</option>
               </select>
-              <input
-                className={inputClass}
-                name="amount"
-                type="number"
-                min="0"
-                value={structureForm.amount}
-                onChange={handleStructureChange}
-                placeholder="Expected fee amount"
-                required
-              />
+              {selectedStructureClass && structureForm.term && (
+                <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
+                  <p className="text-sm font-bold uppercase text-primary/60">
+                    {selectedStructureClass.name.toUpperCase()} Category Structures
+                  </p>
+                  <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {structureCategoryStatus.map(({ feeCategory, structure }) => (
+                      <div
+                        key={feeCategory}
+                        className="rounded-xl bg-secondary px-4 py-3"
+                      >
+                        <p className="text-sm font-bold text-primary">
+                          {formatFeeCategory(feeCategory)}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-primary/60">
+                          {structure
+                            ? formatCurrency(structure.amount)
+                            : "Not created"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {[
+                {
+                  key: "new_items",
+                  title: "Newly Admitted Student Items",
+                  total: getStructureTotal(structureForm.new_items),
+                  items: structureForm.new_items,
+                  hidden:
+                    editingStructureId &&
+                    structureForm.editing_fee_category !== "new",
+                },
+                {
+                  key: "returning_items",
+                  title: "Returning/Old Student Items",
+                  total: getStructureTotal(structureForm.returning_items),
+                  items: structureForm.returning_items,
+                  hidden:
+                    editingStructureId &&
+                    structureForm.editing_fee_category !== "returning",
+                },
+              ]
+                .filter((category) => !category.hidden)
+                .map((category) => (
+                  <div
+                    key={category.key}
+                    className="rounded-2xl border border-primary/10 bg-primary/5 p-4"
+                  >
+                    <div className="mb-4 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-bold uppercase text-primary/60">
+                          {category.title}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-primary/60">
+                          Total: {formatCurrency(category.total)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddStructureItem(category.key)}
+                        className="rounded-xl bg-button px-4 py-2 text-sm font-bold text-secondary"
+                      >
+                        Add Item
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {category.items.map((item, index) => (
+                        <div
+                          key={`${category.key}-${item.name}-${index}`}
+                          className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_150px_auto]"
+                        >
+                          <input
+                            className={inputClass}
+                            value={item.name}
+                            onChange={(event) =>
+                              handleStructureItemChange(
+                                category.key,
+                                index,
+                                "name",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Fee item"
+                            required
+                          />
+                          <input
+                            className={inputClass}
+                            type="number"
+                            min="0"
+                            value={item.amount}
+                            onChange={(event) =>
+                              handleStructureItemChange(
+                                category.key,
+                                index,
+                                "amount",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Amount"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleRemoveStructureItem(category.key, index)
+                            }
+                            disabled={category.items.length === 1}
+                            className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               <button
                 type="submit"
                 className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"
               >
-                {editingStructureId ? "Save Structure" : "Create Structure"}
+                {editingStructureId
+                  ? "Save Structure"
+                  : "Create Both Structures"}
                 <FaArrowRight />
               </button>
               {editingStructureId && (
@@ -839,26 +1365,6 @@ function FeeManagement() {
 
             <select
               className={inputClass}
-              name="student"
-              value={feeForm.student}
-              onChange={handleChange}
-              disabled={!feeForm.class_record}
-              required
-            >
-              <option value="">
-                {feeForm.class_record
-                  ? "Select student"
-                  : "Select class first"}
-              </option>
-              {formStudents.map((student) => (
-                <option key={student._id} value={student._id}>
-                  {student.full_name} - {student.admission_no}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className={inputClass}
               name="term"
               value={feeForm.term}
               onChange={handleChange}
@@ -869,6 +1375,47 @@ function FeeManagement() {
               <option value="Second Term">Second Term</option>
               <option value="Third Term">Third Term</option>
             </select>
+
+            <select
+              className={inputClass}
+              name="student"
+              value={feeForm.student}
+              onChange={handleChange}
+              disabled={!feeForm.class_record || !feeForm.term}
+              required
+            >
+              <option value="">
+                {feeForm.class_record && feeForm.term
+                  ? "Select student"
+                  : "Select class and term first"}
+              </option>
+              {formStudents.map((student) => (
+                <option key={student._id} value={student._id}>
+                  {student.full_name} - {student.admission_no}
+                  {feeForm.term
+                    ? ` - ${formatFeeCategory(
+                        getStudentFeeCategory(
+                          student,
+                          feeForm.session,
+                          feeForm.term
+                        )
+                      )}`
+                    : ""}
+                </option>
+              ))}
+            </select>
+
+            <input
+              className={inputClass}
+              value={
+                selectedFormFeeCategory
+                  ? formatFeeCategory(selectedFormFeeCategory)
+                  : ""
+              }
+              placeholder="Student fee category"
+              disabled
+              readOnly
+            />
 
             <input
               className={inputClass}
@@ -927,40 +1474,75 @@ function FeeManagement() {
             </p>
             <p className="mt-2 text-primary/75">
               {selectedFormClass
-                ? `Class: ${selectedFormClass.name.toUpperCase()}`
+                ? `Class: ${selectedFormClass.name.toUpperCase()}${
+                    selectedFormFeeCategory
+                      ? ` | ${formatFeeCategory(selectedFormFeeCategory)}`
+                      : ""
+                  }`
                 : "Select a class to load the expected payment."}
             </p>
+            {selectedFormStudent && feeForm.term && !selectedFormEnrollment && (
+              <p className="mt-2 text-sm font-semibold text-primary/60">
+                No category record was found for this student in this term, so
+                the system is treating the student as Returning/Old.
+              </p>
+            )}
             {selectedFormStructure ? (
-              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div>
-                  <p className="text-sm font-semibold text-primary/60">
-                    Expected
-                  </p>
-                  <p className="mt-1 text-2xl font-extrabold text-primary">
-                    {formatCurrency(selectedFormStructure.amount)}
-                  </p>
+              <>
+                {selectedFormStructure.items?.length > 0 && (
+                  <div className="mt-4 rounded-2xl border border-primary/10 bg-secondary p-4">
+                    <p className="text-sm font-bold uppercase text-primary/60">
+                      Fee Items
+                    </p>
+                    <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+                      {selectedFormStructure.items.map((item) => (
+                        <div
+                          key={`${item.name}-${item.amount}`}
+                          className="flex items-center justify-between gap-4 rounded-xl bg-primary/5 px-4 py-3"
+                        >
+                          <span className="font-semibold text-primary/75">
+                            {item.name}
+                          </span>
+                          <span className="font-bold text-primary">
+                            {formatCurrency(item.amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div>
+                    <p className="text-sm font-semibold text-primary/60">
+                      Expected
+                    </p>
+                    <p className="mt-1 text-2xl font-extrabold text-primary">
+                      {formatCurrency(selectedFormStructure.amount)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-primary/60">
+                      Paid After This Record
+                    </p>
+                    <p className="mt-1 text-2xl font-extrabold text-primary">
+                      {formatCurrency(selectedStudentProjectedPaid)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-primary/60">
+                      Balance
+                    </p>
+                    <p className="mt-1 text-2xl font-extrabold text-primary">
+                      {formatCurrency(selectedStudentProjectedBalance)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-primary/60">
-                    Paid After This Record
-                  </p>
-                  <p className="mt-1 text-2xl font-extrabold text-primary">
-                    {formatCurrency(selectedStudentProjectedPaid)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-primary/60">
-                    Balance
-                  </p>
-                  <p className="mt-1 text-2xl font-extrabold text-primary">
-                    {formatCurrency(selectedStudentProjectedBalance)}
-                  </p>
-                </div>
-              </div>
+              </>
             ) : (
               <p className="mt-3 text-sm font-semibold text-primary/60">
                 No matching payment structure found for this class, session,
-                and term yet.
+                term, and student category yet.
               </p>
             )}
           </div>
@@ -990,34 +1572,7 @@ function FeeManagement() {
         </form>
 
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
-          <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <div className="rounded-2xl bg-primary/5 p-5">
-              <p className="text-sm font-bold uppercase text-primary/60">
-                Payments
-              </p>
-              <p className="mt-3 text-4xl font-extrabold text-primary">
-                {loading ? "..." : filteredFees.length}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-primary/5 p-5">
-              <p className="text-sm font-bold uppercase text-primary/60">
-                Total Paid
-              </p>
-              <p className="mt-3 text-4xl font-extrabold text-primary">
-                {loading ? "..." : formatCurrency(totalPaid)}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-primary/5 p-5">
-              <p className="text-sm font-bold uppercase text-primary/60">
-                Session
-              </p>
-              <p className="mt-3 text-4xl font-extrabold text-primary">
-                {filters.session || "All"}
-              </p>
-            </div>
-          </div>
-
-          <div className="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-[1fr_220px_220px_1fr_auto] xl:items-end">
+          <div className="mb-6 grid grid-cols-1 gap-5 xl: xl:items-end">
             <div>
               <h3 className="text-3xl font-extrabold text-primary">
                 Payment Records
@@ -1027,7 +1582,8 @@ function FeeManagement() {
               </p>
             </div>
 
-            <select
+            <div className="grid gap-5 grid-cols-[1fr_220px_220px_1fr_auto_auto]">
+                <select
               className={inputClass}
               name="session"
               value={filters.session}
@@ -1076,6 +1632,116 @@ function FeeManagement() {
               Refresh
               <FaArrowRight />
             </button>
+
+            <button
+              type="button"
+              onClick={handlePrintQueriedClassPayments}
+              disabled={!selectedFilterClass || !filters.term}
+              className="flex cursor-pointer items-center justify-center rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Print
+            </button>
+            </div>
+          </div>
+
+          <div className="mb-8 grid grid-cols-1 gap-5 xl:grid-cols-[1fr_420px]">
+            <div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="rounded-2xl bg-primary/5 p-5">
+                  <p className="text-sm font-bold uppercase text-primary/60">
+                    Total Expected School Fees
+                  </p>
+                  <p className="mt-3 text-3xl font-extrabold text-primary">
+                    {loading ? "..." : formatCurrency(dashboardTotalExpected)}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-primary/5 p-5">
+                  <p className="text-sm font-bold uppercase text-primary/60">
+                    Total Amount Paid
+                  </p>
+                  <p className="mt-3 text-3xl font-extrabold text-primary">
+                    {loading ? "..." : formatCurrency(dashboardTotalPaid)}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-primary/5 p-5">
+                  <p className="text-sm font-bold uppercase text-primary/60">
+                    Outstanding Balance
+                  </p>
+                  <p className="mt-3 text-3xl font-extrabold text-primary">
+                    {loading ? "..." : formatCurrency(dashboardTotalBalance)}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-primary/5 p-5">
+                  <p className="text-sm font-bold uppercase text-primary/60">
+                    Fully Paid Students
+                  </p>
+                  <p className="mt-3 text-3xl font-extrabold text-primary">
+                    {loading ? "..." : fullyPaidCount}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-primary/5 p-5">
+                  <p className="text-sm font-bold uppercase text-primary/60">
+                    Partially Paid Students
+                  </p>
+                  <p className="mt-3 text-3xl font-extrabold text-primary">
+                    {loading ? "..." : partiallyPaidCount}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-primary/5 p-5">
+                  <p className="text-sm font-bold uppercase text-primary/60">
+                    Debtors
+                  </p>
+                  <p className="mt-3 text-3xl font-extrabold text-primary">
+                    {loading ? "..." : debtorCount}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-primary/5 p-5">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-bold uppercase text-primary/60">
+                    Recent Payments
+                  </p>
+                  <p className="mt-1 text-sm text-primary/60">
+                    Latest records matching the selected filters.
+                  </p>
+                </div>
+                <span className="rounded-full bg-button/10 px-4 py-2 text-sm font-bold text-primary">
+                  {recentPayments.length}
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {loading ? (
+                  <p className="text-primary/70">Loading recent payments...</p>
+                ) : recentPayments.length === 0 ? (
+                  <p className="text-primary/70">No recent payment found.</p>
+                ) : (
+                  recentPayments.map((fee) => (
+                    <div
+                      key={fee._id}
+                      className="rounded-2xl border border-primary/10 bg-secondary px-4 py-3"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="truncate font-bold text-primary">
+                            {fee.student?.full_name || "Deleted student"}
+                          </p>
+                          <p className="mt-1 text-sm text-primary/60">
+                            {fee.term} | {formatDate(fee.payment_date)}
+                          </p>
+                        </div>
+                        <p className="shrink-0 font-extrabold text-primary">
+                          {formatCurrency(fee.amount)}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
 
           <input
@@ -1127,7 +1793,7 @@ function FeeManagement() {
                 Select a class and term to view student balances for the
                 selected session.
               </p>
-            ) : !selectedFilterStructure ? (
+            ) : selectedFilterStructures.length === 0 ? (
               <p className="text-primary/70">
                 No payment structure found for{" "}
                 {selectedFilterClass.name.toUpperCase()},{" "}
@@ -1141,6 +1807,7 @@ function FeeManagement() {
                       <th className="px-5 py-4 font-bold">S/N</th>
                       <th className="px-5 py-4 font-bold">Student</th>
                       <th className="px-5 py-4 font-bold">Admission No.</th>
+                      <th className="px-5 py-4 font-bold">Fee Category</th>
                       <th className="px-5 py-4 font-bold">Expected</th>
                       <th className="px-5 py-4 font-bold">Paid</th>
                       <th className="px-5 py-4 font-bold">Balance</th>
@@ -1149,7 +1816,7 @@ function FeeManagement() {
                   <tbody className="divide-y divide-primary/10">
                     {balanceRows.length === 0 ? (
                       <tr>
-                        <td className="px-5 py-6 text-primary/70" colSpan="6">
+                        <td className="px-5 py-6 text-primary/70" colSpan="7">
                           No active student found in this class.
                         </td>
                       </tr>
@@ -1164,6 +1831,9 @@ function FeeManagement() {
                           </td>
                           <td className="px-5 py-4">
                             {row.student.admission_no}
+                          </td>
+                          <td className="px-5 py-4">
+                            {formatFeeCategory(row.feeCategory)}
                           </td>
                           <td className="px-5 py-4">
                             {formatCurrency(row.expected)}
@@ -1201,6 +1871,8 @@ function FeeManagement() {
                   <th className="px-5 py-4 font-bold">Class</th>
                   <th className="px-5 py-4 font-bold">Session</th>
                   <th className="px-5 py-4 font-bold">Term</th>
+                  <th className="px-5 py-4 font-bold">Fee Category</th>
+                  <th className="px-5 py-4 font-bold">Expected</th>
                   <th className="px-5 py-4 font-bold">Amount</th>
                   <th className="px-5 py-4 font-bold">Date Paid</th>
                   <th className="px-5 py-4 font-bold">Method</th>
@@ -1211,13 +1883,13 @@ function FeeManagement() {
               <tbody className="divide-y divide-primary/10">
                 {loading ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="11">
+                    <td className="px-5 py-6 text-primary/70" colSpan="13">
                       Loading fee payments...
                     </td>
                   </tr>
                 ) : filteredFees.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="11">
+                    <td className="px-5 py-6 text-primary/70" colSpan="13">
                       No fee payment matches this filter.
                     </td>
                   </tr>
@@ -1237,10 +1909,16 @@ function FeeManagement() {
                         {fee.student?.admission_no || "Not available"}
                       </td>
                       <td className="px-5 py-4">
-                        {fee.student?.class || "Not set"}
+                        {fee.class || fee.student?.class || "Not set"}
                       </td>
                       <td className="px-5 py-4">{fee.session}</td>
                       <td className="px-5 py-4">{fee.term}</td>
+                      <td className="px-5 py-4">
+                        {formatFeeCategory(fee.fee_category)}
+                      </td>
+                      <td className="px-5 py-4">
+                        {formatCurrency(fee.expected_amount_at_payment)}
+                      </td>
                       <td className="px-5 py-4 font-bold text-primary">
                         {formatCurrency(fee.amount)}
                       </td>

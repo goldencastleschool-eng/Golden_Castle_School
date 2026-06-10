@@ -11,6 +11,8 @@ const initialStudentForm = {
   class: "",
   class_record: "",
   current_session: "",
+  admission_term: "",
+  fee_category: "",
   gender: "",
   password: "",
 };
@@ -22,6 +24,21 @@ const normalizeClassName = (className = "") =>
 
 const isActiveStudent = (student) =>
   !student.status || student.status === "active";
+
+const getStudentFeeEnrollment = (student, session, term = "") => {
+  const enrollments = Array.isArray(student.fee_enrollments)
+    ? student.fee_enrollments
+    : [];
+
+  return enrollments.find(
+    (enrollment) =>
+      enrollment.session === session &&
+      (!term || enrollment.term === term)
+  );
+};
+
+const formatFeeCategory = (feeCategory = "") =>
+  feeCategory === "new" ? "Newly Admitted" : "Returning/Old";
 
 function StudentManagement() {
   const [students, setStudents] = useState([]);
@@ -74,6 +91,7 @@ function StudentManagement() {
         current_session: value,
         class: "",
         class_record: "",
+        admission_term: "",
       }));
       return;
     }
@@ -142,6 +160,8 @@ function StudentManagement() {
         classRecord.name === student.class &&
         classRecord.session === student.current_session
     );
+    const currentEnrollment =
+      getStudentFeeEnrollment(student, student.current_session) || {};
 
     setEditingStudentId(student._id);
     setStudentForm({
@@ -154,6 +174,8 @@ function StudentManagement() {
         matchingClassRecord?._id ||
         "",
       current_session: student.current_session || "",
+      admission_term: currentEnrollment.term || "",
+      fee_category: currentEnrollment.fee_category || "",
       gender: student.gender || "",
       password: "",
     });
@@ -237,6 +259,8 @@ function StudentManagement() {
         student.admission_no,
         student.class,
         student.current_session,
+        getStudentFeeEnrollment(student, student.current_session)?.term,
+        getStudentFeeEnrollment(student, student.current_session)?.fee_category,
         student.gender,
       ]
         .filter(Boolean)
@@ -410,6 +434,29 @@ function StudentManagement() {
               <option value="Male">Male</option>
               <option value="Female">Female</option>
             </select>
+            <select
+              className={inputClass}
+              name="admission_term"
+              value={studentForm.admission_term}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select admission term</option>
+              <option value="First Term">First Term</option>
+              <option value="Second Term">Second Term</option>
+              <option value="Third Term">Third Term</option>
+            </select>
+            <select
+              className={inputClass}
+              name="fee_category"
+              value={studentForm.fee_category}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select student fee category</option>
+              <option value="new">Newly Admitted Student</option>
+              <option value="returning">Returning/Old Student</option>
+            </select>
             <input
               className={inputClass}
               name="password"
@@ -533,6 +580,7 @@ function StudentManagement() {
                   <th className="px-5 py-4 font-bold">Admission No.</th>
                   <th className="px-5 py-4 font-bold">Class</th>
                   <th className="px-5 py-4 font-bold">Session</th>
+                  <th className="px-5 py-4 font-bold">Fee Category</th>
                   <th className="px-5 py-4 font-bold">Gender</th>
                   <th className="px-5 py-4 font-bold">Password</th>
                   <th className="px-5 py-4 font-bold">Reset</th>
@@ -541,19 +589,19 @@ function StudentManagement() {
               <tbody className="divide-y divide-primary/10">
                 {loadingStudents ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                    <td className="px-5 py-6 text-primary/70" colSpan="9">
                       Loading students...
                     </td>
                   </tr>
                 ) : !selectedViewClass ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                    <td className="px-5 py-6 text-primary/70" colSpan="9">
                       Select a session and class to view students.
                     </td>
                   </tr>
                 ) : sortedViewedClassStudents.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                    <td className="px-5 py-6 text-primary/70" colSpan="9">
                       No active student found in this class.
                     </td>
                   </tr>
@@ -573,6 +621,18 @@ function StudentManagement() {
                       <td className="px-5 py-4">{student.class}</td>
                       <td className="px-5 py-4">
                         {student.current_session || "Not set"}
+                      </td>
+                      <td className="px-5 py-4">
+                        {(() => {
+                          const enrollment = getStudentFeeEnrollment(
+                            student,
+                            student.current_session
+                          );
+
+                          return enrollment
+                            ? `${formatFeeCategory(enrollment.fee_category)} - ${enrollment.term}`
+                            : "Not set";
+                        })()}
                       </td>
                       <td className="px-5 py-4">{student.gender || "Not set"}</td>
                       <td className="px-5 py-4">
@@ -640,6 +700,7 @@ function StudentManagement() {
                   <th className="px-5 py-4 font-bold">Admission No.</th>
                   <th className="px-5 py-4 font-bold">Class</th>
                   <th className="px-5 py-4 font-bold">Session</th>
+                  <th className="px-5 py-4 font-bold">Fee Category</th>
                   <th className="px-5 py-4 font-bold">Gender</th>
                   <th className="px-5 py-4 font-bold">Status</th>
                   <th className="px-5 py-4 font-bold">Created</th>
@@ -650,13 +711,13 @@ function StudentManagement() {
               <tbody className="divide-y divide-primary/10">
                 {loadingStudents ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="9">
+                    <td className="px-5 py-6 text-primary/70" colSpan="10">
                       Loading students...
                     </td>
                   </tr>
                 ) : displayedStudents.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="9">
+                    <td className="px-5 py-6 text-primary/70" colSpan="10">
                       {studentSearch
                         ? "No student matches your search."
                         : "No students registered yet."}
@@ -678,6 +739,18 @@ function StudentManagement() {
                       <td className="px-5 py-4">{student.class}</td>
                       <td className="px-5 py-4">
                         {student.current_session || "Not set"}
+                      </td>
+                      <td className="px-5 py-4">
+                        {(() => {
+                          const enrollment = getStudentFeeEnrollment(
+                            student,
+                            student.current_session
+                          );
+
+                          return enrollment
+                            ? `${formatFeeCategory(enrollment.fee_category)} - ${enrollment.term}`
+                            : "Not set";
+                        })()}
                       </td>
                       <td className="px-5 py-4">{student.gender || "Not set"}</td>
                       <td className="px-5 py-4">
