@@ -8,6 +8,26 @@ import { isFormTeacher } from "../../utils/teacherAssignments.js";
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString() : "Not available";
 
+const getClassListErrorMessage = (requestError) => {
+  if (requestError.response?.data?.message) {
+    return requestError.response.data.message;
+  }
+
+  if (requestError.response?.data?.error) {
+    return requestError.response.data.error;
+  }
+
+  if (requestError.response?.status === 404) {
+    return "Class list service is not available yet. Please update or restart the backend API.";
+  }
+
+  if (!requestError.response) {
+    return "Unable to reach the class list service. Check the API server or internet connection.";
+  }
+
+  return "Unable to load your class list.";
+};
+
 function TeacherClassList() {
   const { user } = useAuth();
   const [classRecord, setClassRecord] = useState(null);
@@ -32,11 +52,7 @@ function TeacherClassList() {
         setClassRecord(response.data?.class_record || null);
         setStudents(response.data?.students || []);
       } catch (requestError) {
-        setError(
-          requestError.response?.data?.message ||
-            requestError.response?.data?.error ||
-            "Unable to load your class list."
-        );
+        setError(getClassListErrorMessage(requestError));
       } finally {
         setLoading(false);
       }

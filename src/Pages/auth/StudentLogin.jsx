@@ -33,11 +33,15 @@ function StudentLogin() {
 
     try {
       const response = await API.post("/auth/student/login", formData);
-      const { student } = response.data;
+      const { student, token } = response.data;
       const studentUser = {
         ...student,
         role: "student",
       };
+
+      if (token) {
+        localStorage.setItem("token", token);
+      }
 
       setUser(studentUser);
       navigate("/student");
