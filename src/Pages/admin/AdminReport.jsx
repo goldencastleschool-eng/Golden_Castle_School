@@ -11,6 +11,7 @@ import {
 
 import API from "../../api/axios.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import { SCHOOL_NAME, schoolLogo } from "../../utils/printBranding.js";
 
 const DEFAULT_REPORT_SESSION = "2025/2026";
 
@@ -312,6 +313,26 @@ function AdminReport() {
 
   return (
     <div className="px-6 py-10 lg:px-12">
+      <div className="hidden items-center gap-4 border-b border-primary pb-5 print:mb-6 print:flex">
+        <img
+          src={schoolLogo}
+          alt={`${SCHOOL_NAME} logo`}
+          className="h-16 w-16 rounded-full object-cover"
+        />
+        <div>
+          <h1 className="text-2xl font-extrabold text-primary">
+            {SCHOOL_NAME}
+          </h1>
+          <p className="mt-1 text-sm font-bold uppercase text-primary/70">
+            Admin Report
+          </p>
+          <p className="mt-1 text-sm text-primary/60">
+            {reportFilter.session}
+            {reportFilter.term ? ` - ${reportFilter.term}` : ""}
+          </p>
+        </div>
+      </div>
+
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}

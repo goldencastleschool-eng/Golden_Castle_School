@@ -10,6 +10,37 @@
     background-color: var(--color-accent);
 }
 
+.portal-sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-button) 75%, transparent) transparent;
+    scroll-behavior: smooth;
+}
+
+.portal-sidebar-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.portal-sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.portal-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-button) 70%, transparent);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+}
+
+.portal-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--color-button);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.portal-sidebar-scroll::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
 
 
 @theme{

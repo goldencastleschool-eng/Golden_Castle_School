@@ -4,11 +4,24 @@ import {
   FaChalkboardUser,
   FaCircleCheck,
   FaCircleExclamation,
+  FaPrint,
   FaXmark,
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
+import {
+  formatClassSection,
+  getClassSection,
+} from "../../utils/classSections.js";
+import {
+  TEACHER_ASSIGNMENT_TYPES,
+  isFormTeacher,
+} from "../../utils/teacherAssignments.js";
+import {
+  getPrintBrandHeader,
+  getPrintBrandStyles,
+} from "../../utils/printBranding.js";
 
 const DEFAULT_SESSION_FILTER = "2025/2026";
 
@@ -17,6 +30,7 @@ const initialTeacherForm = {
   username: "",
   session: DEFAULT_SESSION_FILTER,
   assigned_class_record: "",
+  assignment_type: TEACHER_ASSIGNMENT_TYPES.FORM,
   password: "",
 };
 
@@ -30,6 +44,18 @@ const buildTeacherUsername = (fullName, suffix = "") => {
 };
 
 const createUsernameSuffix = () => Math.floor(1000 + Math.random() * 9000).toString();
+
+const escapeHtml = (value = "") =>
+  value
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+const formatDate = (value) =>
+  value ? new Date(value).toLocaleDateString() : "Not available";
 
 function ActionMessageModal({ status, onClose }) {
   if (!status?.message) {
@@ -134,6 +160,11 @@ function TeacherManagement() {
     );
   }, [classes, teacherForm.session]);
 
+  const formTeachers = useMemo(
+    () => teachers.filter((teacher) => isFormTeacher(teacher)),
+    [teachers]
+  );
+
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -142,6 +173,7 @@ function TeacherManagement() {
         ...currentForm,
         session: value,
         assigned_class_record: "",
+        assignment_type: TEACHER_ASSIGNMENT_TYPES.FORM,
         username: editingTeacherId
           ? currentForm.username
           : buildTeacherUsername(currentForm.full_name, usernameSuffix),
@@ -153,6 +185,7 @@ function TeacherManagement() {
       setTeacherForm((currentForm) => ({
         ...currentForm,
         assigned_class_record: value,
+        assignment_type: TEACHER_ASSIGNMENT_TYPES.FORM,
         username: editingTeacherId
           ? currentForm.username
           : buildTeacherUsername(currentForm.full_name, usernameSuffix),
@@ -183,7 +216,10 @@ function TeacherManagement() {
     setStatus({ type: "", message: "" });
 
     try {
-      const payload = { ...teacherForm };
+      const payload = {
+        ...teacherForm,
+        assignment_type: TEACHER_ASSIGNMENT_TYPES.FORM,
+      };
 
       if (!payload.password) {
         delete payload.password;
@@ -201,7 +237,7 @@ function TeacherManagement() {
       setStatus({
         type: "success",
         message: editingTeacherId
-          ? "Teacher updated successfully."
+          ? "Form teacher updated successfully."
           : "Form teacher registered successfully.",
       });
       await fetchTeacherData();
@@ -211,7 +247,7 @@ function TeacherManagement() {
         message:
           error.response?.data?.message ||
           error.response?.data?.error ||
-          "Unable to register teacher.",
+          "Unable to register form teacher.",
       });
     } finally {
       setSubmitting(false);
@@ -228,6 +264,7 @@ function TeacherManagement() {
         teacher.assigned_class_record?._id ||
         teacher.assigned_class_record ||
         "",
+      assignment_type: TEACHER_ASSIGNMENT_TYPES.FORM,
       password: "",
     });
     setStatus({ type: "", message: "" });
@@ -266,6 +303,116 @@ function TeacherManagement() {
     }
   };
 
+  const handlePrintFormTeachers = () => {
+    if (formTeachers.length === 0) {
+      setStatus({
+        type: "error",
+        message: "No form teacher record is available to print.",
+      });
+      return;
+    }
+
+    const printWindow = window.open("", "_blank", "width=1000,height=720");
+
+    if (!printWindow) {
+      setStatus({
+        type: "error",
+        message: "Unable to open print window. Allow popups and try again.",
+      });
+      return;
+    }
+
+    const rows = formTeachers
+      .map(
+        (teacher, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(teacher.full_name || "")}</td>
+            <td>${escapeHtml(teacher.username || "")}</td>
+            <td>${escapeHtml(teacher.session || "")}</td>
+            <td>${escapeHtml(
+              teacher.assigned_class?.toUpperCase() || "Not set"
+            )}</td>
+            <td>${escapeHtml(
+              teacher.status === "inactive" ? "Inactive" : "Active"
+            )}</td>
+            <td>${escapeHtml(formatDate(teacher.createdAt))}</td>
+          </tr>
+        `
+      )
+      .join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Registered Form Teachers</title>
+          <style>
+            ${getPrintBrandStyles()}
+            body {
+              color: #111;
+              font-family: Arial, sans-serif;
+              padding: 28px;
+            }
+
+            h1 {
+              font-size: 24px;
+              margin: 0 0 6px;
+            }
+
+            p {
+              color: #555;
+              margin: 0 0 18px;
+            }
+
+            table {
+              border-collapse: collapse;
+              width: 100%;
+            }
+
+            th,
+            td {
+              border: 1px solid #ddd;
+              font-size: 13px;
+              padding: 10px;
+              text-align: left;
+            }
+
+            th {
+              background: #f1f1f1;
+            }
+          </style>
+        </head>
+        <body>
+          ${getPrintBrandHeader({
+            title: "Registered Form Teachers",
+            subtitle: "Form Teacher Records",
+          })}
+          <h1>Registered Form Teachers</h1>
+          <p>Total: ${formTeachers.length} | Printed: ${escapeHtml(
+            new Date().toLocaleDateString()
+          )}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>S/N</th>
+                <th>Teacher</th>
+                <th>Username</th>
+                <th>Session</th>
+                <th>Assigned Class</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   const handleDeactivateConfirm = async () => {
     if (!deactivateTarget?._id) {
       return;
@@ -275,12 +422,12 @@ function TeacherManagement() {
 
     try {
       await API.put(`/teachers/${deactivateTarget._id}/deactivate`, {
-        reason: "Teacher no longer assigned to this class",
+        reason: "Form teacher no longer assigned to this class",
       });
       setStatus({
         type: "success",
         message:
-          "Teacher deactivated successfully. Previous records remain linked.",
+          "Form teacher deactivated successfully. Previous records remain linked.",
       });
       setDeactivateTarget(null);
       await fetchTeacherData();
@@ -309,13 +456,13 @@ function TeacherManagement() {
       <AdminDeleteModal
         open={Boolean(deactivateTarget)}
         title="Deactivate Form Teacher"
-        message="This will remove the teacher from the active class assignment so another form teacher can be assigned. Previous class results and broadsheets will remain linked to this teacher."
+        message="This will remove the form teacher from the active class assignment. Previous class results and broadsheets will remain linked to this teacher."
         details={
           deactivateTarget
             ? `${deactivateTarget.full_name} - ${deactivateTarget.username}`
             : ""
         }
-        confirmLabel="Deactivate Teacher"
+        confirmLabel="Deactivate Form Teacher"
         loading={deactivating}
         onCancel={() => setDeactivateTarget(null)}
         onConfirm={handleDeactivateConfirm}
@@ -338,7 +485,7 @@ function TeacherManagement() {
           <div className="grid grid-cols-1 gap-8 ">
             <div>
               <h3 className="text-3xl font-extrabold text-primary">
-                {editingTeacherId ? "Edit Teacher" : "Register Form Teacher"}
+                {editingTeacherId ? "Edit Form Teacher" : "Register Form Teacher"}
               </h3>
               <p className="mt-3 max-w-2xl text-primary/70">
                 {editingTeacherId
@@ -381,7 +528,8 @@ function TeacherManagement() {
                 <option value="">Assigned class</option>
                 {availableClasses.map((classRecord) => (
                   <option key={classRecord._id} value={classRecord._id}>
-                    {classRecord.name.toUpperCase()}
+                    {classRecord.name.toUpperCase()} -{" "}
+                    {formatClassSection(getClassSection(classRecord))}
                   </option>
                 ))}
               </select>
@@ -419,11 +567,11 @@ function TeacherManagement() {
               >
                 {submitting
                   ? editingTeacherId
-                    ? "Saving teacher..."
-                    : "Registering teacher..."
+                    ? "Saving form teacher..."
+                    : "Registering form teacher..."
                   : editingTeacherId
-                    ? "Save Teacher"
-                    : "Register Teacher"}
+                    ? "Save Form Teacher"
+                    : "Register Form Teacher"}
                 {!submitting && <FaArrowRight />}
               </button>
 
@@ -441,14 +589,26 @@ function TeacherManagement() {
         </section>
 
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
-          <div className="mb-6">
-            <h3 className="text-3xl font-extrabold text-primary">
-              View Form Teachers
-            </h3>
-            <p className="mt-2 text-primary/70">
-              View registered form teachers, edit records, deactivate accounts,
-              or reset a teacher password.
-            </p>
+          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h3 className="text-3xl font-extrabold text-primary">
+                View Form Teachers
+              </h3>
+              <p className="mt-2 text-primary/70">
+                View registered form teachers, edit records, deactivate
+                accounts, or reset a teacher password.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handlePrintFormTeachers}
+              disabled={loading || formTeachers.length === 0}
+              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-3 font-bold text-secondary shadow-lg transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
+            >
+              <FaPrint />
+              Print Form Teachers
+            </button>
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-primary/10">
@@ -470,17 +630,17 @@ function TeacherManagement() {
                 {loading ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="9">
-                      Loading teachers...
+                      Loading form teachers...
                     </td>
                   </tr>
-                ) : teachers.length === 0 ? (
+                ) : formTeachers.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="9">
                       No form teacher has been registered yet.
                     </td>
                   </tr>
                 ) : (
-                  teachers.slice(0, 15).map((teacher, index) => (
+                  formTeachers.map((teacher, index) => (
                     <tr key={teacher._id} className="text-primary/80">
                       <td className="px-5 py-4 font-bold text-primary">
                         {index + 1}
@@ -510,9 +670,7 @@ function TeacherManagement() {
                         </span>
                       </td>
                       <td className="px-5 py-4">
-                        {teacher.createdAt
-                          ? new Date(teacher.createdAt).toLocaleDateString()
-                          : "Not available"}
+                        {formatDate(teacher.createdAt)}
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex gap-2">

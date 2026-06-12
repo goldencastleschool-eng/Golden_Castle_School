@@ -360,12 +360,12 @@ function AdminDashboard() {
       icon: <FaBookOpen />,
     },
     {
-      title: "Active Form Teachers",
+      title: "Active Teachers",
       value: loading ? "..." : activeSessionTeachers.length,
       icon: <FaUsers />,
     },
     {
-      title: "Deactivated Form Teachers",
+      title: "Deactivated Teachers",
       value: loading ? "..." : inactiveSessionTeachers.length,
       icon: <FaUsers />,
     },

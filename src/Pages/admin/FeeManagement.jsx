@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   FaArrowRight,
   FaPenToSquare,
+  FaPrint,
   FaReceipt,
   FaTrashCan,
 } from "react-icons/fa6";
@@ -9,6 +10,12 @@ import {
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import schoolLogo from "../../assets/1723987411228.jpg";
+import { getFeeReceiptNumber } from "../../utils/paymentReceipt.js";
+import {
+  getPrintBrandHeader,
+  getPrintBrandStyles,
+} from "../../utils/printBranding.js";
 
 const DEFAULT_SESSION = "2025/2026";
 
@@ -42,6 +49,7 @@ const initialStructureForm = {
   session: DEFAULT_SESSION,
   class_record: "",
   term: "",
+  fee_category: "returning",
   new_items: newStudentFeeItems,
   returning_items: returningStudentFeeItems,
 };
@@ -76,6 +84,8 @@ const escapeHtml = (value = "") =>
 
 const getRecordId = (record) => record?._id || record || "";
 
+const getFeeStudentId = (fee = {}) => getRecordId(fee.student);
+
 const getStudentFeeEnrollment = (student, session, term = "") => {
   const enrollments = Array.isArray(student?.fee_enrollments)
     ? student.fee_enrollments
@@ -97,6 +107,9 @@ const formatFeeCategory = (feeCategory = "") =>
 const getStructureTotal = (items = []) =>
   items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
+const getStructureItemsKey = (feeCategory = "returning") =>
+  feeCategory === "new" ? "new_items" : "returning_items";
+
 const findFeeStructure = (
   feeStructures,
   classRecordId,
@@ -111,6 +124,28 @@ const findFeeStructure = (
       feeStructure.term === term &&
       (feeStructure.fee_category || "returning") === feeCategory
   );
+
+const getFeeStructurePaymentCount = (feeStructure, fees = []) => {
+  const structureClassId = getRecordId(feeStructure.class_record);
+  const structureClassName = normalizeClassName(feeStructure.class_record?.name);
+  const structureFeeCategory = feeStructure.fee_category || "returning";
+
+  return fees.filter((fee) => {
+    const feeClassId = getRecordId(fee.class_record);
+    const matchesClass =
+      feeClassId === structureClassId ||
+      (!feeClassId &&
+        structureClassName &&
+        normalizeClassName(fee.class || fee.student?.class) === structureClassName);
+
+    return (
+      matchesClass &&
+      fee.session === feeStructure.session &&
+      fee.term === feeStructure.term &&
+      (fee.fee_category || "returning") === structureFeeCategory
+    );
+  }).length;
+};
 
 function FeeManagement() {
   const [fees, setFees] = useState([]);
@@ -275,17 +310,38 @@ function FeeManagement() {
       .reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
   }, [editingFeeId, feeForm.session, feeForm.student, feeForm.term, fees]);
 
+  const selectedFormExpectedAmount = Number(selectedFormStructure?.amount || 0);
+  const selectedStudentRemainingBeforePayment = selectedFormStructure
+    ? Math.max(selectedFormExpectedAmount - selectedStudentPaidForTerm, 0)
+    : 0;
+  const selectedPaymentAmount = Number(feeForm.amount || 0);
   const selectedStudentProjectedPaid =
-    selectedStudentPaidForTerm + Number(feeForm.amount || 0);
+    selectedStudentPaidForTerm + selectedPaymentAmount;
+  const selectedStudentOverpayment = selectedFormStructure
+    ? Math.max(selectedStudentProjectedPaid - selectedFormExpectedAmount, 0)
+    : 0;
 
   const selectedStudentProjectedBalance = selectedFormStructure
       ? Math.max(
-          Number(selectedFormStructure.amount || 0) - selectedStudentProjectedPaid,
+          selectedFormExpectedAmount - selectedStudentProjectedPaid,
           0
         )
       : 0;
   const selectedStructureClass = classes.find(
     (classRecord) => classRecord._id === structureForm.class_record
+  );
+  const selectedStructureCategory = editingStructureId
+    ? structureForm.editing_fee_category || structureForm.fee_category || "returning"
+    : structureForm.fee_category || "returning";
+  const selectedStructureItemsKey = getStructureItemsKey(selectedStructureCategory);
+  const selectedStructureItems = structureForm[selectedStructureItemsKey] || [];
+  const selectedStructureTotal = getStructureTotal(selectedStructureItems);
+  const selectedExistingStructure = findFeeStructure(
+    feeStructures,
+    structureForm.class_record,
+    structureForm.session,
+    structureForm.term,
+    selectedStructureCategory
   );
   const structureCategoryStatus = ["new", "returning"].map((feeCategory) => ({
     feeCategory,
@@ -385,49 +441,49 @@ function FeeManagement() {
     event.preventDefault();
     setStatus({ type: "", message: "" });
 
+    const feeCategory = editingStructureId
+      ? structureForm.editing_fee_category
+      : structureForm.fee_category;
+    const itemsKey = getStructureItemsKey(feeCategory);
+    const items = (structureForm[itemsKey] || []).map((item) => ({
+      name: item.name,
+      amount: Number(item.amount),
+    }));
     const payload = {
       class_record: structureForm.class_record,
       session: structureForm.session,
       term: structureForm.term,
-      new_items: structureForm.new_items.map((item) => ({
-        name: item.name,
-        amount: Number(item.amount),
-      })),
-      returning_items: structureForm.returning_items.map((item) => ({
-        name: item.name,
-        amount: Number(item.amount),
-      })),
+      fee_category: feeCategory,
+      items,
     };
+
+    if (!editingStructureId && selectedExistingStructure?._id) {
+      setStatus({
+        type: "error",
+        message:
+          "A payment structure already exists for this class, session, term, and student category. Use Edit to change it.",
+      });
+      return;
+    }
 
     try {
       if (editingStructureId) {
-        const editingCategory = structureForm.editing_fee_category;
-        const items =
-          editingCategory === "new"
-            ? payload.new_items
-            : payload.returning_items;
-
-        await API.put(`/fee-structures/${editingStructureId}`, {
-          class_record: payload.class_record,
-          session: payload.session,
-          term: payload.term,
-          fee_category: editingCategory,
-          items,
-        });
+        await API.put(`/fee-structures/${editingStructureId}`, payload);
       } else {
-        await API.put("/fee-structures/bulk", payload);
+        await API.post("/fee-structures", payload);
       }
 
       setStructureForm({
         ...initialStructureForm,
         session: structureForm.session || DEFAULT_SESSION,
+        fee_category: structureForm.fee_category || "returning",
       });
       setEditingStructureId("");
       setStatus({
         type: "success",
         message: editingStructureId
           ? "Payment structure updated successfully."
-          : "Payment structure created successfully.",
+          : "Payment structure saved successfully.",
       });
       await fetchFeeData();
     } catch (error) {
@@ -460,6 +516,7 @@ function FeeManagement() {
       session: feeStructure.session || DEFAULT_SESSION,
       class_record: getRecordId(feeStructure.class_record),
       term: feeStructure.term || "",
+      fee_category: feeStructure.fee_category || "returning",
       editing_fee_category: feeStructure.fee_category || "returning",
       new_items:
         feeStructure.fee_category === "new"
@@ -497,6 +554,15 @@ function FeeManagement() {
         type: "error",
         message:
           "Create a matching payment structure for this class, session, term, and student category before recording payment.",
+      });
+      setSubmitting(false);
+      return;
+    }
+
+    if (Number(feeForm.amount) > selectedStudentRemainingBeforePayment) {
+      setStatus({
+        type: "error",
+        message: `Payment amount cannot be greater than the outstanding balance of ${formatCurrency(selectedStudentRemainingBeforePayment)}.`,
       });
       setSubmitting(false);
       return;
@@ -562,7 +628,7 @@ function FeeManagement() {
       amount: fee.amount || "",
       payment_date: toDateInputValue(fee.payment_date),
       payment_method: fee.payment_method || "",
-      receipt_no: fee.receipt_no || "",
+      receipt_no: getFeeReceiptNumber(fee) || "",
       note: fee.note || "",
     });
     setStatus({ type: "", message: "" });
@@ -671,7 +737,7 @@ function FeeManagement() {
         fee.session,
         fee.term,
         formatFeeCategory(fee.fee_category),
-        fee.receipt_no,
+        getFeeReceiptNumber(fee),
         fee.payment_method,
       ]
         .filter(Boolean)
@@ -917,7 +983,7 @@ function FeeManagement() {
             <td>${escapeHtml(formatCurrency(fee.amount))}</td>
             <td>${escapeHtml(formatDate(fee.payment_date))}</td>
             <td>${escapeHtml(fee.payment_method || "Not set")}</td>
-            <td>${escapeHtml(fee.receipt_no || "Not set")}</td>
+            <td>${escapeHtml(getFeeReceiptNumber(fee))}</td>
           </tr>
         `
       )
@@ -928,6 +994,7 @@ function FeeManagement() {
         <head>
           <title>${escapeHtml(selectedFilterClass.name.toUpperCase())} Payment Records</title>
           <style>
+            ${getPrintBrandStyles()}
             body { font-family: Arial, sans-serif; color: #111; padding: 24px; }
             h1 { margin: 0 0 6px; font-size: 24px; }
             h2 { margin: 28px 0 10px; font-size: 18px; }
@@ -942,6 +1009,10 @@ function FeeManagement() {
           </style>
         </head>
         <body>
+          ${getPrintBrandHeader({
+            title: "Class Payment Records",
+            subtitle: `${selectedFilterClass.name.toUpperCase()} - ${filters.session} - ${filters.term}`,
+          })}
           <h1>${escapeHtml(selectedFilterClass.name.toUpperCase())} Payment Records</h1>
           <p>Session: ${escapeHtml(filters.session)} | Term: ${escapeHtml(filters.term)}</p>
           <div class="summary">
@@ -993,6 +1064,341 @@ function FeeManagement() {
     printWindow.document.close();
     printWindow.focus();
     printWindow.print();
+  };
+
+  const handlePrintPaymentReceipt = (fee) => {
+    if (!fee?._id) {
+      setStatus({
+        type: "error",
+        message: "Select a valid fee payment before printing receipt.",
+      });
+      return;
+    }
+
+    const printWindow = window.open("", "_blank", "width=720,height=900");
+
+    if (!printWindow) {
+      setStatus({
+        type: "error",
+        message: "Unable to open receipt window. Allow popups and try again.",
+      });
+      return;
+    }
+
+    const student = fee.student || {};
+    const studentId = getFeeStudentId(fee);
+    const receiptNumber = getFeeReceiptNumber(fee);
+    const expectedAmount = Number(fee.expected_amount_at_payment || 0);
+    const relatedPayments = studentId
+      ? fees.filter(
+          (payment) =>
+            getFeeStudentId(payment) === studentId &&
+            payment.session === fee.session &&
+            payment.term === fee.term
+        )
+      : [fee];
+    const totalPaid = relatedPayments.reduce(
+      (sum, payment) => sum + Number(payment.amount || 0),
+      0
+    );
+    const currentBalance = Math.max(expectedAmount - totalPaid, 0);
+    const feeItems = Array.isArray(fee.expected_items_at_payment)
+      ? fee.expected_items_at_payment
+      : [];
+    const logoUrl = new URL(schoolLogo, window.location.origin).href;
+    const feeItemRows = feeItems.length
+      ? feeItems
+          .map(
+            (item, index) => `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${escapeHtml(item.name || "Fee Item")}</td>
+                <td>${escapeHtml(formatCurrency(item.amount))}</td>
+              </tr>
+            `
+          )
+          .join("")
+      : `
+        <tr>
+          <td>1</td>
+          <td>Expected Fee</td>
+          <td>${escapeHtml(formatCurrency(expectedAmount))}</td>
+        </tr>
+      `;
+    const noteMarkup = fee.note
+      ? `<div class="note"><strong>Note:</strong> ${escapeHtml(fee.note)}</div>`
+      : "";
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${escapeHtml(receiptNumber)} Payment Receipt</title>
+          <style>
+            @page { size: 148mm 210mm; margin: 8mm; }
+            * { box-sizing: border-box; }
+            body {
+              margin: 0;
+              background: #fff;
+              color: #111;
+              font-family: Arial, sans-serif;
+            }
+            .receipt {
+              width: 132mm;
+              min-height: 194mm;
+              margin: 0 auto;
+              border: 1px solid #d7d7d7;
+              padding: 8mm;
+            }
+            .header {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 12px;
+              border-bottom: 2px solid #111;
+              padding-bottom: 12px;
+            }
+            .brand {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
+            .brand img {
+              width: 48px;
+              height: 48px;
+              object-fit: cover;
+              border-radius: 50%;
+            }
+            h1 {
+              margin: 0;
+              font-size: 18px;
+              line-height: 1.15;
+            }
+            .subtitle {
+              margin: 4px 0 0;
+              color: #555;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            }
+            .receipt-no {
+              text-align: right;
+              font-size: 11px;
+              color: #555;
+            }
+            .receipt-no strong {
+              display: block;
+              margin-top: 4px;
+              color: #111;
+              font-size: 13px;
+            }
+            .title {
+              margin: 18px 0 12px;
+              text-align: center;
+              font-size: 16px;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            }
+            .grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 8px 14px;
+              margin-bottom: 14px;
+            }
+            .field {
+              border: 1px solid #e1e1e1;
+              padding: 8px;
+              min-height: 40px;
+            }
+            .label {
+              display: block;
+              color: #666;
+              font-size: 10px;
+              font-weight: 700;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+            }
+            .value {
+              font-size: 12px;
+              font-weight: 700;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+            }
+            th,
+            td {
+              border: 1px solid #dcdcdc;
+              padding: 8px;
+              text-align: left;
+              font-size: 11px;
+            }
+            th {
+              background: #f3f3f3;
+              font-size: 10px;
+              text-transform: uppercase;
+            }
+            .totals {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 8px;
+              margin-top: 14px;
+            }
+            .total {
+              border: 1px solid #111;
+              padding: 9px;
+            }
+            .total strong {
+              display: block;
+              margin-top: 5px;
+              font-size: 14px;
+            }
+            .highlight {
+              background: #111;
+              color: #fff;
+            }
+            .note {
+              margin-top: 12px;
+              border: 1px solid #e1e1e1;
+              padding: 9px;
+              font-size: 11px;
+              color: #333;
+            }
+            .signatures {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+              margin-top: 26px;
+            }
+            .signature {
+              border-top: 1px solid #111;
+              padding-top: 6px;
+              text-align: center;
+              font-size: 11px;
+              color: #555;
+            }
+            .footer {
+              margin-top: 18px;
+              border-top: 1px dashed #aaa;
+              padding-top: 8px;
+              color: #555;
+              font-size: 10px;
+              text-align: center;
+            }
+            @media print {
+              .receipt {
+                width: auto;
+                min-height: auto;
+                border: 0;
+                padding: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <main class="receipt">
+            <header class="header">
+              <div class="brand">
+                <img src="${escapeHtml(logoUrl)}" alt="Golden Castle logo" />
+                <div>
+                  <h1>Golden Castle<br />International School</h1>
+                  <p class="subtitle">Official payment receipt</p>
+                </div>
+              </div>
+              <div class="receipt-no">
+                Receipt No.
+                <strong>${escapeHtml(receiptNumber)}</strong>
+              </div>
+            </header>
+
+            <div class="title">Payment Receipt</div>
+
+            <section class="grid">
+              <div class="field">
+                <span class="label">Student</span>
+                <span class="value">${escapeHtml(student.full_name || "Deleted student")}</span>
+              </div>
+              <div class="field">
+                <span class="label">Admission No.</span>
+                <span class="value">${escapeHtml(student.admission_no || "Not available")}</span>
+              </div>
+              <div class="field">
+                <span class="label">Class</span>
+                <span class="value">${escapeHtml(fee.class || student.class || "Not set")}</span>
+              </div>
+              <div class="field">
+                <span class="label">Session / Term</span>
+                <span class="value">${escapeHtml(fee.session)} | ${escapeHtml(fee.term)}</span>
+              </div>
+              <div class="field">
+                <span class="label">Fee Category</span>
+                <span class="value">${escapeHtml(formatFeeCategory(fee.fee_category))}</span>
+              </div>
+              <div class="field">
+                <span class="label">Date Paid</span>
+                <span class="value">${escapeHtml(formatDate(fee.payment_date))}</span>
+              </div>
+              <div class="field">
+                <span class="label">Payment Method</span>
+                <span class="value">${escapeHtml(fee.payment_method || "Not set")}</span>
+              </div>
+              <div class="field">
+                <span class="label">Print Date</span>
+                <span class="value">${escapeHtml(formatDate(new Date()))}</span>
+              </div>
+            </section>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>S/N</th>
+                  <th>Fee Item</th>
+                  <th>Expected Amount</th>
+                </tr>
+              </thead>
+              <tbody>${feeItemRows}</tbody>
+            </table>
+
+            <section class="totals">
+              <div class="total">
+                <span class="label">Expected Total</span>
+                <strong>${escapeHtml(formatCurrency(expectedAmount))}</strong>
+              </div>
+              <div class="total highlight">
+                <span class="label">Amount Paid On This Receipt</span>
+                <strong>${escapeHtml(formatCurrency(fee.amount))}</strong>
+              </div>
+              <div class="total">
+                <span class="label">Total Paid For Term</span>
+                <strong>${escapeHtml(formatCurrency(totalPaid))}</strong>
+              </div>
+              <div class="total">
+                <span class="label">Current Balance</span>
+                <strong>${escapeHtml(formatCurrency(currentBalance))}</strong>
+              </div>
+            </section>
+
+            ${noteMarkup}
+
+            <section class="signatures">
+              <div class="signature">Received By</div>
+              <div class="signature">Parent / Guardian</div>
+            </section>
+
+            <p class="footer">
+              This receipt confirms the amount paid on this payment record.
+              Please keep it for future reference.
+            </p>
+          </main>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
   };
 
   return (
@@ -1096,6 +1502,17 @@ function FeeManagement() {
                 <option value="Second Term">Second Term</option>
                 <option value="Third Term">Third Term</option>
               </select>
+              <select
+                className={inputClass}
+                name="fee_category"
+                value={structureForm.fee_category}
+                onChange={handleStructureChange}
+                disabled={Boolean(editingStructureId)}
+                required
+              >
+                <option value="new">Newly Admitted Student</option>
+                <option value="returning">Returning/Old Student</option>
+              </select>
               {selectedStructureClass && structureForm.term && (
                 <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
                   <p className="text-sm font-bold uppercase text-primary/60">
@@ -1122,25 +1539,12 @@ function FeeManagement() {
               )}
               {[
                 {
-                  key: "new_items",
-                  title: "Newly Admitted Student Items",
-                  total: getStructureTotal(structureForm.new_items),
-                  items: structureForm.new_items,
-                  hidden:
-                    editingStructureId &&
-                    structureForm.editing_fee_category !== "new",
-                },
-                {
-                  key: "returning_items",
-                  title: "Returning/Old Student Items",
-                  total: getStructureTotal(structureForm.returning_items),
-                  items: structureForm.returning_items,
-                  hidden:
-                    editingStructureId &&
-                    structureForm.editing_fee_category !== "returning",
+                  key: selectedStructureItemsKey,
+                  title: `${formatFeeCategory(selectedStructureCategory)} Student Items`,
+                  total: selectedStructureTotal,
+                  items: selectedStructureItems,
                 },
               ]
-                .filter((category) => !category.hidden)
                 .map((category) => (
                   <div
                     key={category.key}
@@ -1217,11 +1621,14 @@ function FeeManagement() {
                 ))}
               <button
                 type="submit"
-                className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                disabled={!editingStructureId && Boolean(selectedExistingStructure)}
+                className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {editingStructureId
                   ? "Save Structure"
-                  : "Create Both Structures"}
+                  : selectedExistingStructure
+                    ? `${formatFeeCategory(selectedStructureCategory)} Structure Exists`
+                    : `Create ${formatFeeCategory(selectedStructureCategory)} Structure`}
                 <FaArrowRight />
               </button>
               {editingStructureId && (
@@ -1257,53 +1664,72 @@ function FeeManagement() {
                   <th className="px-5 py-4 font-bold">Term</th>
                   <th className="px-5 py-4 font-bold">Fee Category</th>
                   <th className="px-5 py-4 font-bold">Expected Fee</th>
+                  <th className="px-5 py-4 font-bold">Recorded Fees</th>
                   <th className="px-5 py-4 font-bold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary/10">
                 {feeStructures.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="6">
+                    <td className="px-5 py-6 text-primary/70" colSpan="7">
                       No payment structure has been created yet.
                     </td>
                   </tr>
                 ) : (
-                  feeStructures.map((feeStructure) => (
-                    <tr key={feeStructure._id} className="text-primary/80">
-                      <td className="px-5 py-4 font-bold text-primary">
-                        {feeStructure.class_record?.name?.toUpperCase() ||
-                          "Deleted class"}
-                      </td>
-                      <td className="px-5 py-4">{feeStructure.session}</td>
-                      <td className="px-5 py-4">{feeStructure.term}</td>
-                      <td className="px-5 py-4">
-                        {formatFeeCategory(feeStructure.fee_category)}
-                      </td>
-                      <td className="px-5 py-4 font-bold text-primary">
-                        {formatCurrency(feeStructure.amount)}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleEditStructure(feeStructure)}
-                            className="rounded-xl bg-button px-4 py-2 text-sm font-bold text-secondary"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setStructureDeleteTarget(feeStructure)
-                            }
-                            className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-200"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  feeStructures.map((feeStructure) => {
+                    const recordedFeeCount = getFeeStructurePaymentCount(
+                      feeStructure,
+                      fees
+                    );
+
+                    return (
+                      <tr key={feeStructure._id} className="text-primary/80">
+                        <td className="px-5 py-4 font-bold text-primary">
+                          {feeStructure.class_record?.name?.toUpperCase() ||
+                            "Deleted class"}
+                        </td>
+                        <td className="px-5 py-4">{feeStructure.session}</td>
+                        <td className="px-5 py-4">{feeStructure.term}</td>
+                        <td className="px-5 py-4">
+                          {formatFeeCategory(feeStructure.fee_category)}
+                        </td>
+                        <td className="px-5 py-4 font-bold text-primary">
+                          {formatCurrency(feeStructure.amount)}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-bold text-primary">
+                            {recordedFeeCount}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleEditStructure(feeStructure)}
+                              className="rounded-xl bg-button px-4 py-2 text-sm font-bold text-secondary"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setStructureDeleteTarget(feeStructure)
+                              }
+                              disabled={recordedFeeCount > 0}
+                              title={
+                                recordedFeeCount > 0
+                                  ? "Cannot delete a structure with recorded fee payments"
+                                  : "Delete payment structure"
+                              }
+                              className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -1415,6 +1841,11 @@ function FeeManagement() {
               name="amount"
               type="number"
               min="0"
+              max={
+                selectedFormStructure
+                  ? selectedStudentRemainingBeforePayment
+                  : undefined
+              }
               value={feeForm.amount}
               onChange={handleChange}
               placeholder="Amount paid"
@@ -1447,8 +1878,8 @@ function FeeManagement() {
               className={inputClass}
               name="receipt_no"
               value={feeForm.receipt_no}
-              onChange={handleChange}
-              placeholder="Receipt number"
+              placeholder="Receipt number is generated after saving"
+              readOnly
             />
 
             <textarea
@@ -1505,13 +1936,21 @@ function FeeManagement() {
                   </div>
                 )}
 
-                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-4">
                   <div>
                     <p className="text-sm font-semibold text-primary/60">
                       Expected
                     </p>
                     <p className="mt-1 text-2xl font-extrabold text-primary">
                       {formatCurrency(selectedFormStructure.amount)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-primary/60">
+                      Outstanding Before This Record
+                    </p>
+                    <p className="mt-1 text-2xl font-extrabold text-primary">
+                      {formatCurrency(selectedStudentRemainingBeforePayment)}
                     </p>
                   </div>
                   <div>
@@ -1531,6 +1970,12 @@ function FeeManagement() {
                     </p>
                   </div>
                 </div>
+                {selectedStudentOverpayment > 0 && (
+                  <p className="mt-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm font-bold text-red-700">
+                    This amount is {formatCurrency(selectedStudentOverpayment)} above
+                    the outstanding balance. Enter {formatCurrency(selectedStudentRemainingBeforePayment)} or less.
+                  </p>
+                )}
               </>
             ) : (
               <p className="mt-3 text-sm font-semibold text-primary/60">
@@ -1884,10 +2329,18 @@ function FeeManagement() {
                         {fee.payment_method || "Not set"}
                       </td>
                       <td className="px-5 py-4">
-                        {fee.receipt_no || "Not set"}
+                        {getFeeReceiptNumber(fee)}
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handlePrintPaymentReceipt(fee)}
+                            className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm font-bold text-primary"
+                          >
+                            <FaPrint />
+                            Receipt
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleEdit(fee)}

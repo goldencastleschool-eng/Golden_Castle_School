@@ -33,12 +33,14 @@ import StudentLogin from "./Pages/auth/StudentLogin.jsx";
 // DASHBOARD PAGES
 import StudentDashboard from "./Pages/student/StudentDashboard.jsx";
 import StudentLayout from "./Pages/student/StudentLayout.jsx";
+import StudentFees from "./Pages/student/StudentFees.jsx";
 import StudentResult from "./Pages/student/StudentResult.jsx";
 import StudentCumulativeResult from "./Pages/student/StudentCumulativeResult.jsx";
 import StudentSettings from "./Pages/student/StudentSettings.jsx";
 import TeacherLayout from "./Pages/teacher/TeacherLayout.jsx";
 import TeacherBroadsheets from "./Pages/teacher/TeacherBroadsheets.jsx";
 import TeacherClassResults from "./Pages/teacher/TeacherClassResults.jsx";
+import TeacherClassList from "./Pages/teacher/TeacherClassList.jsx";
 import TeacherSettings from "./Pages/teacher/TeacherSettings.jsx";
 import AdminDashboard from "./Pages/admin/AdminDashboard.jsx";
 import AdminLayout from "./Pages/admin/AdminLayout.jsx";
@@ -169,6 +171,10 @@ const router = createBrowserRouter([
             element: <StudentCumulativeResult />,
           },
           {
+            path: "fees",
+            element: <StudentFees />,
+          },
+          {
             path: "settings",
             element: <StudentSettings />,
           },
@@ -191,6 +197,10 @@ const router = createBrowserRouter([
           {
             path: "class-results",
             element: <TeacherClassResults />,
+          },
+          {
+            path: "class-list",
+            element: <TeacherClassList />,
           },
           {
             path: "settings",

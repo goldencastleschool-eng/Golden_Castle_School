@@ -4,6 +4,16 @@ import { FaArrowRight, FaLayerGroup } from "react-icons/fa6";
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import {
+  CLASS_SECTION_OPTIONS,
+  formatClassSection,
+  getClassSection,
+  inferClassSection,
+} from "../../utils/classSections.js";
+import {
+  getPrintBrandHeader,
+  getPrintBrandStyles,
+} from "../../utils/printBranding.js";
 
 const DEFAULT_SESSION_FILTER = "2025/2026";
 
@@ -22,6 +32,8 @@ const escapeHtml = (value = "") =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 
+const UNSECTIONED_CLASS_GROUP = "unsectioned";
+
 function ClassManagement() {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -33,6 +45,7 @@ function ClassManagement() {
   const [studentNameSort, setStudentNameSort] = useState("az");
   const [className, setClassName] = useState("");
   const [classSession, setClassSession] = useState(DEFAULT_SESSION_FILTER);
+  const [classSection, setClassSection] = useState("");
   const [editingClassId, setEditingClassId] = useState("");
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [status, setStatus] = useState({ type: "", message: "" });
@@ -76,6 +89,31 @@ function ClassManagement() {
   const filteredClasses = useMemo(() => {
     return classes.filter((classRecord) => classRecord.session === sessionFilter);
   }, [classes, sessionFilter]);
+
+  const groupedClassRecords = useMemo(() => {
+    const sectionGroups = [
+      ...CLASS_SECTION_OPTIONS.map((sectionOption) => ({
+        ...sectionOption,
+        classes: [],
+      })),
+      {
+        value: UNSECTIONED_CLASS_GROUP,
+        label: "Unsectioned",
+        classes: [],
+      },
+    ];
+
+    filteredClasses.forEach((classRecord) => {
+      const section = getClassSection(classRecord) || UNSECTIONED_CLASS_GROUP;
+      const sectionGroup =
+        sectionGroups.find((group) => group.value === section) ||
+        sectionGroups[sectionGroups.length - 1];
+
+      sectionGroup.classes.push(classRecord);
+    });
+
+    return sectionGroups.filter((sectionGroup) => sectionGroup.classes.length > 0);
+  }, [filteredClasses]);
 
   const studentViewClasses = useMemo(() => {
     return classes.filter(
@@ -135,26 +173,40 @@ function ClassManagement() {
     setStudentViewClassId("");
   };
 
+  const handleClassNameChange = (event) => {
+    const nextClassName = event.target.value;
+
+    setClassName(nextClassName);
+
+    if (!classSection) {
+      setClassSection(inferClassSection(nextClassName));
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     try {
       const submittedSession = classSession;
+      const submittedSection = classSection || inferClassSection(className);
 
       if (editingClassId) {
         await API.put(`/classes/${editingClassId}`, {
           name: className,
           session: classSession,
+          section: submittedSection,
         });
       } else {
         await API.post("/classes", {
           name: className,
           session: classSession,
+          section: submittedSection,
         });
       }
 
       setClassName("");
       setClassSession(submittedSession);
+      setClassSection("");
       setSessionFilter(submittedSession);
       setEditingClassId("");
       setStatus({
@@ -179,6 +231,7 @@ function ClassManagement() {
     setEditingClassId(classRecord._id);
     setClassName(classRecord.name);
     setClassSession(classRecord.session || "");
+    setClassSection(getClassSection(classRecord));
   };
 
   const handleDeleteClassRequest = (classRecord) => {
@@ -221,7 +274,16 @@ function ClassManagement() {
     setEditingClassId("");
     setClassName("");
     setClassSession(sessionFilter);
+    setClassSection("");
   };
+
+  const getClassStudentCount = (classRecord) =>
+    students.filter(
+      (student) =>
+        isActiveStudent(student) &&
+        normalizeClassName(student.class) === normalizeClassName(classRecord.name) &&
+        student.current_session === classRecord.session
+    ).length;
 
   const buildClassStudentRows = () =>
     sortedClassStudents.map((student, index) => ({
@@ -319,6 +381,7 @@ function ClassManagement() {
         <head>
           <title>${escapeHtml(selectedClassRecord.name.toUpperCase())} Class Students</title>
           <style>
+            ${getPrintBrandStyles()}
             body { font-family: Arial, sans-serif; color: #111; padding: 24px; }
             h1 { margin: 0 0 6px; font-size: 24px; }
             p { margin: 0 0 18px; color: #555; }
@@ -328,6 +391,10 @@ function ClassManagement() {
           </style>
         </head>
         <body>
+          ${getPrintBrandHeader({
+            title: "Class Students",
+            subtitle: `${selectedClassRecord.name.toUpperCase()} - ${selectedClassRecord.session}`,
+          })}
           <h1>${escapeHtml(selectedClassRecord.name.toUpperCase())} Students</h1>
           <p>Session: ${escapeHtml(selectedClassRecord.session)} | Total: ${sortedClassStudents.length}</p>
           <table>
@@ -397,7 +464,7 @@ function ClassManagement() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <input
               value={className}
-              onChange={(event) => setClassName(event.target.value)}
+              onChange={handleClassNameChange}
               placeholder="Class name e.g. basic-1"
               required
               className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
@@ -409,6 +476,19 @@ function ClassManagement() {
               required
               className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
             />
+            <select
+              value={classSection}
+              onChange={(event) => setClassSection(event.target.value)}
+              required
+              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+            >
+              <option value="">Class section</option>
+              {CLASS_SECTION_OPTIONS.map((sectionOption) => (
+                <option key={sectionOption.value} value={sectionOption.value}>
+                  {sectionOption.label}
+                </option>
+              ))}
+            </select>
             <button
               type="submit"
               className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"
@@ -476,48 +556,80 @@ function ClassManagement() {
             No class has been created for {sessionFilter} yet.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {filteredClasses.map((classRecord) => (
-            <div
-              key={classRecord._id}
-              className="rounded-2xl border border-primary/10 bg-primary/5 p-5 text-left text-primary transition-all duration-300 hover:border-button"
-            >
-              <p className="text-xl font-extrabold uppercase">
-                {classRecord.name}
-              </p>
-              <p className="mt-1 text-sm font-semibold opacity-75">
-                {classRecord.session}
-              </p>
-              <p className="mt-2 text-sm opacity-75">
-                {
-                  students.filter(
-                    (student) =>
-                      isActiveStudent(student) &&
-                      normalizeClassName(student.class) ===
-                        normalizeClassName(classRecord.name) &&
-                      student.current_session === classRecord.session
-                  ).length
-                }{" "}
-                students
-              </p>
+          <div className="space-y-5">
+            {groupedClassRecords.map((sectionGroup) => (
+              <div
+                key={sectionGroup.value}
+                className="overflow-hidden rounded-2xl border border-primary/10"
+              >
+                <div className="flex flex-col gap-2 bg-primary/10 px-5 py-4 text-primary md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h4 className="text-xl font-extrabold">
+                      {sectionGroup.label}
+                    </h4>
+                    <p className="text-sm font-semibold text-primary/60">
+                      {sectionGroup.classes.length} class
+                      {sectionGroup.classes.length === 1 ? "" : "es"}
+                    </p>
+                  </div>
+                  <span className="w-fit rounded-full bg-secondary px-4 py-2 text-sm font-bold text-primary">
+                    {sessionFilter}
+                  </span>
+                </div>
 
-              <div className="mt-4 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleEditClass(classRecord)}
-                  className="rounded-xl bg-primary/20 px-4 py-2 text-sm font-bold"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteClassRequest(classRecord)}
-                  className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-100"
-                >
-                  Delete
-                </button>
+                <div className="divide-y divide-primary/10">
+                  {sectionGroup.classes.map((classRecord) => (
+                    <div
+                      key={classRecord._id}
+                      className="grid grid-cols-1 gap-4 bg-primary/5 px-5 py-4 text-primary transition duration-300 hover:bg-primary/10 lg:grid-cols-[1.2fr_1fr_1fr_auto]"
+                    >
+                      <div>
+                        <p className="text-lg font-extrabold uppercase">
+                          {classRecord.name}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-primary/55">
+                          {formatClassSection(getClassSection(classRecord))}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-bold uppercase text-primary/45">
+                          Session
+                        </p>
+                        <p className="mt-1 font-semibold">
+                          {classRecord.session}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-bold uppercase text-primary/45">
+                          Students
+                        </p>
+                        <p className="mt-1 font-semibold">
+                          {getClassStudentCount(classRecord)}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 lg:justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleEditClass(classRecord)}
+                          className="rounded-xl bg-primary/20 px-4 py-2 text-sm font-bold"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteClassRequest(classRecord)}
+                          className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-100"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
             ))}
           </div>
         )}

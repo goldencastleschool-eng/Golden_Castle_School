@@ -4,6 +4,7 @@ import { FaArrowRight, FaClipboardCheck } from "react-icons/fa6";
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import { isFormTeacher } from "../../utils/teacherAssignments.js";
 
 const initialResultForm = {
   studentId: "",
@@ -239,6 +240,7 @@ function UploadResult() {
 
       return (
         teacher.status !== "inactive" &&
+        isFormTeacher(teacher) &&
         teacher.session === broadsheetForm.session &&
         teacherClassId === broadsheetForm.class_record
       );
@@ -262,6 +264,7 @@ function UploadResult() {
 
       return (
         teacher.status !== "inactive" &&
+        isFormTeacher(teacher) &&
         teacher.session === classResultForm.session &&
         teacherClassId === classResultForm.class_record
       );
