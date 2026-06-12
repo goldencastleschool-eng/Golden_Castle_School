@@ -467,10 +467,15 @@ function FeeManagement() {
     }
 
     try {
+      const wasEditingStructure = Boolean(editingStructureId);
+      let savedStructure = null;
+
       if (editingStructureId) {
-        await API.put(`/fee-structures/${editingStructureId}`, payload);
+        const response = await API.put(`/fee-structures/${editingStructureId}`, payload);
+        savedStructure = response.data;
       } else {
-        await API.post("/fee-structures", payload);
+        const response = await API.post("/fee-structures", payload);
+        savedStructure = response.data;
       }
 
       setStructureForm({
@@ -485,7 +490,28 @@ function FeeManagement() {
           ? "Payment structure updated successfully."
           : "Payment structure saved successfully.",
       });
-      await fetchFeeData();
+      if (savedStructure?._id) {
+        setFeeStructures((currentStructures) => {
+          const existingStructure = currentStructures.some(
+            (feeStructure) => feeStructure._id === savedStructure._id
+          );
+
+          if (existingStructure) {
+            return currentStructures.map((feeStructure) =>
+              feeStructure._id === savedStructure._id
+                ? savedStructure
+                : feeStructure
+            );
+          }
+
+          return [savedStructure, ...currentStructures];
+        });
+      }
+
+      if (wasEditingStructure) {
+        const feesResponse = await API.get("/fees");
+        setFees(feesResponse.data || []);
+      }
     } catch (error) {
       setStatus({
         type: "error",
@@ -580,10 +606,14 @@ function FeeManagement() {
     };
 
     try {
+      let savedFee = null;
+
       if (editingFeeId) {
-        await API.put(`/fees/${editingFeeId}`, payload);
+        const response = await API.put(`/fees/${editingFeeId}`, payload);
+        savedFee = response.data;
       } else {
-        await API.post("/fees", payload);
+        const response = await API.post("/fees", payload);
+        savedFee = response.data;
       }
 
       setFeeForm({
@@ -597,7 +627,19 @@ function FeeManagement() {
           ? "Fee payment updated successfully."
           : "Fee payment recorded successfully.",
       });
-      await fetchFeeData();
+      if (savedFee?._id) {
+        setFees((currentFees) => {
+          const existingFee = currentFees.some((fee) => fee._id === savedFee._id);
+
+          if (existingFee) {
+            return currentFees.map((fee) =>
+              fee._id === savedFee._id ? savedFee : fee
+            );
+          }
+
+          return [savedFee, ...currentFees];
+        });
+      }
     } catch (error) {
       setStatus({
         type: "error",
@@ -671,7 +713,9 @@ function FeeManagement() {
         type: "success",
         message: "Fee payment deleted successfully.",
       });
-      await fetchFeeData();
+      setFees((currentFees) =>
+        currentFees.filter((fee) => fee._id !== deleteTarget._id)
+      );
     } catch (error) {
       setStatus({
         type: "error",
@@ -699,7 +743,11 @@ function FeeManagement() {
         type: "success",
         message: "Payment structure deleted successfully.",
       });
-      await fetchFeeData();
+      setFeeStructures((currentStructures) =>
+        currentStructures.filter(
+          (feeStructure) => feeStructure._id !== structureDeleteTarget._id
+        )
+      );
     } catch (error) {
       setStatus({
         type: "error",

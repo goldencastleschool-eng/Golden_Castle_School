@@ -225,10 +225,14 @@ function TeacherManagement() {
         delete payload.password;
       }
 
+      let savedTeacher = null;
+
       if (editingTeacherId) {
-        await API.put(`/teachers/${editingTeacherId}`, payload);
+        const response = await API.put(`/teachers/${editingTeacherId}`, payload);
+        savedTeacher = response.data;
       } else {
-        await API.post("/teachers", payload);
+        const response = await API.post("/teachers", payload);
+        savedTeacher = response.data;
       }
 
       setTeacherForm(initialTeacherForm);
@@ -240,7 +244,21 @@ function TeacherManagement() {
           ? "Form teacher updated successfully."
           : "Form teacher registered successfully.",
       });
-      await fetchTeacherData();
+      if (savedTeacher?._id) {
+        setTeachers((currentTeachers) => {
+          const existingTeacher = currentTeachers.some(
+            (teacher) => teacher._id === savedTeacher._id
+          );
+
+          if (existingTeacher) {
+            return currentTeachers.map((teacher) =>
+              teacher._id === savedTeacher._id ? savedTeacher : teacher
+            );
+          }
+
+          return [savedTeacher, ...currentTeachers];
+        });
+      }
     } catch (error) {
       setStatus({
         type: "error",
@@ -421,16 +439,25 @@ function TeacherManagement() {
     setDeactivating(true);
 
     try {
-      await API.put(`/teachers/${deactivateTarget._id}/deactivate`, {
+      const response = await API.put(`/teachers/${deactivateTarget._id}/deactivate`, {
         reason: "Form teacher no longer assigned to this class",
       });
+      const deactivatedTeacher = response.data?.teacher;
       setStatus({
         type: "success",
         message:
           "Form teacher deactivated successfully. Previous records remain linked.",
       });
       setDeactivateTarget(null);
-      await fetchTeacherData();
+      if (deactivatedTeacher?._id) {
+        setTeachers((currentTeachers) =>
+          currentTeachers.map((teacher) =>
+            teacher._id === deactivatedTeacher._id
+              ? deactivatedTeacher
+              : teacher
+          )
+        );
+      }
     } catch (error) {
       setStatus({
         type: "error",

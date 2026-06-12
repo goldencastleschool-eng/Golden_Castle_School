@@ -120,6 +120,8 @@ function StudentManagement() {
     setStatus({ type: "", message: "" });
 
     try {
+      let savedStudent = null;
+
       if (editingStudentId) {
         const payload = { ...studentForm };
 
@@ -127,9 +129,11 @@ function StudentManagement() {
           delete payload.password;
         }
 
-        await API.put(`/students/${editingStudentId}`, payload);
+        const response = await API.put(`/students/${editingStudentId}`, payload);
+        savedStudent = response.data;
       } else {
-        await API.post("/students", studentForm);
+        const response = await API.post("/students", studentForm);
+        savedStudent = response.data;
       }
 
       setStudentForm(initialStudentForm);
@@ -140,7 +144,21 @@ function StudentManagement() {
           ? "Student updated successfully."
           : "Student account created successfully.",
       });
-      await fetchStudents();
+      if (savedStudent?._id) {
+        setStudents((currentStudents) => {
+          const existingStudent = currentStudents.some(
+            (student) => student._id === savedStudent._id
+          );
+
+          if (existingStudent) {
+            return currentStudents.map((student) =>
+              student._id === savedStudent._id ? savedStudent : student
+            );
+          }
+
+          return [savedStudent, ...currentStudents];
+        });
+      }
     } catch (error) {
       setStatus({
         type: "error",
@@ -204,7 +222,9 @@ function StudentManagement() {
         message: "Student deleted successfully.",
       });
       setDeleteTarget(null);
-      await fetchStudents();
+      setStudents((currentStudents) =>
+        currentStudents.filter((student) => student._id !== deleteTarget._id)
+      );
     } catch (error) {
       setStatus({
         type: "error",

@@ -34,6 +34,19 @@ const escapeHtml = (value = "") =>
 
 const UNSECTIONED_CLASS_GROUP = "unsectioned";
 
+const sortClassRecords = (classRecords = []) =>
+  [...classRecords].sort((firstClass, secondClass) => {
+    const sessionCompare = (secondClass.session || "").localeCompare(
+      firstClass.session || ""
+    );
+
+    if (sessionCompare !== 0) {
+      return sessionCompare;
+    }
+
+    return (firstClass.name || "").localeCompare(secondClass.name || "");
+  });
+
 function ClassManagement() {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -189,19 +202,25 @@ function ClassManagement() {
     try {
       const submittedSession = classSession;
       const submittedSection = classSection || inferClassSection(className);
+      const previousClassRecord = classes.find(
+        (classRecord) => classRecord._id === editingClassId
+      );
+      let savedClassRecord = null;
 
       if (editingClassId) {
-        await API.put(`/classes/${editingClassId}`, {
+        const response = await API.put(`/classes/${editingClassId}`, {
           name: className,
           session: classSession,
           section: submittedSection,
         });
+        savedClassRecord = response.data;
       } else {
-        await API.post("/classes", {
+        const response = await API.post("/classes", {
           name: className,
           session: classSession,
           section: submittedSection,
         });
+        savedClassRecord = response.data;
       }
 
       setClassName("");
@@ -215,7 +234,60 @@ function ClassManagement() {
           ? "Class updated successfully."
           : "Class created successfully.",
       });
-      await fetchClassData();
+
+      if (savedClassRecord?._id) {
+        setClasses((currentClasses) => {
+          const existingClassRecord = currentClasses.some(
+            (classRecord) => classRecord._id === savedClassRecord._id
+          );
+
+          if (existingClassRecord) {
+            return sortClassRecords(
+              currentClasses.map((classRecord) =>
+                classRecord._id === savedClassRecord._id
+                  ? savedClassRecord
+                  : classRecord
+              )
+            );
+          }
+
+          return sortClassRecords([savedClassRecord, ...currentClasses]);
+        });
+
+        if (previousClassRecord) {
+          setStudents((currentStudents) =>
+            currentStudents.map((student) => {
+              const studentClassRecordId =
+                student.class_record?._id || student.class_record || "";
+              const matchesClassRecord =
+                studentClassRecordId.toString() === savedClassRecord._id;
+              const matchesLegacyClass =
+                normalizeClassName(student.class) ===
+                  normalizeClassName(previousClassRecord.name) &&
+                student.current_session === previousClassRecord.session;
+
+              if (!matchesClassRecord && !matchesLegacyClass) {
+                return student;
+              }
+
+              return {
+                ...student,
+                class: savedClassRecord.name,
+                current_session: savedClassRecord.session,
+                class_record:
+                  student.class_record && typeof student.class_record === "object"
+                    ? {
+                        ...student.class_record,
+                        name: savedClassRecord.name,
+                        session: savedClassRecord.session,
+                        section: savedClassRecord.section,
+                      }
+                    : savedClassRecord._id,
+              };
+            })
+          );
+        }
+      }
     } catch (error) {
       setStatus({
         type: "error",
@@ -256,7 +328,9 @@ function ClassManagement() {
       }
 
       setDeleteTarget(null);
-      await fetchClassData();
+      setClasses((currentClasses) =>
+        currentClasses.filter((classRecord) => classRecord._id !== deleteTarget._id)
+      );
     } catch (error) {
       setStatus({
         type: "error",
