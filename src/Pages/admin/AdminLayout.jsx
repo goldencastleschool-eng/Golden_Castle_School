@@ -13,6 +13,7 @@ import {
   FaChartLine,
   FaClipboardCheck,
   FaChalkboardUser,
+  FaEye,
   FaLayerGroup,
   FaReceipt,
   FaRightFromBracket,
@@ -69,6 +70,11 @@ const adminLinks = [
     label: "Results",
     path: "/admin/results",
     icon: <FaClipboardCheck />,
+  },
+  {
+    label: "Portal Status",
+    path: "/admin/portal-status",
+    icon: <FaEye />,
   },
 ];
 

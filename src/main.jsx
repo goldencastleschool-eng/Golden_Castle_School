@@ -50,6 +50,7 @@ import StudentManagement from "./Pages/admin/StudentManagement.jsx";
 import TeacherManagement from "./Pages/admin/TeacherManagement.jsx";
 import UploadResult from "./Pages/admin/UploadResult.jsx";
 import FeeManagement from "./Pages/admin/FeeManagement.jsx";
+import PortalVisibility from "./Pages/admin/PortalVisibility.jsx";
 
 // ROUTE PROTECTION
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
@@ -245,6 +246,10 @@ const router = createBrowserRouter([
           {
             path: "results",
             element: <UploadResult />,
+          },
+          {
+            path: "portal-status",
+            element: <PortalVisibility />,
           },
         ],
       },
