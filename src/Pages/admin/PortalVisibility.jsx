@@ -238,6 +238,81 @@ function PortalVisibility() {
                         ))}
                       </div>
 
+                      {(check.class_summary || []).length > 0 && (
+                        <div className="mt-5">
+                          <p className="text-sm font-bold uppercase text-primary/60">
+                            Class Summary
+                          </p>
+                          <div className="portal-sidebar-scroll mt-3 max-h-80 overflow-y-auto rounded-2xl border border-primary/10">
+                            {(check.class_summary || []).map((classRow) => (
+                              <div
+                                key={classRow.id}
+                                className="border-b border-primary/10 p-4 last:border-b-0"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div>
+                                    <p className="font-extrabold text-primary">
+                                      {classRow.class_name}
+                                    </p>
+                                    <p className="mt-1 text-xs font-semibold text-primary/55">
+                                      {[classRow.session, classRow.term]
+                                        .filter(Boolean)
+                                        .join(" | ") || "No active window"}
+                                    </p>
+                                    {classRow.detail && (
+                                      <p className="mt-2 text-xs text-primary/60">
+                                        {classRow.detail}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <span
+                                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+                                      statusStyles[classRow.status] ||
+                                      "bg-primary/10 text-primary"
+                                    }`}
+                                  >
+                                    {classRow.status_label}
+                                  </span>
+                                </div>
+
+                                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                                  <div className="rounded-xl bg-primary/5 px-2 py-3">
+                                    <p className="font-semibold text-primary/55">
+                                      {classRow.expected_label}
+                                    </p>
+                                    <p className="mt-1 text-base font-extrabold text-primary">
+                                      {formatMetricValue(
+                                        classRow.expected_count
+                                      )}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-xl bg-primary/5 px-2 py-3">
+                                    <p className="font-semibold text-primary/55">
+                                      {classRow.visible_label}
+                                    </p>
+                                    <p className="mt-1 text-base font-extrabold text-primary">
+                                      {formatMetricValue(
+                                        classRow.visible_count
+                                      )}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-xl bg-primary/5 px-2 py-3">
+                                    <p className="font-semibold text-primary/55">
+                                      {classRow.missing_label}
+                                    </p>
+                                    <p className="mt-1 text-base font-extrabold text-primary">
+                                      {formatMetricValue(
+                                        classRow.missing_count
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {(check.samples || []).length > 0 && (
                         <div className="mt-5 space-y-4">
                           {check.samples.map((sample) => (
