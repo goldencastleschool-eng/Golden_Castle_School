@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL:"https://golden-castle-school-api.onrender.com/api",
+  baseURL:
+    import.meta.env.VITE_API_BASE_URL ||
+    "https://golden-castle-school-api.onrender.com/api",
 });
 
 // Attach JWT to every request
@@ -26,7 +28,9 @@ API.interceptors.response.use(
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
-      const redirectPath = window.location.pathname.startsWith("/admin")
+      const redirectPath = window.location.pathname.startsWith("/reports")
+        ? "/executive-login"
+        : window.location.pathname.startsWith("/admin")
         ? "/secure-admin-login"
         : "/login";
 

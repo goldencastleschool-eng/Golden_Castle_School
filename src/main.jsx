@@ -51,6 +51,7 @@ import TeacherManagement from "./Pages/admin/TeacherManagement.jsx";
 import UploadResult from "./Pages/admin/UploadResult.jsx";
 import FeeManagement from "./Pages/admin/FeeManagement.jsx";
 import PortalVisibility from "./Pages/admin/PortalVisibility.jsx";
+import ExecutiveReportPortal from "./Pages/reports/ExecutiveReportPortal.jsx";
 
 // ROUTE PROTECTION
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
@@ -146,6 +147,10 @@ const router = createBrowserRouter([
         element: <AdminLogin adminOnly />,
   },
   {
+        path: "executive-login",
+        element: <AdminLogin executiveOnly />,
+  },
+  {
         path: "student-login",
         element: <StudentLogin />,
   },
@@ -214,7 +219,7 @@ const router = createBrowserRouter([
       {
         path: "admin",
         element: (
-          <ProtectedRoute role="admin">
+          <ProtectedRoute role="admin" redirectTo="/secure-admin-login">
             <AdminLayout />
           </ProtectedRoute>
         ),
@@ -252,6 +257,17 @@ const router = createBrowserRouter([
             element: <PortalVisibility />,
           },
         ],
+      },
+      {
+        path: "reports",
+        element: (
+          <ProtectedRoute
+            role={["admin", "principal", "chairman"]}
+            redirectTo="/executive-login"
+          >
+            <ExecutiveReportPortal />
+          </ProtectedRoute>
+        ),
       },
 ]);
 

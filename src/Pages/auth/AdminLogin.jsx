@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FaArrowRight,
   FaGraduationCap,
@@ -8,7 +8,7 @@ import {
   FaUser,
   FaUserShield,
 } from "react-icons/fa6";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import API from "../../api/axios.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -35,13 +35,35 @@ const adminRoleOption = {
   icon: <FaUserShield />,
 };
 
-const getLoginErrorMessage = (requestError) => {
+const executiveRoleOption = {
+  label: "Principal/Chairman",
+  value: "executive",
+  icon: <FaUserShield />,
+};
+
+const reportRoles = ["principal", "chairman"];
+
+const getLoginErrorMessage = (requestError, loginRole) => {
   const responseData = requestError.response?.data;
 
   if (typeof responseData === "string") {
-    return requestError.response?.status === 404
-      ? "Teacher login is not available on the backend yet. Please deploy the latest backend."
-      : "Login failed. Please try again.";
+    if (requestError.response?.status === 404) {
+      if (loginRole === "executive") {
+        return "Executive reports login is not available on the backend yet. Please deploy the latest backend.";
+      }
+
+      if (loginRole === "teacher") {
+        return "Teacher login is not available on the backend yet. Please deploy the latest backend.";
+      }
+
+      if (loginRole === "admin") {
+        return "Admin login is not available on the backend yet. Please deploy the latest backend.";
+      }
+
+      return "This login is not available on the backend yet. Please deploy the latest backend.";
+    }
+
+    return "Login failed. Please try again.";
   }
 
   return (
@@ -51,10 +73,12 @@ const getLoginErrorMessage = (requestError) => {
   );
 };
 
-function Login({ adminOnly = false }) {
+function Login({ adminOnly = false, executiveOnly = false }) {
   const navigate = useNavigate();
   const { setUser } = useAuth();
-  const [role, setRole] = useState(adminOnly ? "admin" : "student");
+  const [role, setRole] = useState(() =>
+    executiveOnly ? "executive" : adminOnly ? "admin" : "student"
+  );
   const [formData, setFormData] = useState({
     identifier: "",
     password: "",
@@ -64,7 +88,43 @@ function Login({ adminOnly = false }) {
 
   const isStudent = role === "student";
   const isTeacher = role === "teacher";
-  const availableRoleOptions = adminOnly ? [adminRoleOption] : roleOptions;
+  const isExecutive = role === "executive";
+  const availableRoleOptions = executiveOnly
+    ? [executiveRoleOption]
+    : adminOnly
+      ? [adminRoleOption]
+      : roleOptions;
+  const roleLabel = isStudent
+    ? "Student"
+    : isTeacher
+      ? "Teacher"
+      : isExecutive
+        ? "Principal/Chairman"
+        : "Admin";
+  const pageTitle = executiveOnly
+    ? "Executive Reports Login"
+    : adminOnly
+      ? "Secure Admin Login"
+      : "Portal Login";
+  const pageDescription = executiveOnly
+    ? "Principal and chairman accounts sign in here to view read-only school reports."
+    : adminOnly
+      ? "Administrator access is available only through this secure URL."
+      : "Sign in as a student or teacher.";
+  const sideDescription = executiveOnly
+    ? "Sign in through the separate reporting access point for school leadership."
+    : adminOnly
+      ? "Sign in through the secure administrator access point."
+      : "Choose your portal role and sign in securely to continue.";
+
+  useEffect(() => {
+    setRole(executiveOnly ? "executive" : adminOnly ? "admin" : "student");
+    setError("");
+    setFormData({
+      identifier: "",
+      password: "",
+    });
+  }, [adminOnly, executiveOnly]);
 
   const handleRoleChange = (nextRole) => {
     setRole(nextRole);
@@ -93,7 +153,9 @@ function Login({ adminOnly = false }) {
         ? "/auth/student/login"
         : isTeacher
           ? "/auth/teacher/login"
-          : "/auth/admin/login";
+          : isExecutive
+            ? "/auth/executive/login"
+            : "/auth/admin/login";
       const identifier = formData.identifier.trim();
       const payload = isStudent
         ? {
@@ -106,7 +168,7 @@ function Login({ adminOnly = false }) {
           };
 
       const response = await API.post(endpoint, payload);
-      const { student, admin, teacher, token } = response.data;
+      const { student, admin, teacher, executive, token } = response.data;
 
       if (token) {
         localStorage.setItem("token", token);
@@ -121,17 +183,27 @@ function Login({ adminOnly = false }) {
               ...teacher,
               role: "teacher",
             }
-          : admin;
+          : isExecutive
+            ? executive
+            : admin;
 
       localStorage.setItem( "user",JSON.stringify(account));
 
       setUser(account);
-      navigate(isStudent ? "/student" : isTeacher ? "/teacher" : "/admin");
+      navigate(
+        isStudent
+          ? "/student"
+          : isTeacher
+            ? "/teacher"
+            : isExecutive || reportRoles.includes(account?.role)
+              ? "/reports"
+              : "/admin"
+      );
     } catch (requestError) {
       if (!requestError.response) {
         setError("Network error. Please make sure the backend is running.");
       } else {
-        setError(getLoginErrorMessage(requestError));
+        setError(getLoginErrorMessage(requestError, role));
       }
     } finally {
       setLoading(false);
@@ -163,9 +235,7 @@ function Login({ adminOnly = false }) {
             </div>
             <h2 className="mb-4 text-4xl font-extrabold">Welcome Back</h2>
             <p className="max-w-md leading-relaxed text-primary/80">
-              {adminOnly
-                ? "Sign in through the secure administrator access point."
-                : "Choose your portal role and sign in securely to continue."}
+              {sideDescription}
             </p>
           </div>
         </div>
@@ -174,18 +244,16 @@ function Login({ adminOnly = false }) {
           <div className="w-full max-w-md">
             <div className="mb-8">
               <h2 className="text-4xl font-extrabold text-primary sm:text-5xl">
-                {adminOnly ? "Secure Admin Login" : "Portal Login"}
+                {pageTitle}
               </h2>
               <p className="mt-4 text-base leading-relaxed text-primary/70 sm:text-lg">
-                {adminOnly
-                  ? "Administrator access is available only through this secure URL."
-                  : "Sign in as a student or teacher."}
+                {pageDescription}
               </p>
             </div>
 
             <div
               className={`mb-8 grid grid-cols-1 gap-3 rounded-2xl bg-primary/5 p-2 ${
-                adminOnly ? "" : "sm:grid-cols-2"
+                adminOnly || executiveOnly ? "" : "sm:grid-cols-2"
               }`}
             >
               {availableRoleOptions.map((option) => (
@@ -262,16 +330,26 @@ function Login({ adminOnly = false }) {
                 disabled={loading}
                 className="group flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {loading
-                  ? "Signing in..."
-                  : `Login as ${
-                      isStudent ? "Student" : isTeacher ? "Teacher" : "Admin"
-                    }`}
+                {loading ? "Signing in..." : `Login as ${roleLabel}`}
                 {!loading && (
                   <FaArrowRight className="transition duration-300 group-hover:translate-x-1" />
                 )}
               </button>
             </form>
+
+            {(adminOnly || executiveOnly) && (
+              <p className="mt-6 text-center text-sm font-semibold text-primary/70">
+                {adminOnly ? "Principal or chairman?" : "Administrator?"}{" "}
+                <Link
+                  to={adminOnly ? "/executive-login" : "/secure-admin-login"}
+                  className="text-button underline-offset-4 hover:underline"
+                >
+                  {adminOnly
+                    ? "Open executive reports login"
+                    : "Open admin login"}
+                </Link>
+              </p>
+            )}
 
             <div className="my-8 flex items-center gap-4">
               <div className="h-[1px] flex-1 bg-primary/10"></div>

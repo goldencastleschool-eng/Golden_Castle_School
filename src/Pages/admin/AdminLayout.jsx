@@ -11,6 +11,7 @@ import {
   FaAnglesRight,
   FaBars,
   FaChartLine,
+  FaChartPie,
   FaClipboardCheck,
   FaChalkboardUser,
   FaEye,
@@ -65,6 +66,11 @@ const adminLinks = [
     label: "Fees",
     path: "/admin/fees",
     icon: <FaReceipt />,
+  },
+  {
+    label: "Reports",
+    path: "/reports",
+    icon: <FaChartPie />,
   },
   {
     label: "Results",
