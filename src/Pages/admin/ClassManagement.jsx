@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaArrowRight, FaLayerGroup } from "react-icons/fa6";
+import {
+  FaArrowRight,
+  FaLayerGroup,
+  FaSchool,
+  FaUsers,
+} from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import AdminStatCard from "../../components/common/AdminStatCard.jsx";
 import {
   CLASS_SECTION_OPTIONS,
   formatClassSection,
@@ -358,6 +364,10 @@ function ClassManagement() {
         normalizeClassName(student.class) === normalizeClassName(classRecord.name) &&
         student.current_session === classRecord.session
     ).length;
+  const activeSessionStudents = students.filter(
+    (student) =>
+      isActiveStudent(student) && student.current_session === sessionFilter
+  );
 
   const buildClassStudentRows = () =>
     sortedClassStudents.map((student, index) => ({
@@ -522,6 +532,31 @@ function ClassManagement() {
           class.
         </p>
       </div>
+
+      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <AdminStatCard
+          title="All Classes"
+          value={classes.length}
+          icon={<FaLayerGroup />}
+        />
+        <AdminStatCard
+          title={`${sessionFilter} Classes`}
+          value={filteredClasses.length}
+          icon={<FaSchool />}
+          tone="muted"
+        />
+        <AdminStatCard
+          title="Active Students"
+          value={activeSessionStudents.length}
+          icon={<FaUsers />}
+          tone="green"
+        />
+        <AdminStatCard
+          title="Sections"
+          value={groupedClassRecords.length}
+          icon={<FaLayerGroup />}
+        />
+      </section>
 
       <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_360px]">

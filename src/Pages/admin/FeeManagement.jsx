@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   FaArrowRight,
+  FaCircleCheck,
+  FaMoneyBillWave,
   FaPenToSquare,
   FaPrint,
   FaReceipt,
   FaTrashCan,
+  FaUsers,
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import AdminStatCard from "../../components/common/AdminStatCard.jsx";
 import schoolLogo from "../../assets/1723987411228.jpg";
 import { getFeeReceiptNumber } from "../../utils/paymentReceipt.js";
 import {
@@ -1497,6 +1501,38 @@ function FeeManagement() {
           Record student fee payments by session, term, and payment date.
         </p>
       </div>
+
+      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <AdminStatCard
+          title="Expected Fees"
+          value={loading ? "..." : formatCurrency(dashboardTotalExpected)}
+          icon={<FaReceipt />}
+        />
+        <AdminStatCard
+          title="Amount Paid"
+          value={loading ? "..." : formatCurrency(dashboardTotalPaid)}
+          icon={<FaMoneyBillWave />}
+          tone="green"
+        />
+        <AdminStatCard
+          title="Outstanding"
+          value={loading ? "..." : formatCurrency(dashboardTotalBalance)}
+          icon={<FaMoneyBillWave />}
+          tone="red"
+        />
+        <AdminStatCard
+          title="Fully Paid"
+          value={loading ? "..." : fullyPaidCount}
+          icon={<FaCircleCheck />}
+          tone="muted"
+        />
+        <AdminStatCard
+          title="Debtors"
+          value={loading ? "..." : debtorCount}
+          icon={<FaUsers />}
+          tone="red"
+        />
+      </section>
 
       <div className="grid grid-cols-1 gap-8">
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">

@@ -4,12 +4,16 @@ import {
   FaChalkboardUser,
   FaCircleCheck,
   FaCircleExclamation,
+  FaLayerGroup,
   FaPrint,
+  FaUserCheck,
+  FaUsers,
   FaXmark,
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
+import AdminStatCard from "../../components/common/AdminStatCard.jsx";
 import {
   formatClassSection,
   getClassSection,
@@ -163,6 +167,12 @@ function TeacherManagement() {
   const formTeachers = useMemo(
     () => teachers.filter((teacher) => isFormTeacher(teacher)),
     [teachers]
+  );
+  const activeFormTeachers = formTeachers.filter(
+    (teacher) => teacher.status !== "inactive"
+  );
+  const inactiveFormTeachers = formTeachers.filter(
+    (teacher) => teacher.status === "inactive"
   );
 
   const handleChange = (event) => {
@@ -506,6 +516,32 @@ function TeacherManagement() {
           Register form teachers and assign them to class records by session.
         </p>
       </div>
+
+      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <AdminStatCard
+          title="Form Teachers"
+          value={formTeachers.length}
+          icon={<FaChalkboardUser />}
+        />
+        <AdminStatCard
+          title="Active"
+          value={activeFormTeachers.length}
+          icon={<FaUserCheck />}
+          tone="green"
+        />
+        <AdminStatCard
+          title="Inactive"
+          value={inactiveFormTeachers.length}
+          icon={<FaUsers />}
+          tone="red"
+        />
+        <AdminStatCard
+          title="Class Records"
+          value={classes.length}
+          icon={<FaLayerGroup />}
+          tone="muted"
+        />
+      </section>
 
       <div className="grid grid-cols-1 gap-8">
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">

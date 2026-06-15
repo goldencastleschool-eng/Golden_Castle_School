@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaArrowRight, FaClipboardCheck } from "react-icons/fa6";
+import {
+  FaArrowRight,
+  FaBookOpen,
+  FaClipboardCheck,
+  FaFilePdf,
+  FaLayerGroup,
+} from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import AdminStatCard from "../../components/common/AdminStatCard.jsx";
 import { isFormTeacher } from "../../utils/teacherAssignments.js";
 
 const initialResultForm = {
@@ -862,6 +869,31 @@ function UploadResult() {
           session, term, and class.
         </p>
       </div>
+
+      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <AdminStatCard
+          title="Term Results"
+          value={results.length}
+          icon={<FaClipboardCheck />}
+        />
+        <AdminStatCard
+          title="Cumulative Results"
+          value={cumulativeResults.length}
+          icon={<FaFilePdf />}
+          tone="muted"
+        />
+        <AdminStatCard
+          title="Class Broadsheets"
+          value={classBroadsheets.length}
+          icon={<FaBookOpen />}
+        />
+        <AdminStatCard
+          title="Class Results"
+          value={classResults.length}
+          icon={<FaLayerGroup />}
+          tone="green"
+        />
+      </section>
 
       <div className="grid grid-cols-1 gap-8">
         <form

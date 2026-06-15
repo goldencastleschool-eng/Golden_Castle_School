@@ -14,6 +14,8 @@ import API from "../../api/axios.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const terms = ["First Term", "Second Term", "Third Term"];
+const emptyList = [];
+const emptySummary = {};
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("en-NG", {
@@ -40,30 +42,80 @@ const getRoleLabel = (role = "") => {
   return "Administrator";
 };
 
+const PAGE_SIZE = 10;
+
 const inputClass =
-  "w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-[#F85E00] focus:ring-2 focus:ring-[#F85E00]/20";
+  "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20";
 
-const tableHeadClass = "bg-slate-100 text-slate-700";
-const tableCellClass = "px-4 py-3";
+const tableHeadClass = "bg-primary/10 text-primary";
+const tableCellClass = "px-5 py-4";
 
-function SummaryCard({ title, value, icon, tone = "slate" }) {
+function PaginationControls({
+  currentPage,
+  totalItems,
+  pageSize = PAGE_SIZE,
+  onPageChange,
+}) {
+  const totalPages = Math.ceil(totalItems / pageSize);
+
+  if (totalPages <= 1) {
+    return null;
+  }
+
+  const startItem = (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
+  const buttonClass =
+    "rounded-xl px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50";
+
+  return (
+    <div className="mt-5 flex flex-col gap-3 border-t border-primary/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm font-semibold text-primary/60">
+        Showing {startItem}-{endItem} of {totalItems}
+      </p>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={`${buttonClass} bg-primary/10 text-primary`}
+        >
+          Previous
+        </button>
+        <span className="rounded-xl bg-button px-4 py-2 text-sm font-bold text-secondary">
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={`${buttonClass} bg-primary/10 text-primary`}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SummaryCard({ title, value, icon, tone = "default" }) {
   const toneClasses = {
-    slate: "bg-slate-900 text-white",
-    amber: "bg-[#F85E00] text-white",
-    green: "bg-emerald-600 text-white",
-    red: "bg-rose-600 text-white",
+    default: "bg-button text-secondary",
+    amber: "bg-button text-secondary",
+    green: "bg-green-500/15 text-green-300",
+    red: "bg-red-500/15 text-red-300",
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-slate-500">{title}</p>
-          <p className="mt-3 text-2xl font-extrabold text-slate-950">{value}</p>
+          <p className="text-sm font-bold uppercase text-primary/60">{title}</p>
+          <p className="mt-3 text-3xl font-extrabold text-primary">{value}</p>
         </div>
         <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${
-            toneClasses[tone] || toneClasses.slate
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl ${
+            toneClasses[tone] || toneClasses.default
           }`}
         >
           {icon}
@@ -74,18 +126,28 @@ function SummaryCard({ title, value, icon, tone = "slate" }) {
 }
 
 function StudentTable({ title, students, loading }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(students.length / PAGE_SIZE));
+  const visiblePage = Math.min(currentPage, totalPages);
+
+  const paginatedStudents = useMemo(() => {
+    const startIndex = (visiblePage - 1) * PAGE_SIZE;
+
+    return students.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [students, visiblePage]);
+
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
       <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h3 className="text-lg font-extrabold text-slate-950">{title}</h3>
-          <p className="mt-1 text-sm font-semibold text-slate-500">
+          <h3 className="text-2xl font-extrabold text-primary">{title}</h3>
+          <p className="mt-1 text-sm font-semibold text-primary/60">
             {loading ? "Loading..." : `${students.length} student(s)`}
           </p>
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200">
+      <div className="overflow-x-auto rounded-2xl border border-primary/10">
         <table className="w-full min-w-[860px] text-left text-sm">
           <thead className={tableHeadClass}>
             <tr>
@@ -101,24 +163,26 @@ function StudentTable({ title, students, loading }) {
               <th className={tableCellClass}>Registered</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 text-slate-700">
+          <tbody className="divide-y divide-primary/10 text-primary/80">
             {loading ? (
               <tr>
-                <td className="px-4 py-5 text-slate-500" colSpan="10">
+                <td className="px-5 py-6 text-primary/70" colSpan="10">
                   Loading student records...
                 </td>
               </tr>
             ) : students.length === 0 ? (
               <tr>
-                <td className="px-4 py-5 text-slate-500" colSpan="10">
+                <td className="px-5 py-6 text-primary/70" colSpan="10">
                   No student record found for this filter.
                 </td>
               </tr>
             ) : (
-              students.map((student, index) => (
+              paginatedStudents.map((student, index) => (
                 <tr key={student._id}>
-                  <td className={tableCellClass}>{index + 1}</td>
-                  <td className={`${tableCellClass} font-bold text-slate-950`}>
+                  <td className={tableCellClass}>
+                    {(visiblePage - 1) * PAGE_SIZE + index + 1}
+                  </td>
+                  <td className={`${tableCellClass} font-bold text-primary`}>
                     {student.full_name}
                   </td>
                   <td className={tableCellClass}>{student.admission_no}</td>
@@ -131,15 +195,15 @@ function StudentTable({ title, students, loading }) {
                   <td className={tableCellClass}>
                     {formatCurrency(student.expected)}
                   </td>
-                  <td className={`${tableCellClass} font-bold text-slate-950`}>
+                  <td className={`${tableCellClass} font-bold text-primary`}>
                     {formatCurrency(student.paid)}
                   </td>
                   <td className={tableCellClass}>
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-bold ${
                         student.balance > 0
-                          ? "bg-rose-50 text-rose-700"
-                          : "bg-emerald-50 text-emerald-700"
+                          ? "bg-red-500/10 text-red-200"
+                          : "bg-green-500/10 text-green-200"
                       }`}
                     >
                       {formatCurrency(student.balance)}
@@ -155,11 +219,16 @@ function StudentTable({ title, students, loading }) {
           </tbody>
         </table>
       </div>
+      <PaginationControls
+        currentPage={visiblePage}
+        totalItems={students.length}
+        onPageChange={setCurrentPage}
+      />
     </section>
   );
 }
 
-function ExecutiveReportPortal() {
+function ExecutiveReportPortal({ embedded = false }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [report, setReport] = useState(null);
@@ -170,6 +239,7 @@ function ExecutiveReportPortal() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [classPage, setClassPage] = useState(1);
 
   const selectedSession = report?.selected_session || filters.session;
   const selectedTerm = report?.selected_term || filters.term;
@@ -211,6 +281,12 @@ function ExecutiveReportPortal() {
     });
   }, [fetchReport]);
 
+  useEffect(() => {
+    if (!embedded && user?.role === "admin") {
+      navigate("/admin/reports", { replace: true });
+    }
+  }, [embedded, navigate, user?.role]);
+
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
     const nextFilters = {
@@ -236,11 +312,19 @@ function ExecutiveReportPortal() {
     navigate(user?.role === "admin" ? "/secure-admin-login" : "/executive-login");
   };
 
-  const summary = report?.summary || {};
-  const classSummaries = report?.class_summaries || [];
-  const classOptions = report?.class_options || [];
-  const newlyAdmittedStudents = report?.newly_admitted_students || [];
-  const returningStudents = report?.returning_students || [];
+  const summary = report?.summary || emptySummary;
+  const classSummaries = report?.class_summaries || emptyList;
+  const classOptions = report?.class_options || emptyList;
+  const newlyAdmittedStudents = report?.newly_admitted_students || emptyList;
+  const returningStudents = report?.returning_students || emptyList;
+  const classTotalPages = Math.max(1, Math.ceil(classSummaries.length / PAGE_SIZE));
+  const visibleClassPage = Math.min(classPage, classTotalPages);
+
+  const paginatedClassSummaries = useMemo(() => {
+    const startIndex = (visibleClassPage - 1) * PAGE_SIZE;
+
+    return classSummaries.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [classSummaries, visibleClassPage]);
 
   const paidPercentage = useMemo(() => {
     if (!summary.expected) {
@@ -253,32 +337,37 @@ function ExecutiveReportPortal() {
     );
   }, [summary.expected, summary.paid]);
 
+  const PageWrapper = embedded ? "div" : "main";
+
   return (
-    <main className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white">
+    <PageWrapper
+      className={embedded ? "px-6 py-10 lg:px-12" : "min-h-screen bg-background"}
+    >
+      {!embedded && (
+      <header className="bg-secondary shadow-2xl">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-5 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#69140E] text-xl text-white">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
               <FaChartPie />
             </div>
             <div>
-              <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
+              <p className="text-sm font-bold uppercase tracking-wide text-primary/60">
                 Golden Castle School
               </p>
-              <h1 className="text-2xl font-extrabold text-slate-950">
+              <h1 className="text-2xl font-extrabold text-primary">
                 Executive Reports
               </h1>
             </div>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2">
-              <p className="text-xs font-bold uppercase text-slate-500">
+            <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-2">
+              <p className="text-xs font-bold uppercase text-primary/60">
                 Signed in as
               </p>
-              <p className="font-bold text-slate-950">
+              <p className="font-bold text-primary">
                 {user?.username || getRoleLabel(user?.role)}
-                <span className="ml-2 text-sm font-semibold text-slate-500">
+                <span className="ml-2 text-sm font-semibold text-primary/60">
                   {getRoleLabel(user?.role)}
                 </span>
               </p>
@@ -286,7 +375,7 @@ function ExecutiveReportPortal() {
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#69140E] px-4 py-3 font-bold text-white transition hover:bg-[#F85E00]"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-button px-4 py-3 font-bold text-secondary shadow-lg transition hover:scale-[1.02]"
             >
               <FaArrowRightFromBracket />
               Logout
@@ -294,12 +383,27 @@ function ExecutiveReportPortal() {
           </div>
         </div>
       </header>
+      )}
 
-      <div className="mx-auto max-w-7xl px-5 py-8 lg:px-8">
-        <section className="mb-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className={embedded ? "" : "mx-auto max-w-7xl px-5 py-8 lg:px-8"}>
+        {embedded && (
+          <div className="mb-8">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+              <FaChartPie />
+            </div>
+            <h2 className="text-4xl font-extrabold text-secondary">
+              Executive Reports
+            </h2>
+            <p className="mt-3 max-w-2xl text-secondary/75">
+              Read-only fee and student population reports for school leadership.
+            </p>
+          </div>
+        )}
+
+        <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end">
             <div>
-              <label className="mb-2 block text-sm font-bold text-slate-600">
+              <label className="mb-2 block text-sm font-bold text-primary/60">
                 Session
               </label>
               <select
@@ -317,7 +421,7 @@ function ExecutiveReportPortal() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-bold text-slate-600">
+              <label className="mb-2 block text-sm font-bold text-primary/60">
                 Term
               </label>
               <select
@@ -335,7 +439,7 @@ function ExecutiveReportPortal() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-bold text-slate-600">
+              <label className="mb-2 block text-sm font-bold text-primary/60">
                 Class
               </label>
               <select
@@ -356,7 +460,7 @@ function ExecutiveReportPortal() {
             <button
               type="button"
               onClick={handleRefresh}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#F85E00] px-5 py-3 font-bold text-white transition hover:bg-[#69140E]"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02]"
             >
               <FaRotateRight />
               Refresh
@@ -365,7 +469,7 @@ function ExecutiveReportPortal() {
         </section>
 
         {error && (
-          <div className="mb-6 rounded-lg border border-rose-200 bg-rose-50 px-5 py-4 font-semibold text-rose-700">
+          <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 font-semibold text-red-200">
             {error}
           </div>
         )}
@@ -397,56 +501,56 @@ function ExecutiveReportPortal() {
         </section>
 
         <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
             <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
               <div>
-                <h2 className="text-xl font-extrabold text-slate-950">
+                <h2 className="text-2xl font-extrabold text-primary">
                   Fee Summary
                 </h2>
-                <p className="mt-1 text-sm font-semibold text-slate-500">
-                  {selectedSession || "No session"} · {selectedTerm}
+                <p className="mt-1 text-sm font-semibold text-primary/60">
+                  {selectedSession || "No session"} - {selectedTerm}
                 </p>
               </div>
-              <div className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">
+              <div className="rounded-full bg-green-500/10 px-4 py-2 text-sm font-bold text-green-300">
                 {loading ? "..." : `${paidPercentage}% paid`}
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="rounded-lg bg-slate-50 p-4">
-                <p className="text-sm font-bold text-slate-500">Total Fee</p>
-                <p className="mt-2 text-2xl font-extrabold text-slate-950">
+              <div className="rounded-2xl bg-primary/5 p-5">
+                <p className="text-sm font-bold text-primary/60">Total Fee</p>
+                <p className="mt-2 text-2xl font-extrabold text-primary">
                   {loading ? "..." : formatCurrency(summary.expected)}
                 </p>
               </div>
-              <div className="rounded-lg bg-emerald-50 p-4">
-                <p className="text-sm font-bold text-emerald-700">Paid</p>
-                <p className="mt-2 text-2xl font-extrabold text-emerald-800">
+              <div className="rounded-2xl bg-green-500/10 p-5">
+                <p className="text-sm font-bold text-green-300">Paid</p>
+                <p className="mt-2 text-2xl font-extrabold text-green-200">
                   {loading ? "..." : formatCurrency(summary.paid)}
                 </p>
               </div>
-              <div className="rounded-lg bg-rose-50 p-4">
-                <p className="text-sm font-bold text-rose-700">Balance</p>
-                <p className="mt-2 text-2xl font-extrabold text-rose-800">
+              <div className="rounded-2xl bg-red-500/10 p-5">
+                <p className="text-sm font-bold text-red-300">Balance</p>
+                <p className="mt-2 text-2xl font-extrabold text-red-200">
                   {loading ? "..." : formatCurrency(summary.balance)}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-xl font-extrabold text-slate-950">
+          <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+            <h2 className="text-2xl font-extrabold text-primary">
               Population Split
             </h2>
             <div className="mt-5 space-y-4">
               <div>
-                <div className="mb-2 flex justify-between text-sm font-bold text-slate-600">
+                <div className="mb-2 flex justify-between text-sm font-bold text-primary/70">
                   <span>Newly Admitted</span>
                   <span>{summary.newly_admitted || 0}</span>
                 </div>
-                <div className="h-3 rounded-full bg-slate-100">
+                <div className="h-3 rounded-full bg-primary/10">
                   <div
-                    className="h-3 rounded-full bg-emerald-600"
+                    className="h-3 rounded-full bg-green-600"
                     style={{
                       width: `${
                         summary.total_students
@@ -458,13 +562,13 @@ function ExecutiveReportPortal() {
                 </div>
               </div>
               <div>
-                <div className="mb-2 flex justify-between text-sm font-bold text-slate-600">
+                <div className="mb-2 flex justify-between text-sm font-bold text-primary/70">
                   <span>Returning</span>
                   <span>{summary.returning || 0}</span>
                 </div>
-                <div className="h-3 rounded-full bg-slate-100">
+                <div className="h-3 rounded-full bg-primary/10">
                   <div
-                    className="h-3 rounded-full bg-[#F85E00]"
+                    className="h-3 rounded-full bg-button"
                     style={{
                       width: `${
                         summary.total_students
@@ -479,19 +583,19 @@ function ExecutiveReportPortal() {
           </div>
         </section>
 
-        <section className="mb-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
           <div className="mb-4">
-            <h2 className="text-xl font-extrabold text-slate-950">
+            <h2 className="text-2xl font-extrabold text-primary">
               Class Report
             </h2>
-            <p className="mt-1 text-sm font-semibold text-slate-500">
+            <p className="mt-1 text-sm font-semibold text-primary/60">
               {loading
                 ? "Loading..."
                 : `${classSummaries.length} class record(s)`}
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <div className="overflow-x-auto rounded-2xl border border-primary/10">
             <table className="w-full min-w-[1080px] text-left text-sm">
               <thead className={tableHeadClass}>
                 <tr>
@@ -508,23 +612,23 @@ function ExecutiveReportPortal() {
                   <th className={tableCellClass}>No Structure</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 text-slate-700">
+              <tbody className="divide-y divide-primary/10 text-primary/80">
                 {loading ? (
                   <tr>
-                    <td className="px-4 py-5 text-slate-500" colSpan="11">
+                    <td className="px-5 py-6 text-primary/70" colSpan="11">
                       Loading class report...
                     </td>
                   </tr>
                 ) : classSummaries.length === 0 ? (
                   <tr>
-                    <td className="px-4 py-5 text-slate-500" colSpan="11">
+                    <td className="px-5 py-6 text-primary/70" colSpan="11">
                       No class record found for this filter.
                     </td>
                   </tr>
                 ) : (
-                  classSummaries.map((classSummary) => (
+                  paginatedClassSummaries.map((classSummary) => (
                     <tr key={classSummary.class_record || classSummary.class}>
-                      <td className={`${tableCellClass} font-bold text-slate-950`}>
+                      <td className={`${tableCellClass} font-bold text-primary`}>
                         {classSummary.class?.toUpperCase() || "Not set"}
                       </td>
                       <td className={tableCellClass}>
@@ -539,7 +643,7 @@ function ExecutiveReportPortal() {
                       <td className={tableCellClass}>
                         {formatCurrency(classSummary.expected)}
                       </td>
-                      <td className={`${tableCellClass} font-bold text-slate-950`}>
+                      <td className={`${tableCellClass} font-bold text-primary`}>
                         {formatCurrency(classSummary.paid)}
                       </td>
                       <td className={tableCellClass}>
@@ -561,6 +665,11 @@ function ExecutiveReportPortal() {
               </tbody>
             </table>
           </div>
+          <PaginationControls
+            currentPage={visibleClassPage}
+            totalItems={classSummaries.length}
+            onPageChange={setClassPage}
+          />
         </section>
 
         <div className="grid grid-cols-1 gap-6">
@@ -576,7 +685,7 @@ function ExecutiveReportPortal() {
           />
         </div>
       </div>
-    </main>
+    </PageWrapper>
   );
 }
 

@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaArrowRight, FaUserGraduate } from "react-icons/fa6";
+import {
+  FaArrowRight,
+  FaLayerGroup,
+  FaUserCheck,
+  FaUserGraduate,
+  FaUsers,
+} from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import AdminStatCard from "../../components/common/AdminStatCard.jsx";
 
 const initialStudentForm = {
   full_name: "",
@@ -348,6 +355,20 @@ function StudentManagement() {
   const availableClasses = classes.filter(
     (classRecord) => classRecord.session === studentForm.current_session
   );
+  const activeStudents = students.filter(isActiveStudent);
+  const sessionStudents = activeStudents.filter(
+    (student) => student.current_session === studentViewSessionFilter
+  );
+  const newlyAdmittedStudents = sessionStudents.filter(
+    (student) =>
+      getStudentFeeEnrollment(student, studentViewSessionFilter)?.fee_category ===
+      "new"
+  );
+  const returningStudents = sessionStudents.filter(
+    (student) =>
+      getStudentFeeEnrollment(student, studentViewSessionFilter)?.fee_category !==
+      "new"
+  );
 
   return (
     <div className="px-6 py-10 lg:px-12">
@@ -382,6 +403,36 @@ function StudentManagement() {
           scan.
         </p>
       </div>
+
+      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <AdminStatCard
+          title="Active Students"
+          value={activeStudents.length}
+          icon={<FaUsers />}
+        />
+        <AdminStatCard
+          title={`${studentViewSessionFilter} Students`}
+          value={sessionStudents.length}
+          icon={<FaUserGraduate />}
+          tone="muted"
+        />
+        <AdminStatCard
+          title="Newly Admitted"
+          value={newlyAdmittedStudents.length}
+          icon={<FaUserCheck />}
+          tone="green"
+        />
+        <AdminStatCard
+          title="Returning"
+          value={returningStudents.length}
+          icon={<FaUsers />}
+        />
+        <AdminStatCard
+          title="Classes"
+          value={classes.length}
+          icon={<FaLayerGroup />}
+        />
+      </section>
 
       <div className="grid grid-cols-1 gap-8 ">
         <form

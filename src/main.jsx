@@ -50,6 +50,8 @@ import StudentManagement from "./Pages/admin/StudentManagement.jsx";
 import TeacherManagement from "./Pages/admin/TeacherManagement.jsx";
 import UploadResult from "./Pages/admin/UploadResult.jsx";
 import FeeManagement from "./Pages/admin/FeeManagement.jsx";
+import BusManagement from "./Pages/admin/BusManagement.jsx";
+import PayrollManagement from "./Pages/admin/PayrollManagement.jsx";
 import PortalVisibility from "./Pages/admin/PortalVisibility.jsx";
 import ExecutiveReportPortal from "./Pages/reports/ExecutiveReportPortal.jsx";
 
@@ -247,6 +249,18 @@ const router = createBrowserRouter([
           {
             path: "fees",
             element: <FeeManagement />,
+          },
+          {
+            path: "buses",
+            element: <BusManagement />,
+          },
+          {
+            path: "payroll",
+            element: <PayrollManagement />,
+          },
+          {
+            path: "reports",
+            element: <ExecutiveReportPortal embedded />,
           },
           {
             path: "results",
