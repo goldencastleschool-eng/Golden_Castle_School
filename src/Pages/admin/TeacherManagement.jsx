@@ -28,6 +28,7 @@ import {
 } from "../../utils/printBranding.js";
 
 const DEFAULT_SESSION_FILTER = "2025/2026";
+const PAGE_SIZE = 25;
 
 const initialTeacherForm = {
   full_name: "",
@@ -167,6 +168,10 @@ function TeacherManagement() {
   const formTeachers = useMemo(
     () => teachers.filter((teacher) => isFormTeacher(teacher)),
     [teachers]
+  );
+  const displayedFormTeachers = useMemo(
+    () => formTeachers.slice(0, PAGE_SIZE),
+    [formTeachers]
   );
   const activeFormTeachers = formTeachers.filter(
     (teacher) => teacher.status !== "inactive"
@@ -696,14 +701,14 @@ function TeacherManagement() {
                       Loading form teachers...
                     </td>
                   </tr>
-                ) : formTeachers.length === 0 ? (
+                ) : displayedFormTeachers.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="9">
                       No form teacher has been registered yet.
                     </td>
                   </tr>
                 ) : (
-                  formTeachers.map((teacher, index) => (
+                  displayedFormTeachers.map((teacher, index) => (
                     <tr key={teacher._id} className="text-primary/80">
                       <td className="px-5 py-4 font-bold text-primary">
                         {index + 1}

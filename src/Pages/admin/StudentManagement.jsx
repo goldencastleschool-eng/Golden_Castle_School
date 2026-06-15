@@ -25,6 +25,7 @@ const initialStudentForm = {
 };
 
 const DEFAULT_SESSION_FILTER = "2025/2026";
+const PAGE_SIZE = 25;
 
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
@@ -277,7 +278,7 @@ function StudentManagement() {
     const searchValue = studentSearch.trim().toLowerCase();
 
     if (!searchValue) {
-      return students.slice(0, 15);
+      return students.slice(0, PAGE_SIZE);
     }
 
     return students.filter((student) => {

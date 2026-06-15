@@ -22,6 +22,7 @@ import {
 } from "../../utils/printBranding.js";
 
 const DEFAULT_SESSION_FILTER = "2025/2026";
+const PAGE_SIZE = 25;
 
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
@@ -176,6 +177,10 @@ function ClassManagement() {
         : firstName.localeCompare(secondName);
     });
   }, [classStudents, studentNameSort]);
+  const displayedClassStudents = useMemo(
+    () => sortedClassStudents.slice(0, PAGE_SIZE),
+    [sortedClassStudents]
+  );
 
   const handleSessionFilterChange = (event) => {
     const nextSession = event.target.value;
@@ -876,7 +881,7 @@ function ClassManagement() {
                   </td>
                 </tr>
               ) : (
-                sortedClassStudents.map((student) => (
+                displayedClassStudents.map((student) => (
                   <tr
                     key={student._id}
                     className="text-primary/80 transition duration-300 hover:bg-primary/5"

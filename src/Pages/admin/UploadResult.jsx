@@ -52,6 +52,8 @@ const initialClassResultForm = {
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
 
+const PAGE_SIZE = 25;
+
 function UploadResult() {
   const [students, setStudents] = useState([]);
   const [results, setResults] = useState([]);
@@ -87,22 +89,28 @@ function UploadResult() {
   const [deleting, setDeleting] = useState(false);
 
   const fetchResults = async () => {
-    const response = await API.get("/results");
+    const response = await API.get("/results", { params: { limit: PAGE_SIZE } });
     setResults(response.data || []);
   };
 
   const fetchCumulativeResults = async () => {
-    const response = await API.get("/cumulative-results");
+    const response = await API.get("/cumulative-results", {
+      params: { limit: PAGE_SIZE },
+    });
     setCumulativeResults(response.data || []);
   };
 
   const fetchClassBroadsheets = async () => {
-    const response = await API.get("/class-broadsheets");
+    const response = await API.get("/class-broadsheets", {
+      params: { limit: PAGE_SIZE },
+    });
     setClassBroadsheets(response.data || []);
   };
 
   const fetchClassResults = async () => {
-    const response = await API.get("/class-results");
+    const response = await API.get("/class-results", {
+      params: { limit: PAGE_SIZE },
+    });
     setClassResults(response.data || []);
   };
 
@@ -122,11 +130,11 @@ function UploadResult() {
           accessRequest,
         ] = await Promise.allSettled([
           API.get("/students"),
-          API.get("/results"),
-          API.get("/cumulative-results"),
+          API.get("/results", { params: { limit: PAGE_SIZE } }),
+          API.get("/cumulative-results", { params: { limit: PAGE_SIZE } }),
           API.get("/classes"),
-          API.get("/class-broadsheets"),
-          API.get("/class-results"),
+          API.get("/class-broadsheets", { params: { limit: PAGE_SIZE } }),
+          API.get("/class-results", { params: { limit: PAGE_SIZE } }),
           API.get("/teachers"),
           API.get("/result-access"),
         ]);
@@ -296,7 +304,7 @@ function UploadResult() {
     const searchValue = resultSearch.trim().toLowerCase();
 
     if (!searchValue) {
-      return results.slice(0, 15);
+      return results.slice(0, PAGE_SIZE);
     }
 
     return results.filter((result) => {
@@ -319,15 +327,15 @@ function UploadResult() {
   }, [resultSearch, results]);
 
   const displayedCumulativeResults = useMemo(() => {
-    return cumulativeResults.slice(0, 15);
+    return cumulativeResults.slice(0, PAGE_SIZE);
   }, [cumulativeResults]);
 
   const displayedClassBroadsheets = useMemo(() => {
-    return classBroadsheets.slice(0, 15);
+    return classBroadsheets.slice(0, PAGE_SIZE);
   }, [classBroadsheets]);
 
   const displayedClassResults = useMemo(() => {
-    return classResults.slice(0, 15);
+    return classResults.slice(0, PAGE_SIZE);
   }, [classResults]);
 
   const handleChange = (event) => {

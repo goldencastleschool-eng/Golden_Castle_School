@@ -13,7 +13,7 @@ import API from "../../api/axios.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 
 const DEFAULT_SESSION = "2025/2026";
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 25;
 const terms = ["First Term", "Second Term", "Third Term"];
 
 const initialBusForm = {
@@ -163,6 +163,8 @@ function BusManagement() {
   const [status, setStatus] = useState({ type: "", message: "" });
   const [enrollmentPage, setEnrollmentPage] = useState(1);
   const [paymentPage, setPaymentPage] = useState(1);
+  const [enrollmentTotal, setEnrollmentTotal] = useState(0);
+  const [paymentTotal, setPaymentTotal] = useState(0);
   const [filters, setFilters] = useState({
     session: DEFAULT_SESSION,
     term: "",
@@ -173,6 +175,20 @@ function BusManagement() {
     try {
       setLoading(true);
       setStatus({ type: "", message: "" });
+      const enrollmentParams = {
+        limit: PAGE_SIZE,
+        page: enrollmentPage,
+        ...Object.fromEntries(
+          Object.entries(filters).filter(([, value]) => Boolean(value))
+        ),
+      };
+      const paymentParams = {
+        limit: PAGE_SIZE,
+        page: paymentPage,
+        ...Object.fromEntries(
+          Object.entries(filters).filter(([, value]) => Boolean(value))
+        ),
+      };
 
       const [
         busesResponse,
@@ -186,8 +202,8 @@ function BusManagement() {
         API.get("/bus-management/buses"),
         API.get("/bus-management/routes"),
         API.get("/bus-management/fee-structures"),
-        API.get("/bus-management/enrollments"),
-        API.get("/bus-management/payments"),
+        API.get("/bus-management/enrollments", { params: enrollmentParams }),
+        API.get("/bus-management/payments", { params: paymentParams }),
         API.get("/students"),
         API.get("/classes"),
       ]);
@@ -197,6 +213,12 @@ function BusManagement() {
       setStructures(structuresResponse.data || []);
       setEnrollments(enrollmentsResponse.data || []);
       setPayments(paymentsResponse.data || []);
+      setEnrollmentTotal(
+        Number(enrollmentsResponse.headers?.["x-total-count"] || 0)
+      );
+      setPaymentTotal(
+        Number(paymentsResponse.headers?.["x-total-count"] || 0)
+      );
       setStudents(studentsResponse.data || []);
       setClasses(classesResponse.data || []);
     } catch (error) {
@@ -214,7 +236,7 @@ function BusManagement() {
 
   useEffect(() => {
     fetchBusData();
-  }, []);
+  }, [enrollmentPage, filters, paymentPage]);
 
   const sessionOptions = useMemo(() => {
     return [
@@ -399,22 +421,10 @@ function BusManagement() {
       );
   }, [filters.route, filters.session, filters.term, payments]);
 
-  const visibleEnrollmentPage = Math.min(
-    enrollmentPage,
-    Math.max(1, Math.ceil(enrollmentRows.length / PAGE_SIZE))
-  );
-  const visiblePaymentPage = Math.min(
-    paymentPage,
-    Math.max(1, Math.ceil(paymentRows.length / PAGE_SIZE))
-  );
-  const paginatedEnrollments = enrollmentRows.slice(
-    (visibleEnrollmentPage - 1) * PAGE_SIZE,
-    visibleEnrollmentPage * PAGE_SIZE
-  );
-  const paginatedPayments = paymentRows.slice(
-    (visiblePaymentPage - 1) * PAGE_SIZE,
-    visiblePaymentPage * PAGE_SIZE
-  );
+  const visibleEnrollmentPage = enrollmentPage;
+  const visiblePaymentPage = paymentPage;
+  const paginatedEnrollments = enrollmentRows;
+  const paginatedPayments = paymentRows;
 
   const totals = useMemo(() => {
     const activeRows = enrollmentRows.filter(
@@ -437,6 +447,15 @@ function BusManagement() {
       ),
     };
   }, [enrollmentRows]);
+
+  const handleFilterChange = (field, value) => {
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      [field]: value,
+    }));
+    setEnrollmentPage(1);
+    setPaymentPage(1);
+  };
 
   const handleBusChange = (event) => {
     const { name, value } = event.target;
@@ -714,9 +733,7 @@ function BusManagement() {
         "/bus-management/enrollments",
         enrollmentForm
       );
-      const refreshResponse = await API.get("/bus-management/enrollments");
-
-      setEnrollments(refreshResponse.data || []);
+      await fetchBusData();
       setEnrollmentForm({
         ...initialEnrollmentForm,
         session: enrollmentForm.session,
@@ -956,10 +973,7 @@ function BusManagement() {
             name="session"
             value={filters.session}
             onChange={(event) =>
-              setFilters((currentFilters) => ({
-                ...currentFilters,
-                session: event.target.value,
-              }))
+              handleFilterChange("session", event.target.value)
             }
           >
             <option value="">All sessions</option>
@@ -974,10 +988,7 @@ function BusManagement() {
             name="term"
             value={filters.term}
             onChange={(event) =>
-              setFilters((currentFilters) => ({
-                ...currentFilters,
-                term: event.target.value,
-              }))
+              handleFilterChange("term", event.target.value)
             }
           >
             <option value="">All terms</option>
@@ -992,10 +1003,7 @@ function BusManagement() {
             name="route"
             value={filters.route}
             onChange={(event) =>
-              setFilters((currentFilters) => ({
-                ...currentFilters,
-                route: event.target.value,
-              }))
+              handleFilterChange("route", event.target.value)
             }
           >
             <option value="">All routes</option>
@@ -1757,7 +1765,7 @@ function BusManagement() {
           </div>
           <PaginationControls
             page={visibleEnrollmentPage}
-            totalItems={enrollmentRows.length}
+            totalItems={enrollmentTotal}
             onPageChange={setEnrollmentPage}
           />
         </section>
@@ -1906,7 +1914,7 @@ function BusManagement() {
             </div>
             <PaginationControls
               page={visiblePaymentPage}
-              totalItems={paymentRows.length}
+              totalItems={paymentTotal}
               onPageChange={setPaymentPage}
             />
           </section>

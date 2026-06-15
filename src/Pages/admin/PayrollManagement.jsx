@@ -17,7 +17,7 @@ import AdminNotification from "../../components/common/AdminNotification.jsx";
 import AdminStatCard from "../../components/common/AdminStatCard.jsx";
 
 const DEFAULT_SESSION = "2025/2026";
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 25;
 const categories = [
   {
     value: "academic",
@@ -176,6 +176,8 @@ function PayrollManagement() {
   const [status, setStatus] = useState({ type: "", message: "" });
   const [assignmentPage, setAssignmentPage] = useState(1);
   const [paymentPage, setPaymentPage] = useState(1);
+  const [assignmentTotal, setAssignmentTotal] = useState(0);
+  const [paymentTotal, setPaymentTotal] = useState(0);
   const [filters, setFilters] = useState({
     session: DEFAULT_SESSION,
     period_type: "monthly",
@@ -187,6 +189,9 @@ function PayrollManagement() {
     try {
       setLoading(true);
       setStatus({ type: "", message: "" });
+      const listFilters = Object.fromEntries(
+        Object.entries(filters).filter(([, value]) => Boolean(value))
+      );
 
       const [
         levelsResponse,
@@ -199,8 +204,20 @@ function PayrollManagement() {
         API.get("/payroll/levels"),
         API.get("/payroll/staff"),
         API.get("/payroll/structures"),
-        API.get("/payroll/assignments"),
-        API.get("/payroll/payments"),
+        API.get("/payroll/assignments", {
+          params: {
+            ...listFilters,
+            limit: PAGE_SIZE,
+            page: assignmentPage,
+          },
+        }),
+        API.get("/payroll/payments", {
+          params: {
+            ...listFilters,
+            limit: PAGE_SIZE,
+            page: paymentPage,
+          },
+        }),
         API.get("/teachers"),
       ]);
 
@@ -209,6 +226,12 @@ function PayrollManagement() {
       setStructures(structuresResponse.data || []);
       setAssignments(assignmentsResponse.data || []);
       setPayments(paymentsResponse.data || []);
+      setAssignmentTotal(
+        Number(assignmentsResponse.headers?.["x-total-count"] || 0)
+      );
+      setPaymentTotal(
+        Number(paymentsResponse.headers?.["x-total-count"] || 0)
+      );
       setTeachers(teachersResponse.data || []);
     } catch (error) {
       setStatus({
@@ -221,7 +244,7 @@ function PayrollManagement() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [assignmentPage, filters, paymentPage]);
 
   useEffect(() => {
     fetchPayrollData();
@@ -339,22 +362,10 @@ function PayrollManagement() {
       );
   }, [filters.category, filters.period, filters.period_type, filters.session, payments]);
 
-  const visibleAssignmentPage = Math.min(
-    assignmentPage,
-    Math.max(1, Math.ceil(assignmentRows.length / PAGE_SIZE))
-  );
-  const visiblePaymentPage = Math.min(
-    paymentPage,
-    Math.max(1, Math.ceil(paymentRows.length / PAGE_SIZE))
-  );
-  const paginatedAssignments = assignmentRows.slice(
-    (visibleAssignmentPage - 1) * PAGE_SIZE,
-    visibleAssignmentPage * PAGE_SIZE
-  );
-  const paginatedPayments = paymentRows.slice(
-    (visiblePaymentPage - 1) * PAGE_SIZE,
-    visiblePaymentPage * PAGE_SIZE
-  );
+  const visibleAssignmentPage = assignmentPage;
+  const visiblePaymentPage = paymentPage;
+  const paginatedAssignments = assignmentRows;
+  const paginatedPayments = paymentRows;
 
   const totals = useMemo(() => {
     const activeAssignments = assignmentRows.filter(
@@ -1783,7 +1794,7 @@ function PayrollManagement() {
           </div>
           <PaginationControls
             page={visibleAssignmentPage}
-            totalItems={assignmentRows.length}
+            totalItems={assignmentTotal}
             onPageChange={setAssignmentPage}
           />
         </section>
@@ -1936,7 +1947,7 @@ function PayrollManagement() {
             </div>
             <PaginationControls
               page={visiblePaymentPage}
-              totalItems={paymentRows.length}
+              totalItems={paymentTotal}
               onPageChange={setPaymentPage}
             />
           </section>

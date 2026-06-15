@@ -13,6 +13,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 
 const DEFAULT_COVERAGE_SESSION_FILTER = "2025/2026";
+const PAGE_SIZE = 25;
 
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
@@ -565,7 +566,7 @@ function AdminDashboard() {
 
         return matchesSession && (!searchValue || searchableText.includes(searchValue));
       })
-      .slice(0, 15);
+      .slice(0, PAGE_SIZE);
   }, [graduateFilter.search, graduateFilter.session, graduatedStudents]);
 
   const leftSchoolStudents = useMemo(() => {
@@ -607,7 +608,7 @@ function AdminDashboard() {
           (!searchValue || searchableText.includes(searchValue))
         );
       })
-      .slice(0, 15);
+      .slice(0, PAGE_SIZE);
   }, [
     leftSchoolFilter.search,
     leftSchoolFilter.session,
