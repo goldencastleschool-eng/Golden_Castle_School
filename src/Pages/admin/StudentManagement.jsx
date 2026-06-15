@@ -742,7 +742,7 @@ function StudentManagement() {
                 Student Records
               </h3>
               <p className="mt-2 text-primary/70">
-                Showing the 15 most recent registrations by default. Use search
+                Showing the 25 most recent registrations by default. Use search
                 to find any student.
               </p>
             </div>

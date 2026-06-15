@@ -1450,8 +1450,8 @@ function UploadResult() {
               Result Records
             </h3>
             <p className="mt-2 text-primary/70">
-              Showing the 15 most recent uploads by default. Use search to find
-              any result record.
+              Showing the 25 most recent uploads by default. Use search to filter
+              these records.
             </p>
           </div>
 
@@ -1470,7 +1470,6 @@ function UploadResult() {
                 <th className="px-5 py-4 font-bold">S/N</th>
                 <th className="px-5 py-4 font-bold">Student</th>
                 <th className="px-5 py-4 font-bold">Class</th>
-                <th className="px-5 py-4 font-bold">Form Teacher</th>
                 <th className="px-5 py-4 font-bold">Session</th>
                 <th className="px-5 py-4 font-bold">Term</th>
                 <th className="px-5 py-4 font-bold">Actions</th>
@@ -1479,7 +1478,7 @@ function UploadResult() {
             <tbody className="divide-y divide-primary/10">
               {displayedResults.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-6 text-primary/70" colSpan="7">
+                  <td className="px-5 py-6 text-primary/70" colSpan="6">
                     {resultSearch
                       ? "No result record matches your search."
                       : "No result records yet."}
@@ -1527,7 +1526,7 @@ function UploadResult() {
             Recent Cumulative Uploads
           </h3>
           <p className="mt-2 text-primary/70">
-            Showing the 15 most recent cumulative result uploads.
+            Showing the 25 most recent cumulative result uploads.
           </p>
         </div>
 
@@ -1596,7 +1595,7 @@ function UploadResult() {
             Recent Class Results
           </h3>
           <p className="mt-2 text-primary/70">
-            Showing the 15 most recent class result uploads.
+            Showing the 25 most recent class result uploads.
           </p>
         </div>
 
@@ -1662,7 +1661,7 @@ function UploadResult() {
             Recent Class Broadsheets
           </h3>
           <p className="mt-2 text-primary/70">
-            Showing the 15 most recent class broadsheet uploads.
+            Showing the 25 most recent class broadsheet uploads.
           </p>
         </div>
 
