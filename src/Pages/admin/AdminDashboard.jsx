@@ -11,6 +11,7 @@ import {
 import API from "../../api/axios.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import { sortStudentsByName } from "../../utils/students.js";
 
 const DEFAULT_COVERAGE_SESSION_FILTER = "2025/2026";
 const PAGE_SIZE = 25;
@@ -504,12 +505,14 @@ function AdminDashboard() {
       return [];
     }
 
-    return students.filter(
-      (student) =>
-        isActiveStudent(student) &&
-        ((student.class_record?._id || student.class_record) === selectedClass._id ||
-          (normalizeClassName(student.class) === normalizeClassName(selectedClass.name) &&
-            student.current_session === selectedClass.session))
+    return sortStudentsByName(
+      students.filter(
+        (student) =>
+          isActiveStudent(student) &&
+          ((student.class_record?._id || student.class_record) === selectedClass._id ||
+            (normalizeClassName(student.class) === normalizeClassName(selectedClass.name) &&
+              student.current_session === selectedClass.session))
+      )
     );
   }, [classes, promotionForm.fromClassRecord, students]);
 
@@ -526,12 +529,14 @@ function AdminDashboard() {
       return [];
     }
 
-    return students.filter(
-      (student) =>
-        isActiveStudent(student) &&
-        ((student.class_record?._id || student.class_record) === selectedClass._id ||
-          (normalizeClassName(student.class) === normalizeClassName(selectedClass.name) &&
-            student.current_session === selectedClass.session))
+    return sortStudentsByName(
+      students.filter(
+        (student) =>
+          isActiveStudent(student) &&
+          ((student.class_record?._id || student.class_record) === selectedClass._id ||
+            (normalizeClassName(student.class) === normalizeClassName(selectedClass.name) &&
+              student.current_session === selectedClass.session))
+      )
     );
   }, [classes, leftSchoolActionForm.fromClassRecord, students]);
 

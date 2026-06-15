@@ -20,6 +20,7 @@ import {
   getPrintBrandHeader,
   getPrintBrandStyles,
 } from "../../utils/printBranding.js";
+import { sortStudentsByName } from "../../utils/students.js";
 
 const DEFAULT_SESSION = "2025/2026";
 
@@ -246,8 +247,8 @@ function FeeManagement() {
       (classRecord) => classRecord._id === feeForm.class_record
     );
 
-    return students
-      .filter((student) => {
+    return sortStudentsByName(
+      students.filter((student) => {
         if (!isActiveStudent(student) || student.current_session !== feeForm.session) {
           return false;
         }
@@ -264,9 +265,7 @@ function FeeManagement() {
           normalizeClassName(student.class) === normalizeClassName(selectedClass.name)
         );
       })
-      .sort((firstStudent, secondStudent) =>
-        (firstStudent.full_name || "").localeCompare(secondStudent.full_name || "")
-      );
+    );
   }, [classes, feeForm.class_record, feeForm.session, students]);
 
   const selectedFormClass = useMemo(

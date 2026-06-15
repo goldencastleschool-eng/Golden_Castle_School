@@ -11,6 +11,7 @@ import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import AdminStatCard from "../../components/common/AdminStatCard.jsx";
+import { sortStudentsByName } from "../../utils/students.js";
 import { isFormTeacher } from "../../utils/teacherAssignments.js";
 
 const initialResultForm = {
@@ -217,12 +218,14 @@ function UploadResult() {
       return [];
     }
 
-    return students.filter(
-      (student) =>
-        student.status === "active" &&
-        normalizeClassName(student.class) ===
-          normalizeClassName(resultForm.class) &&
-        student.current_session === resultForm.session
+    return sortStudentsByName(
+      students.filter(
+        (student) =>
+          student.status === "active" &&
+          normalizeClassName(student.class) ===
+            normalizeClassName(resultForm.class) &&
+          student.current_session === resultForm.session
+      )
     );
   }, [resultForm.class, resultForm.session, students]);
 
@@ -291,12 +294,14 @@ function UploadResult() {
       return [];
     }
 
-    return students.filter(
-      (student) =>
-        student.status === "active" &&
-        normalizeClassName(student.class) ===
-          normalizeClassName(cumulativeForm.class) &&
-        student.current_session === cumulativeForm.session
+    return sortStudentsByName(
+      students.filter(
+        (student) =>
+          student.status === "active" &&
+          normalizeClassName(student.class) ===
+            normalizeClassName(cumulativeForm.class) &&
+          student.current_session === cumulativeForm.session
+      )
     );
   }, [cumulativeForm.class, cumulativeForm.session, students]);
 

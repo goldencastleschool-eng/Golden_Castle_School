@@ -11,6 +11,7 @@ import {
 
 import API from "../../api/axios.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import { sortStudentsByName } from "../../utils/students.js";
 
 const DEFAULT_SESSION = "2025/2026";
 const PAGE_SIZE = 25;
@@ -277,8 +278,8 @@ function BusManagement() {
       return [];
     }
 
-    return students
-      .filter((student) => {
+    return sortStudentsByName(
+      students.filter((student) => {
         const studentClassRecordId = getRecordId(student.class_record);
 
         return (
@@ -287,15 +288,11 @@ function BusManagement() {
           (
             studentClassRecordId === selectedEnrollmentClass._id ||
             normalizeClassName(student.class) ===
-              normalizeClassName(selectedEnrollmentClass.name)
+            normalizeClassName(selectedEnrollmentClass.name)
           )
         );
       })
-      .sort((firstStudent, secondStudent) =>
-        (firstStudent.full_name || "").localeCompare(
-          secondStudent.full_name || ""
-        )
-      );
+    );
   }, [enrollmentForm.session, selectedEnrollmentClass, students]);
 
   const existingEnrollmentStudentIds = useMemo(() => {
