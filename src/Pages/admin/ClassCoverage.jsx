@@ -10,6 +10,7 @@ import {
 
 import API from "../../api/axios.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import { TableSkeleton } from "../../components/common/Loading.jsx";
 
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
@@ -250,11 +251,7 @@ function ClassCoverage() {
                 </thead>
                 <tbody className="divide-y divide-primary/10">
                   {loading ? (
-                    <tr>
-                      <td className="px-5 py-6 text-primary/70" colSpan="5">
-                        Loading class coverage...
-                      </td>
-                    </tr>
+                    <TableSkeleton columns={5} />
                   ) : missingStudents.length === 0 ? (
                     <tr>
                       <td className="px-5 py-6 text-primary/70" colSpan="5">

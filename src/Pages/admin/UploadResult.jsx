@@ -11,6 +11,7 @@ import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import AdminStatCard from "../../components/common/AdminStatCard.jsx";
+import { TableSkeleton } from "../../components/common/Loading.jsx";
 import { sortStudentsByName } from "../../utils/students.js";
 import { isFormTeacher } from "../../utils/teacherAssignments.js";
 
@@ -55,9 +56,26 @@ const normalizeClassName = (className = "") =>
 
 const PAGE_SIZE = 25;
 
+const getResponseTotalCount = (response, fallback = 0) => {
+  const headerValue =
+    response.headers?.get?.("x-total-count") ||
+    response.headers?.["x-total-count"] ||
+    response.headers?.["X-Total-Count"];
+  const totalCount = Number(headerValue);
+
+  return Number.isFinite(totalCount) ? totalCount : fallback;
+};
+
+const getCountValue = (response) => {
+  const totalCount = Number(response?.data?.totalCount);
+
+  return Number.isFinite(totalCount) ? totalCount : null;
+};
+
 function UploadResult() {
   const [students, setStudents] = useState([]);
   const [results, setResults] = useState([]);
+  const [resultTotal, setResultTotal] = useState(0);
   const [cumulativeResults, setCumulativeResults] = useState([]);
   const [classBroadsheets, setClassBroadsheets] = useState([]);
   const [classResults, setClassResults] = useState([]);
@@ -90,8 +108,26 @@ function UploadResult() {
   const [deleting, setDeleting] = useState(false);
 
   const fetchResults = async () => {
-    const response = await API.get("/results", { params: { limit: PAGE_SIZE } });
-    setResults(response.data || []);
+    const [resultsRequest, countRequest] = await Promise.allSettled([
+      API.get("/results", { params: { limit: PAGE_SIZE } }),
+      API.get("/results/count"),
+    ]);
+
+    if (resultsRequest.status === "rejected") {
+      throw resultsRequest.reason;
+    }
+
+    const response = resultsRequest.value;
+    const resultRecords = response.data || [];
+    const totalCount =
+      countRequest.status === "fulfilled"
+        ? getCountValue(countRequest.value)
+        : null;
+
+    setResults(resultRecords);
+    setResultTotal(
+      totalCount ?? getResponseTotalCount(response, resultRecords.length)
+    );
   };
 
   const fetchCumulativeResults = async () => {
@@ -123,6 +159,7 @@ function UploadResult() {
         const [
           studentsRequest,
           resultsRequest,
+          resultCountRequest,
           cumulativeResultsRequest,
           classesRequest,
           broadsheetsRequest,
@@ -132,6 +169,7 @@ function UploadResult() {
         ] = await Promise.allSettled([
           API.get("/students"),
           API.get("/results", { params: { limit: PAGE_SIZE } }),
+          API.get("/results/count"),
           API.get("/cumulative-results", { params: { limit: PAGE_SIZE } }),
           API.get("/classes"),
           API.get("/class-broadsheets", { params: { limit: PAGE_SIZE } }),
@@ -162,7 +200,17 @@ function UploadResult() {
         }
 
         setStudents(studentsRequest.value.data || []);
-        setResults(resultsRequest.value.data || []);
+        const resultRecords = resultsRequest.value.data || [];
+
+        setResults(resultRecords);
+        const totalCount =
+          resultCountRequest.status === "fulfilled"
+            ? getCountValue(resultCountRequest.value)
+            : null;
+
+        setResultTotal(
+          totalCount ?? getResponseTotalCount(resultsRequest.value, resultRecords.length)
+        );
         setClasses(classesRequest.value.data || []);
         setCumulativeResults(
           cumulativeResultsRequest.status === "fulfilled"
@@ -886,7 +934,7 @@ function UploadResult() {
       <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <AdminStatCard
           title="Term Results"
-          value={results.length}
+          value={resultTotal}
           icon={<FaClipboardCheck />}
         />
         <AdminStatCard
@@ -1476,7 +1524,9 @@ function UploadResult() {
               </tr>
             </thead>
             <tbody className="divide-y divide-primary/10">
-              {displayedResults.length === 0 ? (
+              {loadingStudents ? (
+                <TableSkeleton columns={6} />
+              ) : displayedResults.length === 0 ? (
                 <tr>
                   <td className="px-5 py-6 text-primary/70" colSpan="6">
                     {resultSearch
@@ -1543,7 +1593,9 @@ function UploadResult() {
               </tr>
             </thead>
             <tbody className="divide-y divide-primary/10">
-              {displayedCumulativeResults.length === 0 ? (
+              {loadingStudents ? (
+                <TableSkeleton columns={6} />
+              ) : displayedCumulativeResults.length === 0 ? (
                 <tr>
                   <td className="px-5 py-6 text-primary/70" colSpan="6">
                     No cumulative result uploads yet.
@@ -1613,7 +1665,9 @@ function UploadResult() {
               </tr>
             </thead>
             <tbody className="divide-y divide-primary/10">
-              {displayedClassResults.length === 0 ? (
+              {loadingStudents ? (
+                <TableSkeleton columns={7} />
+              ) : displayedClassResults.length === 0 ? (
                 <tr>
                   <td className="px-5 py-6 text-primary/70" colSpan="7">
                     No class result uploads yet.
@@ -1679,7 +1733,9 @@ function UploadResult() {
               </tr>
             </thead>
             <tbody className="divide-y divide-primary/10">
-              {displayedClassBroadsheets.length === 0 ? (
+              {loadingStudents ? (
+                <TableSkeleton columns={7} />
+              ) : displayedClassBroadsheets.length === 0 ? (
                 <tr>
                   <td className="px-5 py-6 text-primary/70" colSpan="7">
                     No class broadsheet uploads yet.

@@ -11,6 +11,7 @@ import {
 
 import API from "../../api/axios.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import { TableSkeleton } from "../../components/common/Loading.jsx";
 import { sortStudentsByName } from "../../utils/students.js";
 
 const DEFAULT_SESSION = "2025/2026";
@@ -1677,11 +1678,7 @@ function BusManagement() {
               </thead>
               <tbody className="divide-y divide-primary/10 text-primary/80">
                 {loading ? (
-                  <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="10">
-                      Loading bus enrollments...
-                    </td>
-                  </tr>
+                  <TableSkeleton columns={10} />
                 ) : paginatedEnrollments.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="10">
@@ -1862,7 +1859,9 @@ function BusManagement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-primary/10 text-primary/80">
-                  {paginatedPayments.length === 0 ? (
+                  {loading ? (
+                    <TableSkeleton columns={8} />
+                  ) : paginatedPayments.length === 0 ? (
                     <tr>
                       <td className="px-5 py-6 text-primary/70" colSpan="8">
                         No bus payment matches this filter.

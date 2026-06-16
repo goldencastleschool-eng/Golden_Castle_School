@@ -11,6 +11,7 @@ import {
 
 import API from "../../api/axios.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import { TableSkeleton } from "../../components/common/Loading.jsx";
 import { SCHOOL_NAME, schoolLogo } from "../../utils/printBranding.js";
 
 const DEFAULT_REPORT_SESSION = "2025/2026";
@@ -451,11 +452,7 @@ function AdminReport() {
               </thead>
               <tbody className="divide-y divide-primary/10">
                 {loading ? (
-                  <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="6">
-                      Loading report...
-                    </td>
-                  </tr>
+                  <TableSkeleton columns={6} />
                 ) : classRows.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="6">

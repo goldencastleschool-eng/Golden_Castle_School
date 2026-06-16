@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { PageLoader } from '../components/common/Loading.jsx';
 
 export default function ProtectedRoute({ children, role, redirectTo }) {
   const { user, isAuthenticated, loading } = useAuth();
@@ -12,11 +13,7 @@ export default function ProtectedRoute({ children, role, redirectTo }) {
       : "/login");
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background text-primary">
-        <span>Loading authentication...</span>
-      </div>
-    );
+    return <PageLoader message="Checking your portal access..." />;
   }
 
   if (!isAuthenticated) {

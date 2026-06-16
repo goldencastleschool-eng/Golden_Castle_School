@@ -11,6 +11,7 @@ import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import AdminStatCard from "../../components/common/AdminStatCard.jsx";
+import { TableSkeleton } from "../../components/common/Loading.jsx";
 
 const initialStudentForm = {
   full_name: "",
@@ -660,11 +661,7 @@ function StudentManagement() {
               </thead>
               <tbody className="divide-y divide-primary/10">
                 {loadingStudents ? (
-                  <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="9">
-                      Loading students...
-                    </td>
-                  </tr>
+                  <TableSkeleton columns={9} />
                 ) : !selectedViewClass ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="9">
@@ -782,11 +779,7 @@ function StudentManagement() {
 
               <tbody className="divide-y divide-primary/10">
                 {loadingStudents ? (
-                  <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="10">
-                      Loading students...
-                    </td>
-                  </tr>
+                  <TableSkeleton columns={10} />
                 ) : displayedStudents.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="10">

@@ -14,6 +14,7 @@ import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import AdminStatCard from "../../components/common/AdminStatCard.jsx";
+import { TableSkeleton } from "../../components/common/Loading.jsx";
 import schoolLogo from "../../assets/1723987411228.jpg";
 import { getFeeReceiptNumber } from "../../utils/paymentReceipt.js";
 import {
@@ -2365,11 +2366,7 @@ function FeeManagement() {
               </thead>
               <tbody className="divide-y divide-primary/10">
                 {loading ? (
-                  <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="13">
-                      Loading fee payments...
-                    </td>
-                  </tr>
+                  <TableSkeleton columns={13} />
                 ) : filteredFees.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="13">

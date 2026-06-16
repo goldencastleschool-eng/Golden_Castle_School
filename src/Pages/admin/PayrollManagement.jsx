@@ -14,6 +14,7 @@ import {
 
 import API from "../../api/axios.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import { TableSkeleton } from "../../components/common/Loading.jsx";
 import AdminStatCard from "../../components/common/AdminStatCard.jsx";
 
 const DEFAULT_SESSION = "2025/2026";
@@ -1069,11 +1070,7 @@ function PayrollManagement() {
                 </thead>
                 <tbody className="divide-y divide-primary/10 text-primary/80">
                   {loading ? (
-                    <tr>
-                      <td className="px-5 py-6 text-primary/70" colSpan="4">
-                        Loading staff levels...
-                      </td>
-                    </tr>
+                    <TableSkeleton columns={4} />
                   ) : levels.length === 0 ? (
                     <tr>
                       <td className="px-5 py-6 text-primary/70" colSpan="4">
@@ -1250,11 +1247,7 @@ function PayrollManagement() {
               </thead>
               <tbody className="divide-y divide-primary/10 text-primary/80">
                 {loading ? (
-                  <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="6">
-                      Loading payroll staff...
-                    </td>
-                  </tr>
+                  <TableSkeleton columns={6} />
                 ) : staff.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="6">
@@ -1704,11 +1697,7 @@ function PayrollManagement() {
               </thead>
               <tbody className="divide-y divide-primary/10 text-primary/80">
                 {loading ? (
-                  <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="8">
-                      Loading payroll assignments...
-                    </td>
-                  </tr>
+                  <TableSkeleton columns={8} />
                 ) : paginatedAssignments.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="8">
@@ -1894,7 +1883,9 @@ function PayrollManagement() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-primary/10 text-primary/80">
-                  {paginatedPayments.length === 0 ? (
+                  {loading ? (
+                    <TableSkeleton columns={6} />
+                  ) : paginatedPayments.length === 0 ? (
                     <tr>
                       <td className="px-5 py-6 text-primary/70" colSpan="6">
                         No payroll payment matches this filter.

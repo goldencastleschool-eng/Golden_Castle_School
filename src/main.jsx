@@ -60,6 +60,7 @@ import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 
 // ERROR PAGE
 import PageNotFound from "./Pages/public/PageNotFound.jsx";
+import { PageLoader } from "./components/common/Loading.jsx";
 
 
 
@@ -294,7 +295,10 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
-      <RouterProvider router={router} />
+      <RouterProvider
+        router={router}
+        fallbackElement={<PageLoader message="Preparing your page..." />}
+      />
     </AuthProvider>
   </StrictMode>
 );

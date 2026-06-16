@@ -14,6 +14,7 @@ import {
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminStatCard from "../../components/common/AdminStatCard.jsx";
+import { TableSkeleton } from "../../components/common/Loading.jsx";
 import {
   formatClassSection,
   getClassSection,
@@ -696,11 +697,7 @@ function TeacherManagement() {
               </thead>
               <tbody className="divide-y divide-primary/10">
                 {loading ? (
-                  <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="9">
-                      Loading form teachers...
-                    </td>
-                  </tr>
+                  <TableSkeleton columns={9} />
                 ) : displayedFormTeachers.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="9">

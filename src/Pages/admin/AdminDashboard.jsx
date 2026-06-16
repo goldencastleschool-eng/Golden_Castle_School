@@ -11,6 +11,7 @@ import {
 import API from "../../api/axios.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
+import { CardSkeleton } from "../../components/common/Loading.jsx";
 import { sortStudentsByName } from "../../utils/students.js";
 
 const DEFAULT_COVERAGE_SESSION_FILTER = "2025/2026";
@@ -959,7 +960,9 @@ function AdminDashboard() {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {stats.map((stat) => (
+          {loading ? (
+            <CardSkeleton count={8} />
+          ) : stats.map((stat) => (
             <div
               key={stat.title}
               className="group rounded-[2rem] bg-secondary p-7 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl"

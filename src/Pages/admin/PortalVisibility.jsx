@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import { CardSkeleton } from "../../components/common/Loading.jsx";
 
 const statusStyles = {
   live: "bg-green-500/10 text-green-700",
@@ -372,9 +373,7 @@ function PortalVisibility() {
 
           <div className="mt-6 space-y-4">
             {loading ? (
-              <div className="rounded-2xl bg-primary/5 p-5 text-primary/70">
-                Loading issues...
-              </div>
+              <CardSkeleton count={3} />
             ) : issues.length === 0 ? (
               <div className="rounded-2xl bg-green-500/10 p-5 text-green-700">
                 All monitored portal visibility checks are clear.

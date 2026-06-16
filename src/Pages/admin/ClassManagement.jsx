@@ -10,6 +10,7 @@ import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import AdminStatCard from "../../components/common/AdminStatCard.jsx";
+import { TableSkeleton } from "../../components/common/Loading.jsx";
 import {
   CLASS_SECTION_OPTIONS,
   formatClassSection,
@@ -863,11 +864,7 @@ function ClassManagement() {
 
             <tbody className="divide-y divide-primary/10">
               {loadingStudents ? (
-                <tr>
-                  <td className="px-5 py-6 text-primary/70" colSpan="5">
-                    Loading students...
-                  </td>
-                </tr>
+                <TableSkeleton columns={5} />
               ) : !selectedClassRecord ? (
                 <tr>
                   <td className="px-5 py-6 text-primary/70" colSpan="5">
