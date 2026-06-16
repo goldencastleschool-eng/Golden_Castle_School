@@ -56,20 +56,40 @@ const normalizeClassName = (className = "") =>
 
 const PAGE_SIZE = 25;
 
-const getResponseTotalCount = (response, fallback = 0) => {
+const getResponseTotalCount = (response) => {
   const headerValue =
     response.headers?.get?.("x-total-count") ||
     response.headers?.["x-total-count"] ||
     response.headers?.["X-Total-Count"];
   const totalCount = Number(headerValue);
 
-  return Number.isFinite(totalCount) ? totalCount : fallback;
+  return Number.isFinite(totalCount) ? totalCount : null;
 };
 
 const getCountValue = (response) => {
   const totalCount = Number(response?.data?.totalCount);
 
   return Number.isFinite(totalCount) ? totalCount : null;
+};
+
+const fetchResultTotalCount = async ({ countResponse, listResponse }) => {
+  const countValue = getCountValue(countResponse);
+
+  if (countValue !== null) {
+    return countValue;
+  }
+
+  const headerValue = getResponseTotalCount(listResponse);
+
+  if (headerValue !== null && headerValue !== PAGE_SIZE) {
+    return headerValue;
+  }
+
+  const fullResultsResponse = await API.get("/results");
+
+  return Array.isArray(fullResultsResponse.data)
+    ? fullResultsResponse.data.length
+    : 0;
 };
 
 function UploadResult() {
@@ -119,15 +139,14 @@ function UploadResult() {
 
     const response = resultsRequest.value;
     const resultRecords = response.data || [];
-    const totalCount =
-      countRequest.status === "fulfilled"
-        ? getCountValue(countRequest.value)
-        : null;
+    const totalCount = await fetchResultTotalCount({
+      countResponse:
+        countRequest.status === "fulfilled" ? countRequest.value : null,
+      listResponse: response,
+    });
 
     setResults(resultRecords);
-    setResultTotal(
-      totalCount ?? getResponseTotalCount(response, resultRecords.length)
-    );
+    setResultTotal(totalCount);
   };
 
   const fetchCumulativeResults = async () => {
@@ -203,14 +222,15 @@ function UploadResult() {
         const resultRecords = resultsRequest.value.data || [];
 
         setResults(resultRecords);
-        const totalCount =
-          resultCountRequest.status === "fulfilled"
-            ? getCountValue(resultCountRequest.value)
-            : null;
+        const totalCount = await fetchResultTotalCount({
+          countResponse:
+            resultCountRequest.status === "fulfilled"
+              ? resultCountRequest.value
+              : null,
+          listResponse: resultsRequest.value,
+        });
 
-        setResultTotal(
-          totalCount ?? getResponseTotalCount(resultsRequest.value, resultRecords.length)
-        );
+        setResultTotal(totalCount);
         setClasses(classesRequest.value.data || []);
         setCumulativeResults(
           cumulativeResultsRequest.status === "fulfilled"
