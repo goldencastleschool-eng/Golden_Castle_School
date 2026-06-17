@@ -238,6 +238,7 @@ function FeeManagement() {
     session: DEFAULT_SESSION,
     term: "",
     class_record: "",
+    payment_status: "",
     search: "",
   });
   const [structurePage, setStructurePage] = useState(1);
@@ -859,6 +860,22 @@ function FeeManagement() {
         feeClassRecordId === selectedClass._id ||
         normalizeClassName(fee.class || student.class) ===
           normalizeClassName(selectedClass.name);
+      const expectedAmount = Number(fee.expected_amount_at_payment || 0);
+      const paidForWindow = getStudentPaidForFeeWindow({
+        fees,
+        studentId: getFeeStudentId(fee),
+        session: fee.session,
+        term: fee.term,
+        feeCategory: fee.fee_category || "returning",
+      });
+      const matchesPaymentStatus =
+        !filters.payment_status ||
+        (filters.payment_status === "paid" &&
+          expectedAmount > 0 &&
+          paidForWindow >= expectedAmount) ||
+        (filters.payment_status === "unpaid" &&
+          expectedAmount > 0 &&
+          paidForWindow < expectedAmount);
       const searchableText = [
         student.full_name,
         student.admission_no,
@@ -878,6 +895,7 @@ function FeeManagement() {
         matchesSession &&
         matchesTerm &&
         matchesClass &&
+        matchesPaymentStatus &&
         (!searchValue || searchableText.includes(searchValue))
       );
     });
@@ -1002,7 +1020,7 @@ function FeeManagement() {
     (row) => row.paid > 0 && row.paid < row.expected
   ).length;
   const debtorCount = dashboardRows.filter((row) => row.balance > 0).length;
-  const balanceRows = useMemo(() => {
+  const allBalanceRows = useMemo(() => {
     if (!selectedFilterClass || !filters.session || !filters.term) {
       return [];
     }
@@ -1061,6 +1079,23 @@ function FeeManagement() {
     selectedFilterClass,
     students,
   ]);
+  const balanceRows = useMemo(() => {
+    if (!filters.payment_status) {
+      return allBalanceRows;
+    }
+
+    return allBalanceRows.filter((row) => {
+      if (filters.payment_status === "paid") {
+        return row.expected > 0 && row.paid >= row.expected;
+      }
+
+      if (filters.payment_status === "unpaid") {
+        return row.expected > 0 && row.paid < row.expected;
+      }
+
+      return true;
+    });
+  }, [allBalanceRows, filters.payment_status]);
   const totalExpected = balanceRows.reduce(
     (sum, row) => sum + Number(row.expected || 0),
     0
@@ -2181,7 +2216,7 @@ function FeeManagement() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[180px_180px_220px_auto_auto]">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[180px_180px_220px_180px_auto_auto]">
               <select
                 className={inputClass}
                 name="session"
@@ -2223,6 +2258,17 @@ function FeeManagement() {
                     {classRecord.name.toUpperCase()}
                   </option>
                 ))}
+              </select>
+
+              <select
+                className={inputClass}
+                name="payment_status"
+                value={filters.payment_status}
+                onChange={handleFilterChange}
+              >
+                <option value="">All payments</option>
+                <option value="paid">Paid</option>
+                <option value="unpaid">Unpaid</option>
               </select>
 
               <button
@@ -2318,7 +2364,9 @@ function FeeManagement() {
                     {balanceRows.length === 0 ? (
                       <tr>
                         <td className="px-5 py-6 text-primary/70" colSpan="7">
-                          No active student found in this class.
+                          {filters.payment_status
+                            ? "No student matches this payment status."
+                            : "No active student found in this class."}
                         </td>
                       </tr>
                     ) : (

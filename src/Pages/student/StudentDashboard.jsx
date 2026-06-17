@@ -7,6 +7,7 @@ import {
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import { CardSkeleton } from "../../components/common/Loading.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 function StudentDashboard() {
@@ -71,6 +72,10 @@ function StudentDashboard() {
         )}
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          {loadingResults ? (
+            <CardSkeleton count={3} />
+          ) : (
+          <>
           <div className="rounded-[2rem] bg-secondary p-7 shadow-xl">
             <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
               <FaIdCard />
@@ -100,9 +105,11 @@ function StudentDashboard() {
             </div>
             <p className="font-medium text-primary/70">Available Results</p>
             <h3 className="mt-3 text-3xl font-extrabold text-primary">
-              {loadingResults ? "..." : results.length}
+              {results.length}
             </h3>
           </div>
+          </>
+          )}
         </div>
 
         <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
@@ -115,7 +122,11 @@ function StudentDashboard() {
 
           <div className="mt-7 rounded-2xl border border-primary/10 bg-primary/5 p-6">
             {loadingResults ? (
-              <p className="text-primary/70">Loading result records...</p>
+              <div className="animate-pulse">
+                <div className="h-7 w-40 rounded-full bg-primary/15"></div>
+                <div className="mt-4 h-4 w-64 rounded-full bg-primary/10"></div>
+                <div className="mt-3 h-4 w-52 rounded-full bg-primary/10"></div>
+              </div>
             ) : latestResult ? (
               <div>
                 <h4 className="text-2xl font-extrabold text-primary">

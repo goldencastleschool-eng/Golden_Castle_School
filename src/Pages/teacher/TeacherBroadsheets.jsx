@@ -170,9 +170,15 @@ function TeacherBroadsheets() {
 
           <div className="mt-6 space-y-3">
             {loadingBroadsheets ? (
-              <p className="rounded-2xl bg-primary/5 p-5 text-primary/70">
-                Loading broadsheets...
-              </p>
+              Array.from({ length: 3 }, (_, index) => (
+                <div
+                  key={`broadsheet-skeleton-${index}`}
+                  className="animate-pulse rounded-2xl bg-primary/5 p-5"
+                >
+                  <div className="h-4 w-32 rounded-full bg-primary/15"></div>
+                  <div className="mt-3 h-3 w-44 rounded-full bg-primary/10"></div>
+                </div>
+              ))
             ) : broadsheets.length === 0 ? (
               <p className="rounded-2xl bg-primary/5 p-5 text-primary/70">
                 No class broadsheet is currently available.

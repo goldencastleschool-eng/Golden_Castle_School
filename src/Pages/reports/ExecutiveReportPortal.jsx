@@ -1,6 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
   FaArrowRightFromBracket,
   FaBus,
   FaChartPie,
@@ -12,6 +25,7 @@ import {
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import { TableSkeleton } from "../../components/common/Loading.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import {
   FIRST_IMPLEMENTED_SESSION,
@@ -49,6 +63,15 @@ const getRoleLabel = (role = "") => {
 };
 
 const PAGE_SIZE = 10;
+const CHART_COLORS = {
+  primary: "#1f2937",
+  button: "#d4a017",
+  paid: "#16a34a",
+  outstanding: "#dc2626",
+  muted: "#6b7280",
+  blue: "#2563eb",
+  purple: "#7c3aed",
+};
 
 const inputClass =
   "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20";
@@ -131,6 +154,66 @@ function SummaryCard({ title, value, icon, tone = "default" }) {
   );
 }
 
+function ChartEmptyState({ message = "No chart data available for this filter." }) {
+  return (
+    <div className="flex h-64 items-center justify-center rounded-2xl border border-primary/10 bg-primary/5 px-5 text-center text-sm font-semibold text-primary/60">
+      {message}
+    </div>
+  );
+}
+
+function CurrencyTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-2xl border border-primary/10 bg-secondary px-4 py-3 text-sm shadow-xl">
+      <p className="mb-2 font-extrabold text-primary">{label}</p>
+      {payload.map((entry) => (
+        <p key={entry.dataKey} className="font-semibold text-primary/70">
+          <span style={{ color: entry.color }}>{entry.name}: </span>
+          {formatCurrency(entry.value)}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function NumberTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-2xl border border-primary/10 bg-secondary px-4 py-3 text-sm shadow-xl">
+      <p className="mb-2 font-extrabold text-primary">{label}</p>
+      {payload.map((entry) => (
+        <p key={entry.dataKey} className="font-semibold text-primary/70">
+          <span style={{ color: entry.color }}>{entry.name}: </span>
+          {Number(entry.value || 0).toLocaleString()}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function ReportChartCard({ title, subtitle, children }) {
+  return (
+    <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+      <div className="mb-5">
+        <h2 className="text-2xl font-extrabold text-primary">{title}</h2>
+        {subtitle && (
+          <p className="mt-1 text-sm font-semibold text-primary/60">
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function StudentTable({ title, students, loading }) {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(students.length / PAGE_SIZE));
@@ -148,7 +231,7 @@ function StudentTable({ title, students, loading }) {
         <div>
           <h3 className="text-2xl font-extrabold text-primary">{title}</h3>
           <p className="mt-1 text-sm font-semibold text-primary/60">
-            {loading ? "Loading..." : `${students.length} student(s)`}
+            {loading ? "Fetching student records..." : `${students.length} student(s)`}
           </p>
         </div>
       </div>
@@ -171,11 +254,7 @@ function StudentTable({ title, students, loading }) {
           </thead>
           <tbody className="divide-y divide-primary/10 text-primary/80">
             {loading ? (
-              <tr>
-                <td className="px-5 py-6 text-primary/70" colSpan="10">
-                  Loading student records...
-                </td>
-              </tr>
+              <TableSkeleton columns={10} />
             ) : students.length === 0 ? (
               <tr>
                 <td className="px-5 py-6 text-primary/70" colSpan="10">
@@ -396,6 +475,89 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
       Math.round((Number(summary.paid || 0) / Number(summary.expected)) * 100)
     );
   }, [summary.expected, summary.paid]);
+
+  const feeFinancialChartData = useMemo(
+    () => [
+      {
+        name: "Fees",
+        expected: summary.expected || 0,
+        paid: summary.paid || 0,
+        balance: summary.balance || 0,
+      },
+    ],
+    [summary.balance, summary.expected, summary.paid]
+  );
+
+  const populationSplitChartData = useMemo(
+    () => [
+      {
+        name: "Newly Admitted",
+        value: summary.newly_admitted || 0,
+        fill: CHART_COLORS.paid,
+      },
+      {
+        name: "Returning",
+        value: summary.returning || 0,
+        fill: CHART_COLORS.button,
+      },
+    ],
+    [summary.newly_admitted, summary.returning]
+  );
+
+  const classPaymentStatusChartData = useMemo(
+    () =>
+      classSummaries.map((row) => ({
+        name: row.class?.toUpperCase() || "Class",
+        fullyPaid: row.fully_paid || 0,
+        partPayment: row.part_payment || 0,
+        unpaid: row.unpaid || 0,
+        noStructure: row.no_structure || 0,
+      })),
+    [classSummaries]
+  );
+
+  const classFinanceChartData = useMemo(
+    () =>
+      classSummaries.map((row) => ({
+        name: row.class?.toUpperCase() || "Class",
+        paid: row.paid || 0,
+        balance: row.balance || 0,
+      })),
+    [classSummaries]
+  );
+
+  const busChartData = useMemo(
+    () =>
+      busReportRows.map((row) => ({
+        name: row.route || "Route",
+        paid: row.paid || 0,
+        balance: row.balance || 0,
+        students: row.active_enrollments || 0,
+      })),
+    [busReportRows]
+  );
+
+  const boardingChartData = useMemo(
+    () =>
+      boardingReportRows.map((row) => ({
+        name: row.house || "House",
+        paid: row.paid || 0,
+        balance: row.balance || 0,
+        students: row.active_enrollments || 0,
+      })),
+    [boardingReportRows]
+  );
+
+  const payrollChartData = useMemo(
+    () =>
+      payrollReportRows.map((row) => ({
+        name: row.level_name || row.category || "Payroll",
+        paid: row.paid || 0,
+        balance: row.balance || 0,
+        staff: row.assigned_staff || 0,
+      })),
+    [payrollReportRows]
+  );
 
   const PageWrapper = embedded ? "div" : "main";
 
@@ -679,6 +841,119 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
         </>
         )}
 
+        {showFeePage && (
+          <section className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <ReportChartCard
+              title="Fee Collection Insight"
+              subtitle={`${selectedSession || "No session"} - ${selectedTerm}`}
+            >
+              {loading ? (
+                <TableSkeleton columns={3} />
+              ) : !summary.expected && !summary.paid && !summary.balance ? (
+                <ChartEmptyState />
+              ) : (
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={feeFinancialChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                      <XAxis dataKey="name" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                      <YAxis tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                      <Tooltip content={<CurrencyTooltip />} />
+                      <Legend />
+                      <Bar dataKey="paid" name="Paid" stackId="fee" fill={CHART_COLORS.paid} radius={[0, 0, 8, 8]} />
+                      <Bar dataKey="balance" name="Balance" stackId="fee" fill={CHART_COLORS.outstanding} radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </ReportChartCard>
+
+            <ReportChartCard
+              title="Student Category Split"
+              subtitle="Newly admitted against returning students"
+            >
+              {loading ? (
+                <TableSkeleton columns={2} />
+              ) : populationSplitChartData.every((item) => item.value === 0) ? (
+                <ChartEmptyState />
+              ) : (
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={populationSplitChartData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={60}
+                        outerRadius={95}
+                        paddingAngle={4}
+                      >
+                        {populationSplitChartData.map((entry) => (
+                          <Cell key={entry.name} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<NumberTooltip />} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </ReportChartCard>
+
+            <ReportChartCard
+              title="Class Payment Status"
+              subtitle="Fully paid, part payment, unpaid, and no-structure counts"
+            >
+              {loading ? (
+                <TableSkeleton columns={4} />
+              ) : classPaymentStatusChartData.length === 0 ? (
+                <ChartEmptyState />
+              ) : (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={classPaymentStatusChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                      <XAxis dataKey="name" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                      <YAxis tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                      <Tooltip content={<NumberTooltip />} />
+                      <Legend />
+                      <Bar dataKey="fullyPaid" name="Fully Paid" stackId="status" fill={CHART_COLORS.paid} />
+                      <Bar dataKey="partPayment" name="Part Payment" stackId="status" fill={CHART_COLORS.button} />
+                      <Bar dataKey="unpaid" name="Unpaid" stackId="status" fill={CHART_COLORS.outstanding} />
+                      <Bar dataKey="noStructure" name="No Structure" stackId="status" fill={CHART_COLORS.purple} radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </ReportChartCard>
+
+            <ReportChartCard
+              title="Class Fee Balance"
+              subtitle="Paid and balance by class"
+            >
+              {loading ? (
+                <TableSkeleton columns={3} />
+              ) : classFinanceChartData.length === 0 ? (
+                <ChartEmptyState />
+              ) : (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={classFinanceChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                      <XAxis dataKey="name" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                      <YAxis tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                      <Tooltip content={<CurrencyTooltip />} />
+                      <Legend />
+                      <Bar dataKey="paid" name="Paid" stackId="classFee" fill={CHART_COLORS.paid} />
+                      <Bar dataKey="balance" name="Balance" stackId="classFee" fill={CHART_COLORS.outstanding} radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </ReportChartCard>
+          </section>
+        )}
+
         {(showBusPage || showBoardingPage || showPayrollPage) && (
         <section
           className={`mb-6 grid grid-cols-1 gap-4 ${
@@ -831,6 +1106,63 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
         )}
 
         {showBusPage && (
+        <section className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <ReportChartCard
+            title="Bus Payment By Route"
+            subtitle="Paid and balance values for each route"
+          >
+            {loading ? (
+              <TableSkeleton columns={3} />
+            ) : busChartData.length === 0 ? (
+              <ChartEmptyState />
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={busChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                    <XAxis dataKey="name" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                    <YAxis tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                    <Tooltip content={<CurrencyTooltip />} />
+                    <Legend />
+                    <Bar dataKey="paid" name="Paid" stackId="bus" fill={CHART_COLORS.paid} />
+                    <Bar dataKey="balance" name="Balance" stackId="bus" fill={CHART_COLORS.outstanding} radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </ReportChartCard>
+
+          <ReportChartCard
+            title="Bus Enrollment"
+            subtitle="Active students by route"
+          >
+            {loading ? (
+              <TableSkeleton columns={2} />
+            ) : busChartData.length === 0 ? (
+              <ChartEmptyState />
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={busChartData} layout="vertical" margin={{ left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                    <XAxis type="number" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={90}
+                      tick={{ fill: CHART_COLORS.muted, fontSize: 12 }}
+                    />
+                    <Tooltip content={<NumberTooltip />} />
+                    <Bar dataKey="students" name="Students" fill={CHART_COLORS.button} radius={[0, 8, 8, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </ReportChartCard>
+        </section>
+        )}
+
+        {showBusPage && (
         <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
           <div className="mb-4">
             <h2 className="text-2xl font-extrabold text-primary">
@@ -855,11 +1187,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
               </thead>
               <tbody className="divide-y divide-primary/10 text-primary/80">
                 {loading ? (
-                  <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="6">
-                      Loading bus report...
-                    </td>
-                  </tr>
+                  <TableSkeleton columns={6} />
                 ) : busReportRows.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="6">
@@ -895,6 +1223,63 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
         )}
 
         {showBoardingPage && (
+        <section className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <ReportChartCard
+            title="Boarding Payment By House"
+            subtitle="Paid and balance values for each boarding house"
+          >
+            {loading ? (
+              <TableSkeleton columns={3} />
+            ) : boardingChartData.length === 0 ? (
+              <ChartEmptyState />
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={boardingChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                    <XAxis dataKey="name" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                    <YAxis tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                    <Tooltip content={<CurrencyTooltip />} />
+                    <Legend />
+                    <Bar dataKey="paid" name="Paid" stackId="boarding" fill={CHART_COLORS.paid} />
+                    <Bar dataKey="balance" name="Balance" stackId="boarding" fill={CHART_COLORS.outstanding} radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </ReportChartCard>
+
+          <ReportChartCard
+            title="Boarding Enrollment"
+            subtitle="Active students by house"
+          >
+            {loading ? (
+              <TableSkeleton columns={2} />
+            ) : boardingChartData.length === 0 ? (
+              <ChartEmptyState />
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={boardingChartData} layout="vertical" margin={{ left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                    <XAxis type="number" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={90}
+                      tick={{ fill: CHART_COLORS.muted, fontSize: 12 }}
+                    />
+                    <Tooltip content={<NumberTooltip />} />
+                    <Bar dataKey="students" name="Students" fill={CHART_COLORS.button} radius={[0, 8, 8, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </ReportChartCard>
+        </section>
+        )}
+
+        {showBoardingPage && (
         <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
           <div className="mb-4">
             <h2 className="text-2xl font-extrabold text-primary">
@@ -919,11 +1304,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
               </thead>
               <tbody className="divide-y divide-primary/10 text-primary/80">
                 {loading ? (
-                  <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="6">
-                      Loading boarding report...
-                    </td>
-                  </tr>
+                  <TableSkeleton columns={6} />
                 ) : boardingReportRows.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="6">
@@ -953,6 +1334,63 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
         )}
 
         {showPayrollPage && (
+          <section className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <ReportChartCard
+              title="Payroll By Level"
+              subtitle="Paid and balance values by payroll level"
+            >
+              {loading ? (
+                <TableSkeleton columns={3} />
+              ) : payrollChartData.length === 0 ? (
+                <ChartEmptyState />
+              ) : (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={payrollChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                      <XAxis dataKey="name" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                      <YAxis tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                      <Tooltip content={<CurrencyTooltip />} />
+                      <Legend />
+                      <Bar dataKey="paid" name="Paid" stackId="payroll" fill={CHART_COLORS.paid} />
+                      <Bar dataKey="balance" name="Balance" stackId="payroll" fill={CHART_COLORS.outstanding} radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </ReportChartCard>
+
+            <ReportChartCard
+              title="Payroll Staff Coverage"
+              subtitle="Assigned staff by payroll level"
+            >
+              {loading ? (
+                <TableSkeleton columns={2} />
+              ) : payrollChartData.length === 0 ? (
+                <ChartEmptyState />
+              ) : (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={payrollChartData} layout="vertical" margin={{ left: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                      <XAxis type="number" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        width={90}
+                        tick={{ fill: CHART_COLORS.muted, fontSize: 12 }}
+                      />
+                      <Tooltip content={<NumberTooltip />} />
+                      <Bar dataKey="staff" name="Assigned Staff" fill={CHART_COLORS.button} radius={[0, 8, 8, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </ReportChartCard>
+          </section>
+        )}
+
+        {showPayrollPage && (
           <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
             <div className="mb-4">
               <h2 className="text-2xl font-extrabold text-primary">
@@ -978,11 +1416,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
                 </thead>
                 <tbody className="divide-y divide-primary/10 text-primary/80">
                   {loading ? (
-                    <tr>
-                      <td className="px-5 py-6 text-primary/70" colSpan="7">
-                        Loading payroll report...
-                      </td>
-                    </tr>
+                    <TableSkeleton columns={7} />
                   ) : payrollReportRows.length === 0 ? (
                     <tr>
                       <td className="px-5 py-6 text-primary/70" colSpan="7">
@@ -1051,11 +1485,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
               </thead>
               <tbody className="divide-y divide-primary/10 text-primary/80">
                 {loading ? (
-                  <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="11">
-                      Loading class report...
-                    </td>
-                  </tr>
+                  <TableSkeleton columns={11} />
                 ) : classSummaries.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="11">

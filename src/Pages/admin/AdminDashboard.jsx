@@ -1,6 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
   FaArrowRight,
   FaBookOpen,
   FaBed,
@@ -25,6 +38,16 @@ import { isFormTeacher } from "../../utils/teacherAssignments.js";
 const DEFAULT_COVERAGE_SESSION_FILTER = "2025/2026";
 const DEFAULT_TERM_FILTER = "Third Term";
 const PAGE_SIZE = 25;
+const CHART_COLORS = {
+  primary: "#1f2937",
+  button: "#d4a017",
+  paid: "#16a34a",
+  outstanding: "#dc2626",
+  soft: "#f3f4f6",
+  muted: "#6b7280",
+  blue: "#2563eb",
+  purple: "#7c3aed",
+};
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("en-NG", {
@@ -101,6 +124,66 @@ const countUniqueClassRecords = (records = []) =>
   new Set(
     records.map((record) => getRecordId(record.class_record) || record.class)
   ).size;
+
+function ChartEmptyState({ message = "No chart data available for this filter." }) {
+  return (
+    <div className="flex h-64 items-center justify-center rounded-2xl border border-primary/10 bg-primary/5 px-5 text-center text-sm font-semibold text-primary/60">
+      {message}
+    </div>
+  );
+}
+
+function CurrencyTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-2xl border border-primary/10 bg-secondary px-4 py-3 text-sm shadow-xl">
+      <p className="mb-2 font-extrabold text-primary">{label}</p>
+      {payload.map((entry) => (
+        <p key={entry.dataKey} className="font-semibold text-primary/70">
+          <span style={{ color: entry.color }}>{entry.name}: </span>
+          {formatCurrency(entry.value)}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function NumberTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-2xl border border-primary/10 bg-secondary px-4 py-3 text-sm shadow-xl">
+      <p className="mb-2 font-extrabold text-primary">{label}</p>
+      {payload.map((entry) => (
+        <p key={entry.dataKey} className="font-semibold text-primary/70">
+          <span style={{ color: entry.color }}>{entry.name}: </span>
+          {Number(entry.value || 0).toLocaleString()}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function DashboardChartCard({ title, subtitle, children }) {
+  return (
+    <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+      <div className="mb-5">
+        <h4 className="text-xl font-extrabold text-primary">{title}</h4>
+        {subtitle && (
+          <p className="mt-1 text-sm font-semibold text-primary/60">
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
 
 function AdminDashboard() {
   const { user } = useAuth();
@@ -815,6 +898,94 @@ function AdminDashboard() {
     });
   }, [coverageClasses, coverageResults, coverageTermFilter, students]);
 
+  const populationChartData = useMemo(
+    () => [
+      {
+        name: "Newly Admitted",
+        value: newlyAdmittedStudents.length,
+        fill: CHART_COLORS.paid,
+      },
+      {
+        name: "Returning",
+        value: returningOldStudentsCount,
+        fill: CHART_COLORS.button,
+      },
+      {
+        name: "Left",
+        value: leftSchoolSessionStudents.length,
+        fill: CHART_COLORS.outstanding,
+      },
+      {
+        name: "Graduated",
+        value: graduatedSessionStudents.length,
+        fill: CHART_COLORS.blue,
+      },
+    ],
+    [
+      graduatedSessionStudents.length,
+      leftSchoolSessionStudents.length,
+      newlyAdmittedStudents.length,
+      returningOldStudentsCount,
+    ]
+  );
+
+  const genderChartData = useMemo(
+    () =>
+      Object.entries(activeGenderSummary)
+        .map(([name, value], index) => ({
+          name,
+          value,
+          fill:
+            index === 0
+              ? CHART_COLORS.button
+              : index === 1
+                ? CHART_COLORS.blue
+                : CHART_COLORS.purple,
+        }))
+        .filter((item) => item.value > 0),
+    [activeGenderSummary]
+  );
+
+  const financeChartData = useMemo(
+    () => [
+      {
+        name: "Fees",
+        expected: feeSummary.expected,
+        paid: feeSummary.paid,
+        outstanding: feeSummary.outstanding,
+      },
+      {
+        name: "Bus",
+        expected: busSummary.expected,
+        paid: busSummary.paid,
+        outstanding: busSummary.outstanding,
+      },
+      {
+        name: "Boarding",
+        expected: boardingSummary.expected,
+        paid: boardingSummary.paid,
+        outstanding: boardingSummary.outstanding,
+      },
+      {
+        name: "Payroll",
+        expected: payrollSummary.expected,
+        paid: Math.max(payrollSummary.expected - payrollSummary.outstanding, 0),
+        outstanding: payrollSummary.outstanding,
+      },
+    ],
+    [boardingSummary, busSummary, feeSummary, payrollSummary]
+  );
+
+  const coverageChartData = useMemo(
+    () =>
+      classCoverage.map((item) => ({
+        name: item.className?.toUpperCase(),
+        uploaded: item.uploaded,
+        missing: Math.max(item.total - item.uploaded, 0),
+      })),
+    [classCoverage]
+  );
+
   const summaryGroups = [
     {
       title: "Student Summary",
@@ -1111,6 +1282,124 @@ function AdminDashboard() {
             </section>
           ))}
         </div>
+
+        <section className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <DashboardChartCard
+            title="Population Movement"
+            subtitle={`${populationSessionFilter} - ${populationTermFilter}`}
+          >
+            {loading ? (
+              <CardSkeleton count={1} />
+            ) : populationChartData.every((item) => item.value === 0) ? (
+              <ChartEmptyState />
+            ) : (
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={populationChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                    <XAxis dataKey="name" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                    <YAxis tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                    <Tooltip content={<NumberTooltip />} />
+                    <Bar dataKey="value" name="Students" radius={[10, 10, 0, 0]}>
+                      {populationChartData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </DashboardChartCard>
+
+          <DashboardChartCard
+            title="Gender Distribution"
+            subtitle="Active students for the selected session and term"
+          >
+            {loading ? (
+              <CardSkeleton count={1} />
+            ) : genderChartData.length === 0 ? (
+              <ChartEmptyState />
+            ) : (
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={genderChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={60}
+                      outerRadius={95}
+                      paddingAngle={4}
+                    >
+                      {genderChartData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<NumberTooltip />} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </DashboardChartCard>
+
+          <DashboardChartCard
+            title="Financial Overview"
+            subtitle="Paid and outstanding values across major school collections"
+          >
+            {loading ? (
+              <CardSkeleton count={1} />
+            ) : financeChartData.every(
+                (item) => item.paid === 0 && item.outstanding === 0
+              ) ? (
+              <ChartEmptyState />
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={financeChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                    <XAxis dataKey="name" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                    <YAxis tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                    <Tooltip content={<CurrencyTooltip />} />
+                    <Legend />
+                    <Bar dataKey="paid" name="Paid" stackId="money" fill={CHART_COLORS.paid} radius={[0, 0, 6, 6]} />
+                    <Bar dataKey="outstanding" name="Outstanding" stackId="money" fill={CHART_COLORS.outstanding} radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </DashboardChartCard>
+
+          <DashboardChartCard
+            title="Result Upload Coverage"
+            subtitle={`${coverageSessionFilter} - ${coverageTermFilter}`}
+          >
+            {loading ? (
+              <CardSkeleton count={1} />
+            ) : coverageChartData.length === 0 ? (
+              <ChartEmptyState />
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={coverageChartData} layout="vertical" margin={{ left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
+                    <XAxis type="number" tick={{ fill: CHART_COLORS.muted, fontSize: 12 }} />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={90}
+                      tick={{ fill: CHART_COLORS.muted, fontSize: 12 }}
+                    />
+                    <Tooltip content={<NumberTooltip />} />
+                    <Legend />
+                    <Bar dataKey="uploaded" name="Uploaded" stackId="coverage" fill={CHART_COLORS.paid} radius={[0, 8, 8, 0]} />
+                    <Bar dataKey="missing" name="Missing" stackId="coverage" fill={CHART_COLORS.outstanding} radius={[0, 8, 8, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </DashboardChartCard>
+        </section>
 
         <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
           <div className="mb-8">

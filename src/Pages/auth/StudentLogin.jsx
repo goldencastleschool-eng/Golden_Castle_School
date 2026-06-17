@@ -3,6 +3,7 @@ import { FaArrowRight, FaBookOpen, FaIdCard, FaLock } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 
 import API from "../../api/axios.jsx";
+import { PageLoader } from "../../components/common/Loading.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const image =
@@ -54,6 +55,10 @@ function StudentLogin() {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return <PageLoader message="Signing in to Student portal..." />;
+  }
 
   return (
     <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10 sm:px-6 lg:px-10">
