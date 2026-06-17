@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import {
   createBrowserRouter,
@@ -12,56 +12,90 @@ import { AuthProvider } from "./context/AuthProvider.jsx";
 import App from "./App.jsx";
 import "./App.css";
 
-// PUBLIC PAGES
-import Home from "./Pages/public/Home.jsx";
-import AboutUs from "./Pages/public/About.jsx";
-import Contact from "./Pages/public/Contact.jsx";
-import Gallery from "./Pages/public/Gallery.jsx";
-import Program from "./Pages/public/Program.jsx";
-
-import SecondaryEducation from "./Pages/public/SecondaryEducation.jsx";
-import BasicEducation from "./Pages/public/BasicEducation.jsx";
-import NurseryEducation from "./Pages/public/NurseryEducation.jsx";
-import ComputerTraining from "./Pages/public/ComputerTraining.jsx";
-import BoardingSchool from "./Pages/public/BoardingSchool.jsx";
-import MusicAndArts from "./Pages/public/MusicAndArts.jsx";
-
-// AUTH PAGES
-import AdminLogin from "./Pages/auth/AdminLogin.jsx";
-import StudentLogin from "./Pages/auth/StudentLogin.jsx";
-
-// DASHBOARD PAGES
-import StudentDashboard from "./Pages/student/StudentDashboard.jsx";
-import StudentLayout from "./Pages/student/StudentLayout.jsx";
-import StudentFees from "./Pages/student/StudentFees.jsx";
-import StudentResult from "./Pages/student/StudentResult.jsx";
-import StudentCumulativeResult from "./Pages/student/StudentCumulativeResult.jsx";
-import StudentSettings from "./Pages/student/StudentSettings.jsx";
-import TeacherLayout from "./Pages/teacher/TeacherLayout.jsx";
-import TeacherBroadsheets from "./Pages/teacher/TeacherBroadsheets.jsx";
-import TeacherClassResults from "./Pages/teacher/TeacherClassResults.jsx";
-import TeacherClassList from "./Pages/teacher/TeacherClassList.jsx";
-import TeacherSettings from "./Pages/teacher/TeacherSettings.jsx";
-import AdminDashboard from "./Pages/admin/AdminDashboard.jsx";
-import AdminLayout from "./Pages/admin/AdminLayout.jsx";
-import ClassManagement from "./Pages/admin/ClassManagement.jsx";
-import ClassCoverage from "./Pages/admin/ClassCoverage.jsx";
-import StudentManagement from "./Pages/admin/StudentManagement.jsx";
-import TeacherManagement from "./Pages/admin/TeacherManagement.jsx";
-import UploadResult from "./Pages/admin/UploadResult.jsx";
-import FeeManagement from "./Pages/admin/FeeManagement.jsx";
-import BusManagement from "./Pages/admin/BusManagement.jsx";
-import BoardingManagement from "./Pages/admin/BoardingManagement.jsx";
-import PayrollManagement from "./Pages/admin/PayrollManagement.jsx";
-import PortalVisibility from "./Pages/admin/PortalVisibility.jsx";
-import ExecutiveReportPortal from "./Pages/reports/ExecutiveReportPortal.jsx";
-
 // ROUTE PROTECTION
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 
-// ERROR PAGE
-import PageNotFound from "./Pages/public/PageNotFound.jsx";
 import { PageLoader } from "./components/common/Loading.jsx";
+
+// PUBLIC PAGES
+const Home = lazy(() => import("./Pages/public/Home.jsx"));
+const AboutUs = lazy(() => import("./Pages/public/About.jsx"));
+const Contact = lazy(() => import("./Pages/public/Contact.jsx"));
+const Gallery = lazy(() => import("./Pages/public/Gallery.jsx"));
+const Program = lazy(() => import("./Pages/public/Program.jsx"));
+const SecondaryEducation = lazy(() =>
+  import("./Pages/public/SecondaryEducation.jsx")
+);
+const BasicEducation = lazy(() => import("./Pages/public/BasicEducation.jsx"));
+const NurseryEducation = lazy(() =>
+  import("./Pages/public/NurseryEducation.jsx")
+);
+const ComputerTraining = lazy(() =>
+  import("./Pages/public/ComputerTraining.jsx")
+);
+const BoardingSchool = lazy(() => import("./Pages/public/BoardingSchool.jsx"));
+const MusicAndArts = lazy(() => import("./Pages/public/MusicAndArts.jsx"));
+
+// AUTH PAGES
+const AdminLogin = lazy(() => import("./Pages/auth/AdminLogin.jsx"));
+const StudentLogin = lazy(() => import("./Pages/auth/StudentLogin.jsx"));
+
+// DASHBOARD PAGES
+const StudentDashboard = lazy(() =>
+  import("./Pages/student/StudentDashboard.jsx")
+);
+const StudentLayout = lazy(() => import("./Pages/student/StudentLayout.jsx"));
+const StudentFees = lazy(() => import("./Pages/student/StudentFees.jsx"));
+const StudentResult = lazy(() => import("./Pages/student/StudentResult.jsx"));
+const StudentCumulativeResult = lazy(() =>
+  import("./Pages/student/StudentCumulativeResult.jsx")
+);
+const StudentSettings = lazy(() =>
+  import("./Pages/student/StudentSettings.jsx")
+);
+const TeacherLayout = lazy(() => import("./Pages/teacher/TeacherLayout.jsx"));
+const TeacherBroadsheets = lazy(() =>
+  import("./Pages/teacher/TeacherBroadsheets.jsx")
+);
+const TeacherClassResults = lazy(() =>
+  import("./Pages/teacher/TeacherClassResults.jsx")
+);
+const TeacherClassList = lazy(() =>
+  import("./Pages/teacher/TeacherClassList.jsx")
+);
+const TeacherSettings = lazy(() =>
+  import("./Pages/teacher/TeacherSettings.jsx")
+);
+const AdminDashboard = lazy(() => import("./Pages/admin/AdminDashboard.jsx"));
+const AdminLayout = lazy(() => import("./Pages/admin/AdminLayout.jsx"));
+const ClassManagement = lazy(() =>
+  import("./Pages/admin/ClassManagement.jsx")
+);
+const ClassCoverage = lazy(() => import("./Pages/admin/ClassCoverage.jsx"));
+const StudentManagement = lazy(() =>
+  import("./Pages/admin/StudentManagement.jsx")
+);
+const TeacherManagement = lazy(() =>
+  import("./Pages/admin/TeacherManagement.jsx")
+);
+const UploadResult = lazy(() => import("./Pages/admin/UploadResult.jsx"));
+const FeeManagement = lazy(() => import("./Pages/admin/FeeManagement.jsx"));
+const BusManagement = lazy(() => import("./Pages/admin/BusManagement.jsx"));
+const BoardingManagement = lazy(() =>
+  import("./Pages/admin/BoardingManagement.jsx")
+);
+const PayrollManagement = lazy(() =>
+  import("./Pages/admin/PayrollManagement.jsx")
+);
+const PortalVisibility = lazy(() =>
+  import("./Pages/admin/PortalVisibility.jsx")
+);
+const ExecutiveReportPortal = lazy(() =>
+  import("./Pages/reports/ExecutiveReportPortal.jsx")
+);
+
+// ERROR PAGE
+const PageNotFound = lazy(() => import("./Pages/public/PageNotFound.jsx"));
 
 
 
@@ -344,10 +378,12 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
-      <RouterProvider
-        router={router}
-        fallbackElement={<PageLoader message="Preparing your page..." />}
-      />
+      <Suspense fallback={<PageLoader message="Preparing your page..." />}>
+        <RouterProvider
+          router={router}
+          fallbackElement={<PageLoader message="Preparing your page..." />}
+        />
+      </Suspense>
     </AuthProvider>
   </StrictMode>
 );
