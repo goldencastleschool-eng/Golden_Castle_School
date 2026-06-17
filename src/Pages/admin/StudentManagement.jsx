@@ -10,8 +10,12 @@ import {
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
-import AdminStatCard from "../../components/common/AdminStatCard.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
+import PaginationControls from "../../components/common/PaginationControls.jsx";
+import {
+  getVisibleTermsForSession,
+  normalizeTermForSession,
+} from "../../utils/academicTerms.js";
 
 const initialStudentForm = {
   full_name: "",
@@ -26,7 +30,7 @@ const initialStudentForm = {
 };
 
 const DEFAULT_SESSION_FILTER = "2025/2026";
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 15;
 
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
@@ -56,9 +60,11 @@ function StudentManagement() {
   const [studentForm, setStudentForm] = useState(initialStudentForm);
   const [editingStudentId, setEditingStudentId] = useState("");
   const [studentSearch, setStudentSearch] = useState("");
+  const [studentPage, setStudentPage] = useState(1);
   const [studentViewSessionFilter, setStudentViewSessionFilter] = useState(
     DEFAULT_SESSION_FILTER
   );
+  const [studentViewTermFilter, setStudentViewTermFilter] = useState("");
   const [studentViewClassId, setStudentViewClassId] = useState("");
   const [studentNameSort, setStudentNameSort] = useState("az");
   const [status, setStatus] = useState({ type: "", message: "" });
@@ -100,7 +106,10 @@ function StudentManagement() {
         current_session: value,
         class: "",
         class_record: "",
-        admission_term: "",
+        admission_term: normalizeTermForSession(
+          currentForm.admission_term,
+          value
+        ),
       }));
       return;
     }
@@ -275,11 +284,15 @@ function StudentManagement() {
   const inputClass =
     "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
-  const displayedStudents = (() => {
+  useEffect(() => {
+    setStudentPage(1);
+  }, [studentSearch, students.length]);
+
+  const filteredStudentRecords = (() => {
     const searchValue = studentSearch.trim().toLowerCase();
 
     if (!searchValue) {
-      return students.slice(0, PAGE_SIZE);
+      return students;
     }
 
     return students.filter((student) => {
@@ -299,6 +312,15 @@ function StudentManagement() {
       return searchableText.includes(searchValue);
     });
   })();
+
+  const visibleStudentPage = Math.min(
+    studentPage,
+    Math.max(1, Math.ceil(filteredStudentRecords.length / PAGE_SIZE))
+  );
+  const displayedStudents = filteredStudentRecords.slice(
+    (visibleStudentPage - 1) * PAGE_SIZE,
+    visibleStudentPage * PAGE_SIZE
+  );
 
   const sessionOptions = useMemo(() => {
     return [
@@ -350,7 +372,11 @@ function StudentManagement() {
   }, [studentNameSort, viewedClassStudents]);
 
   const handleStudentViewSessionChange = (event) => {
-    setStudentViewSessionFilter(event.target.value);
+    const nextSession = event.target.value;
+    setStudentViewSessionFilter(nextSession);
+    setStudentViewTermFilter((currentTerm) =>
+      normalizeTermForSession(currentTerm, nextSession)
+    );
     setStudentViewClassId("");
   };
 
@@ -358,17 +384,35 @@ function StudentManagement() {
     (classRecord) => classRecord.session === studentForm.current_session
   );
   const activeStudents = students.filter(isActiveStudent);
-  const sessionStudents = activeStudents.filter(
-    (student) => student.current_session === studentViewSessionFilter
-  );
+  const sessionStudents = activeStudents.filter((student) => {
+    if (!studentViewTermFilter) {
+      return student.current_session === studentViewSessionFilter;
+    }
+
+    return Boolean(
+      getStudentFeeEnrollment(
+        student,
+        studentViewSessionFilter,
+        studentViewTermFilter
+      )
+    );
+  });
   const newlyAdmittedStudents = sessionStudents.filter(
     (student) =>
-      getStudentFeeEnrollment(student, studentViewSessionFilter)?.fee_category ===
+      getStudentFeeEnrollment(
+        student,
+        studentViewSessionFilter,
+        studentViewTermFilter
+      )?.fee_category ===
       "new"
   );
   const returningStudents = sessionStudents.filter(
     (student) =>
-      getStudentFeeEnrollment(student, studentViewSessionFilter)?.fee_category !==
+      getStudentFeeEnrollment(
+        student,
+        studentViewSessionFilter,
+        studentViewTermFilter
+      )?.fee_category !==
       "new"
   );
 
@@ -406,36 +450,6 @@ function StudentManagement() {
         </p>
       </div>
 
-      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <AdminStatCard
-          title="Active Students"
-          value={activeStudents.length}
-          icon={<FaUsers />}
-        />
-        <AdminStatCard
-          title={`${studentViewSessionFilter} Students`}
-          value={sessionStudents.length}
-          icon={<FaUserGraduate />}
-          tone="muted"
-        />
-        <AdminStatCard
-          title="Newly Admitted"
-          value={newlyAdmittedStudents.length}
-          icon={<FaUserCheck />}
-          tone="green"
-        />
-        <AdminStatCard
-          title="Returning"
-          value={returningStudents.length}
-          icon={<FaUsers />}
-        />
-        <AdminStatCard
-          title="Classes"
-          value={classes.length}
-          icon={<FaLayerGroup />}
-        />
-      </section>
-
       <div className="grid grid-cols-1 gap-8 ">
         <form
           onSubmit={handleSubmit}
@@ -448,7 +462,7 @@ function StudentManagement() {
             The password is stored securely by the backend.
           </p>
 
-          <div className="mt-7 grid grid-cols-1 gap-5">
+          <div className="mt-7 grid grid-cols-1 gap-5 md:grid-cols-2">
             <input
               className={inputClass}
               name="full_name"
@@ -493,7 +507,7 @@ function StudentManagement() {
               ))}
             </select>
             {studentForm.current_session && availableClasses.length === 0 && (
-              <p className="text-sm font-semibold text-primary/60">
+              <p className="text-sm font-semibold text-primary/60 md:col-span-2">
                 No class has been created for this session yet.
               </p>
             )}
@@ -515,9 +529,11 @@ function StudentManagement() {
               required
             >
               <option value="">Select admission term</option>
-              <option value="First Term">First Term</option>
-              <option value="Second Term">Second Term</option>
-              <option value="Third Term">Third Term</option>
+              {getVisibleTermsForSession(studentForm.current_session).map((term) => (
+                <option key={term} value={term}>
+                  {term}
+                </option>
+              ))}
             </select>
             <select
               className={inputClass}
@@ -568,8 +584,11 @@ function StudentManagement() {
         </form>
 
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
-          <div className="mb-6 grid grid-cols-1 gap-5  xl:items-end">
+          <div className="mb-6 flex flex-col gap-4 rounded-[2rem] bg-secondary p-6 shadow-2xl">
             <div>
+              <p className="text-sm font-bold uppercase text-button">
+                Student Filters
+              </p>
               <h3 className="text-3xl font-extrabold text-primary">
                 View Students
               </h3>
@@ -579,10 +598,7 @@ function StudentManagement() {
               </p>
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-primary/60">
-                Session
-              </label>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
               <select
                 className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 value={studentViewSessionFilter}
@@ -594,12 +610,20 @@ function StudentManagement() {
                   </option>
                 ))}
               </select>
-            </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-primary/60">
-                Class
-              </label>
+              <select
+                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                value={studentViewTermFilter}
+              onChange={(event) => setStudentViewTermFilter(event.target.value)}
+            >
+              <option value="">All terms</option>
+              {getVisibleTermsForSession(studentViewSessionFilter).map((term) => (
+                <option key={term} value={term}>
+                  {term}
+                </option>
+              ))}
+              </select>
+
               <select
                 className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 value={studentViewClassId}
@@ -612,12 +636,7 @@ function StudentManagement() {
                   </option>
                 ))}
               </select>
-            </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-primary/60">
-                Sort
-              </label>
               <select
                 className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 value={studentNameSort}
@@ -733,17 +752,17 @@ function StudentManagement() {
         </section>
 
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
-          <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px_auto] lg:items-end">
-            <div>
+          <div className="mb-5">
               <h3 className="text-3xl font-extrabold text-primary">
                 Student Records
               </h3>
               <p className="mt-2 text-primary/70">
-                Showing the 25 most recent registrations by default. Use search
+                Showing 15 records per page. Use search
                 to find any student.
               </p>
-            </div>
+          </div>
 
+          <div className="mb-6 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-[320px_auto] lg:items-end">
             <input
               value={studentSearch}
               onChange={(event) => setStudentSearch(event.target.value)}
@@ -795,7 +814,7 @@ function StudentManagement() {
                       className="text-primary/80 transition duration-300 hover:bg-primary/5"
                     >
                       <td className="px-5 py-4 font-bold text-primary">
-                        {index + 1}
+                        {(visibleStudentPage - 1) * PAGE_SIZE + index + 1}
                       </td>
                       <td className="px-5 py-4 font-semibold text-primary">
                         {student.full_name}
@@ -862,6 +881,12 @@ function StudentManagement() {
               </tbody>
             </table>
           </div>
+          <PaginationControls
+            currentPage={visibleStudentPage}
+            totalItems={filteredStudentRecords.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setStudentPage}
+          />
         </section>
       </div>
     </div>

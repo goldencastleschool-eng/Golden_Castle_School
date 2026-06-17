@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FaArrowRightFromBracket,
+  FaBus,
   FaChartPie,
   FaMoneyBillWave,
   FaRotateRight,
@@ -12,8 +13,13 @@ import {
 
 import API from "../../api/axios.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
+import {
+  FIRST_IMPLEMENTED_SESSION,
+  getVisibleTermsForSession,
+  normalizeTermForSession,
+} from "../../utils/academicTerms.js";
 
-const terms = ["First Term", "Second Term", "Third Term"];
+const DEFAULT_TERM = "Second Term";
 const emptyList = [];
 const emptySummary = {};
 
@@ -228,13 +234,13 @@ function StudentTable({ title, students, loading }) {
   );
 }
 
-function ExecutiveReportPortal({ embedded = false }) {
+function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [report, setReport] = useState(null);
   const [filters, setFilters] = useState({
-    session: "",
-    term: "First Term",
+    session: FIRST_IMPLEMENTED_SESSION,
+    term: DEFAULT_TERM,
     class_record: "",
   });
   const [loading, setLoading] = useState(true);
@@ -242,7 +248,10 @@ function ExecutiveReportPortal({ embedded = false }) {
   const [classPage, setClassPage] = useState(1);
 
   const selectedSession = report?.selected_session || filters.session;
-  const selectedTerm = report?.selected_term || filters.term;
+  const selectedTerm =
+    normalizeTermForSession(report?.selected_term || filters.term, selectedSession) ||
+    getVisibleTermsForSession(selectedSession)[0] ||
+    "";
   const selectedClassRecord =
     report?.selected_class_record || filters.class_record;
 
@@ -256,9 +265,17 @@ function ExecutiveReportPortal({ embedded = false }) {
       });
 
       setReport(response.data);
+      const selectedSession =
+        response.data.selected_session || nextFilters.session;
       setFilters({
-        session: response.data.selected_session || nextFilters.session,
-        term: response.data.selected_term || nextFilters.term,
+        session: selectedSession,
+        term:
+          normalizeTermForSession(
+            response.data.selected_term || nextFilters.term,
+            selectedSession
+          ) ||
+          getVisibleTermsForSession(selectedSession)[0] ||
+          "",
         class_record:
           response.data.selected_class_record || nextFilters.class_record,
       });
@@ -275,8 +292,8 @@ function ExecutiveReportPortal({ embedded = false }) {
 
   useEffect(() => {
     fetchReport({
-      session: "",
-      term: "First Term",
+      session: FIRST_IMPLEMENTED_SESSION,
+      term: DEFAULT_TERM,
       class_record: "",
     });
   }, [fetchReport]);
@@ -296,6 +313,10 @@ function ExecutiveReportPortal({ embedded = false }) {
 
     if (name === "session") {
       nextFilters.class_record = "";
+      nextFilters.term =
+        normalizeTermForSession(nextFilters.term, value) ||
+        getVisibleTermsForSession(value)[0] ||
+        "";
     }
 
     setFilters(nextFilters);
@@ -317,6 +338,45 @@ function ExecutiveReportPortal({ embedded = false }) {
   const classOptions = report?.class_options || emptyList;
   const newlyAdmittedStudents = report?.newly_admitted_students || emptyList;
   const returningStudents = report?.returning_students || emptyList;
+  const busSummary = report?.bus_summary || emptySummary;
+  const boardingSummary = report?.boarding_summary || emptySummary;
+  const payrollSummary = report?.payroll_summary || emptySummary;
+  const busReportRows = busSummary.route_rows || emptyList;
+  const boardingReportRows = boardingSummary.house_rows || emptyList;
+  const payrollReportRows = payrollSummary.category_rows || emptyList;
+  const showPayroll = user?.role !== "chairman";
+  const activePage = embedded ? "all" : page;
+  const showFeePage = activePage === "all" || activePage === "fee";
+  const showBusPage = activePage === "all" || activePage === "bus";
+  const showBoardingPage = activePage === "all" || activePage === "boarding";
+  const showPayrollPage =
+    showPayroll && (activePage === "all" || activePage === "payroll");
+  const executiveNavItems = [
+    {
+      label: "Fee Report",
+      path: "/reports/fees",
+      page: "fee",
+    },
+    {
+      label: "Bus Report",
+      path: "/reports/buses",
+      page: "bus",
+    },
+    {
+      label: "Boarding Report",
+      path: "/reports/boarding",
+      page: "boarding",
+    },
+    ...(showPayroll
+      ? [
+          {
+            label: "Payroll Report",
+            path: "/reports/payroll",
+            page: "payroll",
+          },
+        ]
+      : []),
+  ];
   const classTotalPages = Math.max(1, Math.ceil(classSummaries.length / PAGE_SIZE));
   const visibleClassPage = Math.min(classPage, classTotalPages);
 
@@ -392,16 +452,40 @@ function ExecutiveReportPortal({ embedded = false }) {
               <FaChartPie />
             </div>
             <h2 className="text-4xl font-extrabold text-secondary">
-              Executive Reports
+              Admin Report
             </h2>
             <p className="mt-3 max-w-2xl text-secondary/75">
-              Read-only fee and student population reports for school leadership.
+              Review fee, bus, boarding, payroll, and student population reports.
             </p>
           </div>
         )}
 
+        {!embedded && (
+          <nav className="mb-6 flex flex-wrap gap-3">
+            {executiveNavItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`rounded-2xl px-5 py-3 text-sm font-bold shadow-lg transition ${
+                  activePage === item.page
+                    ? "bg-button text-secondary"
+                    : "bg-secondary text-primary hover:bg-button hover:text-secondary"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        )}
+
         <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end">
+          <div
+            className={`grid grid-cols-1 gap-4 lg:items-end ${
+              showFeePage
+                ? "lg:grid-cols-[1fr_1fr_1fr_auto]"
+                : "lg:grid-cols-[1fr_1fr_auto]"
+            }`}
+          >
             <div>
               <label className="mb-2 block text-sm font-bold text-primary/60">
                 Session
@@ -430,14 +514,21 @@ function ExecutiveReportPortal({ embedded = false }) {
                 value={selectedTerm}
                 onChange={handleFilterChange}
               >
-                {(report?.available_terms || terms).map((term) => (
-                  <option key={term} value={term}>
-                    {term}
-                  </option>
-                ))}
+                {getVisibleTermsForSession(selectedSession)
+                  .filter(
+                    (term) =>
+                      !(report?.available_terms?.length) ||
+                      report.available_terms.includes(term)
+                  )
+                  .map((term) => (
+                    <option key={term} value={term}>
+                      {term}
+                    </option>
+                  ))}
               </select>
             </div>
 
+            {showFeePage && (
             <div>
               <label className="mb-2 block text-sm font-bold text-primary/60">
                 Class
@@ -456,6 +547,7 @@ function ExecutiveReportPortal({ embedded = false }) {
                 ))}
               </select>
             </div>
+            )}
 
             <button
               type="button"
@@ -474,6 +566,8 @@ function ExecutiveReportPortal({ embedded = false }) {
           </div>
         )}
 
+        {showFeePage && (
+        <>
         <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SummaryCard
             title="Total Students"
@@ -582,7 +676,350 @@ function ExecutiveReportPortal({ embedded = false }) {
             </div>
           </div>
         </section>
+        </>
+        )}
 
+        {(showBusPage || showBoardingPage || showPayrollPage) && (
+        <section
+          className={`mb-6 grid grid-cols-1 gap-4 ${
+            [showBusPage, showBoardingPage, showPayrollPage].filter(Boolean).length > 1
+              ? "xl:grid-cols-2"
+              : ""
+          }`}
+        >
+          {showBusPage && (
+          <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-extrabold text-primary">
+                  Bus Summary
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-primary/60">
+                  {selectedSession || "No session"} - {selectedTerm}
+                </p>
+              </div>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+                <FaBus />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl bg-primary/5 p-5">
+                <p className="text-sm font-bold text-primary/60">
+                  Active Bus Students
+                </p>
+                <p className="mt-2 text-2xl font-extrabold text-primary">
+                  {loading ? "..." : busSummary.active_enrollments || 0}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-primary/5 p-5">
+                <p className="text-sm font-bold text-primary/60">Routes</p>
+                <p className="mt-2 text-2xl font-extrabold text-primary">
+                  {loading ? "..." : busSummary.routes || 0}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-green-500/10 p-5">
+                <p className="text-sm font-bold text-green-300">Paid</p>
+                <p className="mt-2 text-2xl font-extrabold text-green-200">
+                  {loading ? "..." : formatCurrency(busSummary.paid)}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-red-500/10 p-5">
+                <p className="text-sm font-bold text-red-300">Balance</p>
+                <p className="mt-2 text-2xl font-extrabold text-red-200">
+                  {loading ? "..." : formatCurrency(busSummary.balance)}
+                </p>
+              </div>
+            </div>
+          </div>
+          )}
+
+          {showBoardingPage && (
+          <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-extrabold text-primary">
+                  Boarding Summary
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-primary/60">
+                  {selectedSession || "No session"} - {selectedTerm}
+                </p>
+              </div>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+                <FaUserGraduate />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl bg-primary/5 p-5">
+                <p className="text-sm font-bold text-primary/60">Boarding Students</p>
+                <p className="mt-2 text-2xl font-extrabold text-primary">
+                  {loading ? "..." : boardingSummary.active_enrollments || 0}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-primary/5 p-5">
+                <p className="text-sm font-bold text-primary/60">Houses</p>
+                <p className="mt-2 text-2xl font-extrabold text-primary">
+                  {loading ? "..." : boardingSummary.houses || 0}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-green-500/10 p-5">
+                <p className="text-sm font-bold text-green-300">Paid</p>
+                <p className="mt-2 text-2xl font-extrabold text-green-200">
+                  {loading ? "..." : formatCurrency(boardingSummary.paid)}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-red-500/10 p-5">
+                <p className="text-sm font-bold text-red-300">Balance</p>
+                <p className="mt-2 text-2xl font-extrabold text-red-200">
+                  {loading ? "..." : formatCurrency(boardingSummary.balance)}
+                </p>
+              </div>
+            </div>
+          </div>
+          )}
+
+          {showPayrollPage && (
+            <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-primary">
+                    Payroll Summary
+                  </h2>
+                  <p className="mt-1 text-sm font-semibold text-primary/60">
+                    {selectedSession || "No session"} - {selectedTerm}
+                  </p>
+                </div>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+                  <FaMoneyBillWave />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl bg-primary/5 p-5">
+                  <p className="text-sm font-bold text-primary/60">
+                    Active Staff
+                  </p>
+                  <p className="mt-2 text-2xl font-extrabold text-primary">
+                    {loading ? "..." : payrollSummary.active_staff || 0}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-primary/5 p-5">
+                  <p className="text-sm font-bold text-primary/60">
+                    Assigned Staff
+                  </p>
+                  <p className="mt-2 text-2xl font-extrabold text-primary">
+                    {loading ? "..." : payrollSummary.assigned_staff || 0}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-green-500/10 p-5">
+                  <p className="text-sm font-bold text-green-300">Paid</p>
+                  <p className="mt-2 text-2xl font-extrabold text-green-200">
+                    {loading ? "..." : formatCurrency(payrollSummary.paid)}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-red-500/10 p-5">
+                  <p className="text-sm font-bold text-red-300">Balance</p>
+                  <p className="mt-2 text-2xl font-extrabold text-red-200">
+                    {loading ? "..." : formatCurrency(payrollSummary.balance)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+        )}
+
+        {showBusPage && (
+        <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <div className="mb-4">
+            <h2 className="text-2xl font-extrabold text-primary">
+              Bus Report
+            </h2>
+            <p className="mt-1 text-sm font-semibold text-primary/60">
+              Route-level transport enrollment and payment report.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-primary/10">
+            <table className="w-full min-w-[920px] text-left text-sm">
+              <thead className={tableHeadClass}>
+                <tr>
+                  <th className={tableCellClass}>Route</th>
+                  <th className={tableCellClass}>Students</th>
+                  <th className={tableCellClass}>Expected</th>
+                  <th className={tableCellClass}>Paid</th>
+                  <th className={tableCellClass}>Balance</th>
+                  <th className={tableCellClass}>Outstanding Students</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-primary/10 text-primary/80">
+                {loading ? (
+                  <tr>
+                    <td className="px-5 py-6 text-primary/70" colSpan="6">
+                      Loading bus report...
+                    </td>
+                  </tr>
+                ) : busReportRows.length === 0 ? (
+                  <tr>
+                    <td className="px-5 py-6 text-primary/70" colSpan="6">
+                      No bus record found for this filter.
+                    </td>
+                  </tr>
+                ) : (
+                  busReportRows.map((row) => (
+                    <tr key={row.route_id || row.route}>
+                      <td className={`${tableCellClass} font-bold text-primary`}>
+                        {row.route}
+                      </td>
+                      <td className={tableCellClass}>{row.active_enrollments}</td>
+                      <td className={tableCellClass}>
+                        {formatCurrency(row.expected)}
+                      </td>
+                      <td className={`${tableCellClass} font-bold text-primary`}>
+                        {formatCurrency(row.paid)}
+                      </td>
+                      <td className={tableCellClass}>
+                        {formatCurrency(row.balance)}
+                      </td>
+                      <td className={tableCellClass}>
+                        {row.outstanding_students}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        )}
+
+        {showBoardingPage && (
+        <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <div className="mb-4">
+            <h2 className="text-2xl font-extrabold text-primary">
+              Boarding Report
+            </h2>
+            <p className="mt-1 text-sm font-semibold text-primary/60">
+              House-level boarding registration and payment report.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-primary/10">
+            <table className="w-full min-w-[920px] text-left text-sm">
+              <thead className={tableHeadClass}>
+                <tr>
+                  <th className={tableCellClass}>House</th>
+                  <th className={tableCellClass}>Students</th>
+                  <th className={tableCellClass}>Expected</th>
+                  <th className={tableCellClass}>Paid</th>
+                  <th className={tableCellClass}>Balance</th>
+                  <th className={tableCellClass}>Outstanding Students</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-primary/10 text-primary/80">
+                {loading ? (
+                  <tr>
+                    <td className="px-5 py-6 text-primary/70" colSpan="6">
+                      Loading boarding report...
+                    </td>
+                  </tr>
+                ) : boardingReportRows.length === 0 ? (
+                  <tr>
+                    <td className="px-5 py-6 text-primary/70" colSpan="6">
+                      No boarding record found for this filter.
+                    </td>
+                  </tr>
+                ) : (
+                  boardingReportRows.map((row) => (
+                    <tr key={row.house_id || row.house}>
+                      <td className={`${tableCellClass} font-bold text-primary`}>
+                        {row.house}
+                      </td>
+                      <td className={tableCellClass}>{row.active_enrollments}</td>
+                      <td className={tableCellClass}>{formatCurrency(row.expected)}</td>
+                      <td className={`${tableCellClass} font-bold text-primary`}>
+                        {formatCurrency(row.paid)}
+                      </td>
+                      <td className={tableCellClass}>{formatCurrency(row.balance)}</td>
+                      <td className={tableCellClass}>{row.outstanding_students}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        )}
+
+        {showPayrollPage && (
+          <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+            <div className="mb-4">
+              <h2 className="text-2xl font-extrabold text-primary">
+                Payroll Report
+              </h2>
+              <p className="mt-1 text-sm font-semibold text-primary/60">
+                Staff payroll by category and level for the selected filter.
+              </p>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-primary/10">
+              <table className="w-full min-w-[920px] text-left text-sm">
+                <thead className={tableHeadClass}>
+                  <tr>
+                    <th className={tableCellClass}>Category</th>
+                    <th className={tableCellClass}>Level</th>
+                    <th className={tableCellClass}>Assigned Staff</th>
+                    <th className={tableCellClass}>Expected</th>
+                    <th className={tableCellClass}>Paid</th>
+                    <th className={tableCellClass}>Balance</th>
+                    <th className={tableCellClass}>Outstanding Staff</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-primary/10 text-primary/80">
+                  {loading ? (
+                    <tr>
+                      <td className="px-5 py-6 text-primary/70" colSpan="7">
+                        Loading payroll report...
+                      </td>
+                    </tr>
+                  ) : payrollReportRows.length === 0 ? (
+                    <tr>
+                      <td className="px-5 py-6 text-primary/70" colSpan="7">
+                        No payroll record found for this filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    payrollReportRows.map((row) => (
+                      <tr key={row.key || `${row.category}-${row.level_name}`}>
+                        <td className={`${tableCellClass} font-bold text-primary`}>
+                          {row.category === "non_academic"
+                            ? "Non Academic"
+                            : "Academic"}
+                        </td>
+                        <td className={tableCellClass}>{row.level_name}</td>
+                        <td className={tableCellClass}>{row.assigned_staff}</td>
+                        <td className={tableCellClass}>
+                          {formatCurrency(row.expected)}
+                        </td>
+                        <td className={`${tableCellClass} font-bold text-primary`}>
+                          {formatCurrency(row.paid)}
+                        </td>
+                        <td className={tableCellClass}>
+                          {formatCurrency(row.balance)}
+                        </td>
+                        <td className={tableCellClass}>{row.outstanding_staff}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {showFeePage && (
+        <>
         <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
           <div className="mb-4">
             <h2 className="text-2xl font-extrabold text-primary">
@@ -684,6 +1121,8 @@ function ExecutiveReportPortal({ embedded = false }) {
             loading={loading}
           />
         </div>
+        </>
+        )}
       </div>
     </PageWrapper>
   );

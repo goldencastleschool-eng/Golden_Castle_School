@@ -10,6 +10,7 @@ import {
   FaAnglesLeft,
   FaAnglesRight,
   FaBars,
+  FaBed,
   FaBus,
   FaChartLine,
   FaChartPie,
@@ -73,6 +74,11 @@ const adminLinks = [
     label: "Buses",
     path: "/admin/buses",
     icon: <FaBus />,
+  },
+  {
+    label: "Boarding",
+    path: "/admin/boarding",
+    icon: <FaBed />,
   },
   {
     label: "Payroll",

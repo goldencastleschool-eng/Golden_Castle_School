@@ -13,8 +13,8 @@ import {
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
-import AdminStatCard from "../../components/common/AdminStatCard.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
+import PaginationControls from "../../components/common/PaginationControls.jsx";
 import schoolLogo from "../../assets/1723987411228.jpg";
 import { getFeeReceiptNumber } from "../../utils/paymentReceipt.js";
 import {
@@ -22,8 +22,13 @@ import {
   getPrintBrandStyles,
 } from "../../utils/printBranding.js";
 import { sortStudentsByName } from "../../utils/students.js";
+import {
+  getVisibleTermsForSession,
+  normalizeTermForSession,
+} from "../../utils/academicTerms.js";
 
 const DEFAULT_SESSION = "2025/2026";
+const PAGE_SIZE = 15;
 
 const initialFeeForm = {
   student: "",
@@ -92,6 +97,14 @@ const getRecordId = (record) => record?._id || record || "";
 
 const getFeeStudentId = (fee = {}) => getRecordId(fee.student);
 
+const TERM_ORDER = ["First Term", "Second Term", "Third Term"];
+
+const getTermIndex = (term = "") => {
+  const termIndex = TERM_ORDER.indexOf(term);
+
+  return termIndex === -1 ? TERM_ORDER.length : termIndex;
+};
+
 const getStudentFeeEnrollment = (student, session, term = "") => {
   const enrollments = Array.isArray(student?.fee_enrollments)
     ? student.fee_enrollments
@@ -101,6 +114,45 @@ const getStudentFeeEnrollment = (student, session, term = "") => {
     (enrollment) =>
       enrollment.session === session &&
       (!term || enrollment.term === term)
+  );
+};
+
+const getStudentEffectiveFeeEnrollment = (student, session, term = "") => {
+  const enrollments = Array.isArray(student?.fee_enrollments)
+    ? student.fee_enrollments
+    : [];
+
+  if (!term) {
+    return getStudentFeeEnrollment(student, session);
+  }
+
+  const targetTermIndex = getTermIndex(term);
+
+  return enrollments
+    .filter(
+      (enrollment) =>
+        enrollment.session === session &&
+        getTermIndex(enrollment.term) <= targetTermIndex
+    )
+    .sort(
+      (firstEnrollment, secondEnrollment) =>
+        getTermIndex(secondEnrollment.term) - getTermIndex(firstEnrollment.term)
+    )[0];
+};
+
+const studentBelongsToTermClass = (student, classRecord, session, term) => {
+  const enrollment = getStudentEffectiveFeeEnrollment(student, session, term);
+
+  if (!enrollment || !classRecord) {
+    return false;
+  }
+
+  const enrollmentClassRecordId = getRecordId(enrollment.class_record);
+  const classRecordId = getRecordId(classRecord);
+
+  return (
+    enrollmentClassRecordId === classRecordId ||
+    normalizeClassName(enrollment.class) === normalizeClassName(classRecord.name)
   );
 };
 
@@ -153,6 +205,26 @@ const getFeeStructurePaymentCount = (feeStructure, fees = []) => {
   }).length;
 };
 
+const getStudentPaidForFeeWindow = ({
+  fees = [],
+  studentId,
+  session,
+  term,
+  feeCategory,
+}) =>
+  fees
+    .filter((fee) => {
+      const feeStudentId = getFeeStudentId(fee);
+
+      return (
+        feeStudentId === studentId &&
+        fee.session === session &&
+        fee.term === term &&
+        (fee.fee_category || "returning") === feeCategory
+      );
+    })
+    .reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
+
 function FeeManagement() {
   const [fees, setFees] = useState([]);
   const [feeStructures, setFeeStructures] = useState([]);
@@ -168,6 +240,8 @@ function FeeManagement() {
     class_record: "",
     search: "",
   });
+  const [structurePage, setStructurePage] = useState(1);
+  const [paymentPage, setPaymentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -250,24 +324,23 @@ function FeeManagement() {
 
     return sortStudentsByName(
       students.filter((student) => {
-        if (!isActiveStudent(student) || student.current_session !== feeForm.session) {
+        if (!isActiveStudent(student)) {
           return false;
         }
 
-        if (!selectedClass) {
+        if (!selectedClass || !feeForm.term) {
           return false;
         }
 
-        const studentClassRecordId =
-          student.class_record?._id || student.class_record || "";
-
-        return (
-          studentClassRecordId === selectedClass._id ||
-          normalizeClassName(student.class) === normalizeClassName(selectedClass.name)
+        return studentBelongsToTermClass(
+          student,
+          selectedClass,
+          feeForm.session,
+          feeForm.term
         );
       })
     );
-  }, [classes, feeForm.class_record, feeForm.session, students]);
+  }, [classes, feeForm.class_record, feeForm.session, feeForm.term, students]);
 
   const selectedFormClass = useMemo(
     () =>
@@ -367,6 +440,7 @@ function FeeManagement() {
         session: value,
         class_record: "",
         student: "",
+        term: normalizeTermForSession(currentForm.term, value),
       }));
       return;
     }
@@ -394,6 +468,7 @@ function FeeManagement() {
         ...currentForm,
         session: value,
         class_record: "",
+        term: normalizeTermForSession(currentForm.term, value),
       }));
       return;
     }
@@ -700,6 +775,9 @@ function FeeManagement() {
     setFilters((currentFilters) => ({
       ...currentFilters,
       [name]: value,
+      ...(name === "session"
+        ? { term: normalizeTermForSession(currentFilters.term, value) }
+        : {}),
     }));
   };
 
@@ -805,6 +883,31 @@ function FeeManagement() {
     });
   }, [classes, fees, filters]);
 
+  useEffect(() => {
+    setStructurePage(1);
+  }, [feeStructures.length]);
+
+  useEffect(() => {
+    setPaymentPage(1);
+  }, [filteredFees.length, filters]);
+
+  const visibleStructurePage = Math.min(
+    structurePage,
+    Math.max(1, Math.ceil(feeStructures.length / PAGE_SIZE))
+  );
+  const paginatedFeeStructures = feeStructures.slice(
+    (visibleStructurePage - 1) * PAGE_SIZE,
+    visibleStructurePage * PAGE_SIZE
+  );
+  const visiblePaymentPage = Math.min(
+    paymentPage,
+    Math.max(1, Math.ceil(filteredFees.length / PAGE_SIZE))
+  );
+  const paginatedFees = filteredFees.slice(
+    (visiblePaymentPage - 1) * PAGE_SIZE,
+    visiblePaymentPage * PAGE_SIZE
+  );
+
   const selectedFilterClass = classes.find(
     (classRecord) => classRecord._id === filters.class_record
   );
@@ -830,15 +933,14 @@ function FeeManagement() {
       .flatMap((feeStructure) => {
         const classRecord = feeStructure.class_record;
         const classStudents = students.filter((student) => {
-          const studentClassRecordId =
-            student.class_record?._id || student.class_record || "";
-
           return (
             isActiveStudent(student) &&
-            student.current_session === classRecord.session &&
-            (studentClassRecordId === classRecord._id ||
-              normalizeClassName(student.class) ===
-                normalizeClassName(classRecord.name))
+            studentBelongsToTermClass(
+              student,
+              classRecord,
+              feeStructure.session,
+              feeStructure.term
+            )
           );
         }).filter(
           (student) =>
@@ -850,17 +952,14 @@ function FeeManagement() {
         );
 
         return classStudents.map((student) => {
-          const paid = fees
-            .filter((fee) => {
-              const feeStudentId = fee.student?._id || fee.student;
-
-              return (
-                feeStudentId === student._id &&
-                fee.session === feeStructure.session &&
-                fee.term === feeStructure.term
-              );
-            })
-            .reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
+          const feeCategory = feeStructure.fee_category || "returning";
+          const paid = getStudentPaidForFeeWindow({
+            fees,
+            studentId: student._id,
+            session: feeStructure.session,
+            term: feeStructure.term,
+            feeCategory,
+          });
           const expected = Number(feeStructure.amount || 0);
 
           return {
@@ -868,6 +967,7 @@ function FeeManagement() {
             classRecord,
             session: feeStructure.session,
             term: feeStructure.term,
+            feeCategory,
             expected,
             paid,
             balance: Math.max(expected - paid, 0),
@@ -902,7 +1002,6 @@ function FeeManagement() {
     (row) => row.paid > 0 && row.paid < row.expected
   ).length;
   const debtorCount = dashboardRows.filter((row) => row.balance > 0).length;
-
   const balanceRows = useMemo(() => {
     if (!selectedFilterClass || !filters.session || !filters.term) {
       return [];
@@ -910,37 +1009,32 @@ function FeeManagement() {
 
     return students
       .filter((student) => {
-        const studentClassRecordId =
-          student.class_record?._id || student.class_record || "";
-
         return (
           isActiveStudent(student) &&
-          student.current_session === filters.session &&
-          (studentClassRecordId === selectedFilterClass._id ||
-            normalizeClassName(student.class) ===
-              normalizeClassName(selectedFilterClass.name))
+          studentBelongsToTermClass(
+            student,
+            selectedFilterClass,
+            filters.session,
+            filters.term
+          )
         );
       })
       .sort((firstStudent, secondStudent) =>
         (firstStudent.full_name || "").localeCompare(secondStudent.full_name || "")
       )
       .map((student) => {
-        const paid = fees
-          .filter((fee) => {
-            const feeStudentId = fee.student?._id || fee.student;
-
-            return (
-              feeStudentId === student._id &&
-              fee.session === filters.session &&
-              fee.term === filters.term
-            );
-          })
-          .reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
         const feeCategory = getStudentFeeCategory(
           student,
           filters.session,
           filters.term
         );
+        const paid = getStudentPaidForFeeWindow({
+          fees,
+          studentId: student._id,
+          session: filters.session,
+          term: filters.term,
+          feeCategory,
+        });
         const expectedStructure = findFeeStructure(
           feeStructures,
           filters.class_record,
@@ -1502,38 +1596,6 @@ function FeeManagement() {
         </p>
       </div>
 
-      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <AdminStatCard
-          title="Expected Fees"
-          value={loading ? "..." : formatCurrency(dashboardTotalExpected)}
-          icon={<FaReceipt />}
-        />
-        <AdminStatCard
-          title="Amount Paid"
-          value={loading ? "..." : formatCurrency(dashboardTotalPaid)}
-          icon={<FaMoneyBillWave />}
-          tone="green"
-        />
-        <AdminStatCard
-          title="Outstanding"
-          value={loading ? "..." : formatCurrency(dashboardTotalBalance)}
-          icon={<FaMoneyBillWave />}
-          tone="red"
-        />
-        <AdminStatCard
-          title="Fully Paid"
-          value={loading ? "..." : fullyPaidCount}
-          icon={<FaCircleCheck />}
-          tone="muted"
-        />
-        <AdminStatCard
-          title="Debtors"
-          value={loading ? "..." : debtorCount}
-          icon={<FaUsers />}
-          tone="red"
-        />
-      </section>
-
       <div className="grid grid-cols-1 gap-8">
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
           <div className="grid grid-cols-1 gap-8">
@@ -1582,9 +1644,11 @@ function FeeManagement() {
                 required
               >
                 <option value="">Select term</option>
-                <option value="First Term">First Term</option>
-                <option value="Second Term">Second Term</option>
-                <option value="Third Term">Third Term</option>
+                {getVisibleTermsForSession(structureForm.session).map((term) => (
+                  <option key={term} value={term}>
+                    {term}
+                  </option>
+                ))}
               </select>
               <select
                 className={inputClass}
@@ -1753,14 +1817,16 @@ function FeeManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary/10">
-                {feeStructures.length === 0 ? (
+                {loading ? (
+                  <TableSkeleton columns={7} />
+                ) : feeStructures.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="7">
                       No payment structure has been created yet.
                     </td>
                   </tr>
                 ) : (
-                  feeStructures.map((feeStructure) => {
+                  paginatedFeeStructures.map((feeStructure) => {
                     const recordedFeeCount = getFeeStructurePaymentCount(
                       feeStructure,
                       fees
@@ -1818,6 +1884,12 @@ function FeeManagement() {
               </tbody>
             </table>
           </div>
+          <PaginationControls
+            currentPage={visibleStructurePage}
+            totalItems={feeStructures.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setStructurePage}
+          />
         </section>
 
         <form
@@ -1874,9 +1946,11 @@ function FeeManagement() {
               required
             >
               <option value="">Select term</option>
-              <option value="First Term">First Term</option>
-              <option value="Second Term">Second Term</option>
-              <option value="Third Term">Third Term</option>
+              {getVisibleTermsForSession(feeForm.session).map((term) => (
+                <option key={term} value={term}>
+                  {term}
+                </option>
+              ))}
             </select>
 
             <select
@@ -2094,70 +2168,11 @@ function FeeManagement() {
         </form>
 
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
-          <div className="mb-6">
-            <h3 className="text-3xl font-extrabold text-primary">
-              Fee Dashboard
-            </h3>
-            <p className="mt-2 text-primary/70">
-              Summary for the selected payment-record filters.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-2xl bg-primary/5 p-5">
-              <p className="text-sm font-bold uppercase text-primary/60">
-                Total Expected School Fees
+          <div className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+            <div className="mb-5">
+              <p className="text-sm font-bold uppercase text-button">
+                Fee Filters
               </p>
-              <p className="mt-3 text-3xl font-extrabold text-primary">
-                {loading ? "..." : formatCurrency(dashboardTotalExpected)}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-primary/5 p-5">
-              <p className="text-sm font-bold uppercase text-primary/60">
-                Total Amount Paid
-              </p>
-              <p className="mt-3 text-3xl font-extrabold text-primary">
-                {loading ? "..." : formatCurrency(dashboardTotalPaid)}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-primary/5 p-5">
-              <p className="text-sm font-bold uppercase text-primary/60">
-                Outstanding Balance
-              </p>
-              <p className="mt-3 text-3xl font-extrabold text-primary">
-                {loading ? "..." : formatCurrency(dashboardTotalBalance)}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-primary/5 p-5">
-              <p className="text-sm font-bold uppercase text-primary/60">
-                Fully Paid Students
-              </p>
-              <p className="mt-3 text-3xl font-extrabold text-primary">
-                {loading ? "..." : fullyPaidCount}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-primary/5 p-5">
-              <p className="text-sm font-bold uppercase text-primary/60">
-                Partially Paid Students
-              </p>
-              <p className="mt-3 text-3xl font-extrabold text-primary">
-                {loading ? "..." : partiallyPaidCount}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-primary/5 p-5">
-              <p className="text-sm font-bold uppercase text-primary/60">
-                Debtors
-              </p>
-              <p className="mt-3 text-3xl font-extrabold text-primary">
-                {loading ? "..." : debtorCount}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
-          <div className="mb-6 grid grid-cols-1 gap-5 xl:items-end">
-            <div>
               <h3 className="text-3xl font-extrabold text-primary">
                 Payment Records
               </h3>
@@ -2166,65 +2181,67 @@ function FeeManagement() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-[1fr_220px_220px_auto_auto]">
-                <select
-              className={inputClass}
-              name="session"
-              value={filters.session}
-              onChange={handleFilterChange}
-            >
-              <option value="">All sessions</option>
-              {sessionOptions.map((session) => (
-                <option key={session} value={session}>
-                  {session}
-                </option>
-              ))}
-            </select>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[180px_180px_220px_auto_auto]">
+              <select
+                className={inputClass}
+                name="session"
+                value={filters.session}
+                onChange={handleFilterChange}
+              >
+                <option value="">All sessions</option>
+                {sessionOptions.map((session) => (
+                  <option key={session} value={session}>
+                    {session}
+                  </option>
+                ))}
+              </select>
 
-            <select
-              className={inputClass}
-              name="term"
-              value={filters.term}
-              onChange={handleFilterChange}
-            >
-              <option value="">All terms</option>
-              <option value="First Term">First Term</option>
-              <option value="Second Term">Second Term</option>
-              <option value="Third Term">Third Term</option>
-            </select>
+              <select
+                className={inputClass}
+                name="term"
+                value={filters.term}
+                onChange={handleFilterChange}
+              >
+                <option value="">All terms</option>
+                {getVisibleTermsForSession(filters.session).map((term) => (
+                  <option key={term} value={term}>
+                    {term}
+                  </option>
+                ))}
+              </select>
 
-            <select
-              className={inputClass}
-              name="class_record"
-              value={filters.class_record}
-              onChange={handleFilterChange}
-              disabled={!filters.session}
-            >
-              <option value="">All classes</option>
-              {filterClasses.map((classRecord) => (
-                <option key={classRecord._id} value={classRecord._id}>
-                  {classRecord.name.toUpperCase()}
-                </option>
-              ))}
-            </select>
+              <select
+                className={inputClass}
+                name="class_record"
+                value={filters.class_record}
+                onChange={handleFilterChange}
+                disabled={!filters.session}
+              >
+                <option value="">All classes</option>
+                {filterClasses.map((classRecord) => (
+                  <option key={classRecord._id} value={classRecord._id}>
+                    {classRecord.name.toUpperCase()}
+                  </option>
+                ))}
+              </select>
 
-            <button
-              type="button"
-              onClick={fetchFeeData}
-              className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-semibold text-secondary shadow-lg transition-all duration-300 hover:scale-105"
-            >
-              Refresh
-              <FaArrowRight />
-            </button>
+              <button
+                type="button"
+                onClick={fetchFeeData}
+                className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-semibold text-secondary shadow-lg transition-all duration-300 hover:scale-105"
+              >
+                Refresh
+                <FaArrowRight />
+              </button>
 
-            <button
-              type="button"
-              onClick={handlePrintQueriedClassPayments}
-              disabled={!selectedFilterClass || !filters.term}
-              className="flex cursor-pointer items-center justify-center rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Print
-            </button>
+              <button
+                type="button"
+                onClick={handlePrintQueriedClassPayments}
+                disabled={!selectedFilterClass || !filters.term}
+                className="flex cursor-pointer items-center justify-center rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Print
+              </button>
             </div>
           </div>
 
@@ -2374,13 +2391,13 @@ function FeeManagement() {
                     </td>
                   </tr>
                 ) : (
-                  filteredFees.map((fee, index) => (
+                  paginatedFees.map((fee, index) => (
                     <tr
                       key={fee._id}
                       className="text-primary/80 transition duration-300 hover:bg-primary/5"
                     >
                       <td className="px-5 py-4 font-bold text-primary">
-                        {index + 1}
+                        {(visiblePaymentPage - 1) * PAGE_SIZE + index + 1}
                       </td>
                       <td className="px-5 py-4 font-semibold text-primary">
                         {fee.student?.full_name || "Deleted student"}
@@ -2445,6 +2462,12 @@ function FeeManagement() {
               </tbody>
             </table>
           </div>
+          <PaginationControls
+            currentPage={visiblePaymentPage}
+            totalItems={filteredFees.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPaymentPage}
+          />
         </section>
       </div>
     </div>

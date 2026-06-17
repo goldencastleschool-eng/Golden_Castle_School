@@ -51,6 +51,7 @@ import TeacherManagement from "./Pages/admin/TeacherManagement.jsx";
 import UploadResult from "./Pages/admin/UploadResult.jsx";
 import FeeManagement from "./Pages/admin/FeeManagement.jsx";
 import BusManagement from "./Pages/admin/BusManagement.jsx";
+import BoardingManagement from "./Pages/admin/BoardingManagement.jsx";
 import PayrollManagement from "./Pages/admin/PayrollManagement.jsx";
 import PortalVisibility from "./Pages/admin/PortalVisibility.jsx";
 import ExecutiveReportPortal from "./Pages/reports/ExecutiveReportPortal.jsx";
@@ -256,12 +257,16 @@ const router = createBrowserRouter([
             element: <BusManagement />,
           },
           {
+            path: "boarding",
+            element: <BoardingManagement />,
+          },
+          {
             path: "payroll",
             element: <PayrollManagement />,
           },
           {
             path: "reports",
-            element: <ExecutiveReportPortal embedded />,
+            element: <ExecutiveReportPortal embedded page="all" />,
           },
           {
             path: "results",
@@ -280,7 +285,51 @@ const router = createBrowserRouter([
             role={["admin", "principal", "chairman"]}
             redirectTo="/executive-login"
           >
-            <ExecutiveReportPortal />
+            <ExecutiveReportPortal page="fee" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "reports/fees",
+        element: (
+          <ProtectedRoute
+            role={["admin", "principal", "chairman"]}
+            redirectTo="/executive-login"
+          >
+            <ExecutiveReportPortal page="fee" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "reports/buses",
+        element: (
+          <ProtectedRoute
+            role={["admin", "principal", "chairman"]}
+            redirectTo="/executive-login"
+          >
+            <ExecutiveReportPortal page="bus" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "reports/boarding",
+        element: (
+          <ProtectedRoute
+            role={["admin", "principal", "chairman"]}
+            redirectTo="/executive-login"
+          >
+            <ExecutiveReportPortal page="boarding" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "reports/payroll",
+        element: (
+          <ProtectedRoute
+            role={["admin", "principal"]}
+            redirectTo="/executive-login"
+          >
+            <ExecutiveReportPortal page="payroll" />
           </ProtectedRoute>
         ),
       },

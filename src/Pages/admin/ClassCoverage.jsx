@@ -15,6 +15,55 @@ import { TableSkeleton } from "../../components/common/Loading.jsx";
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
 
+const getRecordId = (record) => record?._id || record || "";
+
+const isActiveStudent = (student) =>
+  !student.status || student.status === "active";
+
+const TERM_ORDER = ["First Term", "Second Term", "Third Term"];
+
+const getTermIndex = (term = "") => {
+  const termIndex = TERM_ORDER.indexOf(term);
+
+  return termIndex === -1 ? TERM_ORDER.length : termIndex;
+};
+
+const getStudentEffectiveTermEnrollment = (student, session, term) => {
+  const enrollments = Array.isArray(student?.fee_enrollments)
+    ? student.fee_enrollments
+    : [];
+  const targetTermIndex = getTermIndex(term);
+
+  return enrollments
+    .filter(
+      (enrollment) =>
+        enrollment.session === session &&
+        getTermIndex(enrollment.term) <= targetTermIndex
+    )
+    .sort(
+      (firstEnrollment, secondEnrollment) =>
+        getTermIndex(secondEnrollment.term) - getTermIndex(firstEnrollment.term)
+    )[0];
+};
+
+const studentBelongsToEffectiveTermClass = (
+  student,
+  classRecord,
+  session,
+  term
+) => {
+  const enrollment = getStudentEffectiveTermEnrollment(student, session, term);
+
+  if (!enrollment || !classRecord) {
+    return false;
+  }
+
+  return (
+    getRecordId(enrollment.class_record) === getRecordId(classRecord) ||
+    normalizeClassName(enrollment.class) === normalizeClassName(classRecord.name)
+  );
+};
+
 function ClassCoverage() {
   const { classId } = useParams();
   const [classes, setClasses] = useState([]);
@@ -70,18 +119,21 @@ function ClassCoverage() {
   );
 
   const classStudents = useMemo(() => {
-    if (!classRecord) {
+    if (!classRecord || !access.term) {
       return [];
     }
 
     return students.filter(
       (student) =>
-        student.status === "active" &&
-        normalizeClassName(student.class) ===
-          normalizeClassName(classRecord.name) &&
-        student.current_session === classRecord.session
+        isActiveStudent(student) &&
+        studentBelongsToEffectiveTermClass(
+          student,
+          classRecord,
+          classRecord.session,
+          access.term
+        )
     );
-  }, [classRecord, students]);
+  }, [access.term, classRecord, students]);
 
   const activeResults = useMemo(() => {
     if (!classRecord || !access.term) {
@@ -90,8 +142,9 @@ function ClassCoverage() {
 
     return results.filter(
       (result) =>
-        normalizeClassName(result.class) ===
-          normalizeClassName(classRecord.name) &&
+        (getRecordId(result.class_record) === getRecordId(classRecord) ||
+          normalizeClassName(result.class) ===
+            normalizeClassName(classRecord.name)) &&
         result.session === classRecord.session &&
         result.term === access.term
     );

@@ -26,7 +26,7 @@ function AdminNotification({ status, onDismiss }) {
   }
 
   return (
-    <div className="pointer-events-none fixed left-1/2 top-4 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 px-2">
+    <div className="pointer-events-none fixed left-1/2 top-4 z-20 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 px-2">
       <div
         role="status"
         aria-live="polite"

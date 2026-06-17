@@ -7,6 +7,10 @@ import {
 
 import API from "../../api/axios.jsx";
 import {
+  ACADEMIC_TERMS,
+  getVisibleTermsForSession,
+} from "../../utils/academicTerms.js";
+import {
   formatCurrency,
   formatFeeCategory,
   formatReceiptDate,
@@ -30,12 +34,10 @@ const getStatusClass = (status = "") => {
   return "bg-primary/10 text-primary";
 };
 
-const FEE_TERMS = ["First Term", "Second Term", "Third Term"];
-
 const getTermSortValue = (term = "") => {
-  const termIndex = FEE_TERMS.indexOf(term);
+  const termIndex = ACADEMIC_TERMS.indexOf(term);
 
-  return termIndex === -1 ? FEE_TERMS.length : termIndex;
+  return termIndex === -1 ? ACADEMIC_TERMS.length : termIndex;
 };
 
 const sortFeeTerms = (terms = []) =>
@@ -63,7 +65,9 @@ function StudentFees() {
         setError("");
 
         const response = await API.get("/fees/me");
-        const summaryList = response.data?.summaries || [];
+        const summaryList = (response.data?.summaries || []).filter((summary) =>
+          getVisibleTermsForSession(summary.session).includes(summary.term)
+        );
 
         setStudent(response.data?.student || null);
         setSummaries(summaryList);

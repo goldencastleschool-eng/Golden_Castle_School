@@ -12,6 +12,10 @@ import {
 
 import API from "../../api/axios.jsx";
 import { CardSkeleton } from "../../components/common/Loading.jsx";
+import {
+  getVisibleTermsForSession,
+  normalizeTermForSession,
+} from "../../utils/academicTerms.js";
 
 const statusStyles = {
   live: "bg-green-500/10 text-green-700",
@@ -57,6 +61,10 @@ function PortalVisibility() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [filters, setFilters] = useState({
+    session: "",
+    term: "",
+  });
 
   const fetchVisibility = async ({ silent = false } = {}) => {
     try {
@@ -68,7 +76,12 @@ function PortalVisibility() {
 
       setError("");
 
-      const response = await API.get("/portal-visibility/admin");
+      const params = Object.fromEntries(
+        Object.entries(filters).filter(([, value]) => Boolean(value))
+      );
+      const response = await API.get("/portal-visibility/admin", {
+        params,
+      });
       setVisibility(response.data || null);
     } catch (requestError) {
       setError(
@@ -84,7 +97,26 @@ function PortalVisibility() {
 
   useEffect(() => {
     fetchVisibility();
-  }, []);
+  }, [filters.session, filters.term]);
+
+  const handleFilterChange = (event) => {
+    const { name, value } = event.target;
+
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      [name]: value,
+      ...(name === "session"
+        ? { term: normalizeTermForSession(currentFilters.term, value) }
+        : {}),
+    }));
+  };
+
+  const activeAuditLabel = visibility?.audit_filter?.using_live_access
+    ? "Current portal access"
+    : [
+        visibility?.audit_filter?.session || "All sessions",
+        visibility?.audit_filter?.term || "All terms",
+      ].join(" | ");
 
   const checks = useMemo(() => visibility?.checks || [], [visibility?.checks]);
   const issues = visibility?.issues || [];
@@ -134,6 +166,40 @@ function PortalVisibility() {
           {error}
         </div>
       )}
+
+      <section className="mb-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <div className="mb-5">
+          <p className="text-sm font-bold uppercase text-button">
+            Visibility Filters
+          </p>
+          <h3 className="mt-2 text-2xl font-extrabold text-primary">
+            {loading ? "Checking..." : activeAuditLabel}
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <input
+            className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+            name="session"
+            value={filters.session}
+            onChange={handleFilterChange}
+            placeholder="Use live session"
+          />
+          <select
+            className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+            name="term"
+            value={filters.term}
+            onChange={handleFilterChange}
+          >
+            <option value="">Use live term</option>
+            {getVisibleTermsForSession(filters.session).map((term) => (
+              <option key={term} value={term}>
+                {term}
+              </option>
+            ))}
+          </select>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="rounded-2xl bg-secondary p-6 shadow-xl">

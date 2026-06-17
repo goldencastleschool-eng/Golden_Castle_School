@@ -10,10 +10,14 @@ import {
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
-import AdminStatCard from "../../components/common/AdminStatCard.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
+import PaginationControls from "../../components/common/PaginationControls.jsx";
 import { sortStudentsByName } from "../../utils/students.js";
 import { isFormTeacher } from "../../utils/teacherAssignments.js";
+import {
+  getVisibleTermsForSession,
+  normalizeTermForSession,
+} from "../../utils/academicTerms.js";
 
 const initialResultForm = {
   studentId: "",
@@ -54,7 +58,63 @@ const initialClassResultForm = {
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
 
-const PAGE_SIZE = 25;
+const getRecordId = (record) => record?._id || record || "";
+
+const TERM_ORDER = ["First Term", "Second Term", "Third Term"];
+
+const getTermIndex = (term = "") => {
+  const termIndex = TERM_ORDER.indexOf(term);
+
+  return termIndex === -1 ? TERM_ORDER.length : termIndex;
+};
+
+const getStudentTermEnrollment = (student, session, term) => {
+  const enrollments = Array.isArray(student?.fee_enrollments)
+    ? student.fee_enrollments
+    : [];
+
+  return enrollments.find(
+    (enrollment) =>
+      enrollment.session === session &&
+      enrollment.term === term
+  );
+};
+
+const getStudentEffectiveTermEnrollment = (student, session, term) => {
+  const enrollments = Array.isArray(student?.fee_enrollments)
+    ? student.fee_enrollments
+    : [];
+  const targetTermIndex = getTermIndex(term);
+
+  return enrollments
+    .filter(
+      (enrollment) =>
+        enrollment.session === session &&
+        getTermIndex(enrollment.term) <= targetTermIndex
+    )
+    .sort(
+      (firstEnrollment, secondEnrollment) =>
+        getTermIndex(secondEnrollment.term) - getTermIndex(firstEnrollment.term)
+    )[0];
+};
+
+const studentBelongsToTermClass = (student, classRecord, session, term) => {
+  const enrollment = getStudentEffectiveTermEnrollment(student, session, term);
+
+  if (!enrollment || !classRecord) {
+    return false;
+  }
+
+  const enrollmentClassRecordId = getRecordId(enrollment.class_record);
+  const classRecordId = getRecordId(classRecord);
+
+  return (
+    enrollmentClassRecordId === classRecordId ||
+    normalizeClassName(enrollment.class) === normalizeClassName(classRecord.name)
+  );
+};
+
+const PAGE_SIZE = 15;
 
 const getResponseTotalCount = (response) => {
   const headerValue =
@@ -95,10 +155,15 @@ const fetchResultTotalCount = async ({ countResponse, listResponse }) => {
 function UploadResult() {
   const [students, setStudents] = useState([]);
   const [results, setResults] = useState([]);
+  const [resultSummaryRecords, setResultSummaryRecords] = useState([]);
   const [resultTotal, setResultTotal] = useState(0);
   const [cumulativeResults, setCumulativeResults] = useState([]);
+  const [cumulativeSummaryRecords, setCumulativeSummaryRecords] = useState([]);
   const [classBroadsheets, setClassBroadsheets] = useState([]);
+  const [classBroadsheetSummaryRecords, setClassBroadsheetSummaryRecords] =
+    useState([]);
   const [classResults, setClassResults] = useState([]);
+  const [classResultSummaryRecords, setClassResultSummaryRecords] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
@@ -106,6 +171,13 @@ function UploadResult() {
   const [cumulativeForm, setCumulativeForm] = useState(initialCumulativeForm);
   const [broadsheetForm, setBroadsheetForm] = useState(initialBroadsheetForm);
   const [classResultForm, setClassResultForm] = useState(initialClassResultForm);
+  const [studentResultAccessForm, setStudentResultAccessForm] = useState({
+    session: "",
+    term: "",
+  });
+  const [cumulativeAccessForm, setCumulativeAccessForm] = useState({
+    cumulative_session: "",
+  });
   const [broadsheetAccessForm, setBroadsheetAccessForm] = useState({
     broadsheet_session: "",
     broadsheet_term: "",
@@ -117,20 +189,32 @@ function UploadResult() {
   const [editingResultId, setEditingResultId] = useState("");
   const [editingCumulativeResultId, setEditingCumulativeResultId] = useState("");
   const [resultSearch, setResultSearch] = useState("");
+  const [resultPage, setResultPage] = useState(1);
+  const [cumulativePage, setCumulativePage] = useState(1);
+  const [classResultPage, setClassResultPage] = useState(1);
+  const [broadsheetPage, setBroadsheetPage] = useState(1);
   const [status, setStatus] = useState({ type: "", message: "" });
   const [uploading, setUploading] = useState(false);
   const [uploadingCumulative, setUploadingCumulative] = useState(false);
   const [uploadingBroadsheet, setUploadingBroadsheet] = useState(false);
   const [uploadingClassResult, setUploadingClassResult] = useState(false);
+  const [savingStudentResultAccess, setSavingStudentResultAccess] =
+    useState(false);
+  const [savingCumulativeAccess, setSavingCumulativeAccess] = useState(false);
   const [savingBroadsheetAccess, setSavingBroadsheetAccess] = useState(false);
   const [savingClassResultAccess, setSavingClassResultAccess] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [summaryFilters, setSummaryFilters] = useState({
+    session: "",
+    term: "",
+  });
 
   const fetchResults = async () => {
-    const [resultsRequest, countRequest] = await Promise.allSettled([
+    const [resultsRequest, countRequest, summaryRequest] = await Promise.allSettled([
       API.get("/results", { params: { limit: PAGE_SIZE } }),
       API.get("/results/count"),
+      API.get("/results"),
     ]);
 
     if (resultsRequest.status === "rejected") {
@@ -147,27 +231,42 @@ function UploadResult() {
 
     setResults(resultRecords);
     setResultTotal(totalCount);
+    if (summaryRequest.status === "fulfilled") {
+      setResultSummaryRecords(summaryRequest.value.data || []);
+    }
   };
 
   const fetchCumulativeResults = async () => {
-    const response = await API.get("/cumulative-results", {
-      params: { limit: PAGE_SIZE },
-    });
+    const [response, summaryResponse] = await Promise.all([
+      API.get("/cumulative-results", {
+        params: { limit: PAGE_SIZE },
+      }),
+      API.get("/cumulative-results"),
+    ]);
     setCumulativeResults(response.data || []);
+    setCumulativeSummaryRecords(summaryResponse.data || []);
   };
 
   const fetchClassBroadsheets = async () => {
-    const response = await API.get("/class-broadsheets", {
-      params: { limit: PAGE_SIZE },
-    });
+    const [response, summaryResponse] = await Promise.all([
+      API.get("/class-broadsheets", {
+        params: { limit: PAGE_SIZE },
+      }),
+      API.get("/class-broadsheets"),
+    ]);
     setClassBroadsheets(response.data || []);
+    setClassBroadsheetSummaryRecords(summaryResponse.data || []);
   };
 
   const fetchClassResults = async () => {
-    const response = await API.get("/class-results", {
-      params: { limit: PAGE_SIZE },
-    });
+    const [response, summaryResponse] = await Promise.all([
+      API.get("/class-results", {
+        params: { limit: PAGE_SIZE },
+      }),
+      API.get("/class-results"),
+    ]);
     setClassResults(response.data || []);
+    setClassResultSummaryRecords(summaryResponse.data || []);
   };
 
   useEffect(() => {
@@ -185,6 +284,10 @@ function UploadResult() {
           classResultsRequest,
           teachersRequest,
           accessRequest,
+          resultSummaryRequest,
+          cumulativeSummaryRequest,
+          broadsheetSummaryRequest,
+          classResultSummaryRequest,
         ] = await Promise.allSettled([
           API.get("/students"),
           API.get("/results", { params: { limit: PAGE_SIZE } }),
@@ -195,6 +298,10 @@ function UploadResult() {
           API.get("/class-results", { params: { limit: PAGE_SIZE } }),
           API.get("/teachers"),
           API.get("/result-access"),
+          API.get("/results"),
+          API.get("/cumulative-results"),
+          API.get("/class-broadsheets"),
+          API.get("/class-results"),
         ]);
 
         if (studentsRequest.status === "rejected") {
@@ -222,6 +329,11 @@ function UploadResult() {
         const resultRecords = resultsRequest.value.data || [];
 
         setResults(resultRecords);
+        setResultSummaryRecords(
+          resultSummaryRequest.status === "fulfilled"
+            ? resultSummaryRequest.value.data || []
+            : resultRecords
+        );
         const totalCount = await fetchResultTotalCount({
           countResponse:
             resultCountRequest.status === "fulfilled"
@@ -237,15 +349,36 @@ function UploadResult() {
             ? cumulativeResultsRequest.value.data || []
             : []
         );
+        setCumulativeSummaryRecords(
+          cumulativeSummaryRequest.status === "fulfilled"
+            ? cumulativeSummaryRequest.value.data || []
+            : cumulativeResultsRequest.status === "fulfilled"
+              ? cumulativeResultsRequest.value.data || []
+              : []
+        );
         setClassBroadsheets(
           broadsheetsRequest.status === "fulfilled"
             ? broadsheetsRequest.value.data || []
             : []
         );
+        setClassBroadsheetSummaryRecords(
+          broadsheetSummaryRequest.status === "fulfilled"
+            ? broadsheetSummaryRequest.value.data || []
+            : broadsheetsRequest.status === "fulfilled"
+              ? broadsheetsRequest.value.data || []
+              : []
+        );
         setClassResults(
           classResultsRequest.status === "fulfilled"
             ? classResultsRequest.value.data || []
             : []
+        );
+        setClassResultSummaryRecords(
+          classResultSummaryRequest.status === "fulfilled"
+            ? classResultSummaryRequest.value.data || []
+            : classResultsRequest.status === "fulfilled"
+              ? classResultsRequest.value.data || []
+              : []
         );
         setTeachers(
           teachersRequest.status === "fulfilled"
@@ -253,6 +386,14 @@ function UploadResult() {
             : []
         );
         if (accessRequest.status === "fulfilled") {
+          setStudentResultAccessForm({
+            session: accessRequest.value.data?.session || "",
+            term: accessRequest.value.data?.term || "",
+          });
+          setCumulativeAccessForm({
+            cumulative_session:
+              accessRequest.value.data?.cumulative_session || "",
+          });
           setBroadsheetAccessForm({
             broadsheet_session:
               accessRequest.value.data?.broadsheet_session || "",
@@ -282,20 +423,33 @@ function UploadResult() {
   }, []);
 
   const filteredStudents = useMemo(() => {
-    if (!resultForm.class || !resultForm.session) {
+    if (!resultForm.class_record || !resultForm.session || !resultForm.term) {
       return [];
     }
+
+    const selectedClass = classes.find(
+      (classRecord) => classRecord._id === resultForm.class_record
+    );
 
     return sortStudentsByName(
       students.filter(
         (student) =>
           student.status === "active" &&
-          normalizeClassName(student.class) ===
-            normalizeClassName(resultForm.class) &&
-          student.current_session === resultForm.session
+          studentBelongsToTermClass(
+            student,
+            selectedClass,
+            resultForm.session,
+            resultForm.term
+          )
       )
     );
-  }, [resultForm.class, resultForm.session, students]);
+  }, [
+    classes,
+    resultForm.class_record,
+    resultForm.session,
+    resultForm.term,
+    students,
+  ]);
 
   const availableClasses = useMemo(() => {
     return classes.filter(
@@ -373,14 +527,16 @@ function UploadResult() {
     );
   }, [cumulativeForm.class, cumulativeForm.session, students]);
 
-  const displayedResults = useMemo(() => {
+  const filteredResults = useMemo(() => {
     const searchValue = resultSearch.trim().toLowerCase();
+    const sourceResults =
+      resultSummaryRecords.length > 0 ? resultSummaryRecords : results;
 
     if (!searchValue) {
-      return results.slice(0, PAGE_SIZE);
+      return sourceResults;
     }
 
-    return results.filter((result) => {
+    return sourceResults.filter((result) => {
       const studentName = result.student?.full_name || "";
       const admissionNo = result.student?.admission_no || "";
       const searchableText = [
@@ -397,19 +553,145 @@ function UploadResult() {
 
       return searchableText.includes(searchValue);
     });
-  }, [resultSearch, results]);
+  }, [resultSearch, resultSummaryRecords, results]);
 
+  useEffect(() => {
+    setResultPage(1);
+  }, [filteredResults.length, resultSearch]);
+
+  const visibleResultPage = Math.min(
+    resultPage,
+    Math.max(1, Math.ceil(filteredResults.length / PAGE_SIZE))
+  );
+  const displayedResults = useMemo(
+    () =>
+      filteredResults.slice(
+        (visibleResultPage - 1) * PAGE_SIZE,
+        visibleResultPage * PAGE_SIZE
+      ),
+    [filteredResults, visibleResultPage]
+  );
+
+  const cumulativeRecordSource =
+    cumulativeSummaryRecords.length > 0
+      ? cumulativeSummaryRecords
+      : cumulativeResults;
+  const visibleCumulativePage = Math.min(
+    cumulativePage,
+    Math.max(1, Math.ceil(cumulativeRecordSource.length / PAGE_SIZE))
+  );
   const displayedCumulativeResults = useMemo(() => {
-    return cumulativeResults.slice(0, PAGE_SIZE);
-  }, [cumulativeResults]);
+    return cumulativeRecordSource.slice(
+      (visibleCumulativePage - 1) * PAGE_SIZE,
+      visibleCumulativePage * PAGE_SIZE
+    );
+  }, [cumulativeRecordSource, visibleCumulativePage]);
 
-  const displayedClassBroadsheets = useMemo(() => {
-    return classBroadsheets.slice(0, PAGE_SIZE);
-  }, [classBroadsheets]);
-
+  const classResultRecordSource =
+    classResultSummaryRecords.length > 0 ? classResultSummaryRecords : classResults;
+  const visibleClassResultPage = Math.min(
+    classResultPage,
+    Math.max(1, Math.ceil(classResultRecordSource.length / PAGE_SIZE))
+  );
   const displayedClassResults = useMemo(() => {
-    return classResults.slice(0, PAGE_SIZE);
-  }, [classResults]);
+    return classResultRecordSource.slice(
+      (visibleClassResultPage - 1) * PAGE_SIZE,
+      visibleClassResultPage * PAGE_SIZE
+    );
+  }, [classResultRecordSource, visibleClassResultPage]);
+
+  const broadsheetRecordSource =
+    classBroadsheetSummaryRecords.length > 0
+      ? classBroadsheetSummaryRecords
+      : classBroadsheets;
+  const visibleBroadsheetPage = Math.min(
+    broadsheetPage,
+    Math.max(1, Math.ceil(broadsheetRecordSource.length / PAGE_SIZE))
+  );
+  const displayedClassBroadsheets = useMemo(() => {
+    return broadsheetRecordSource.slice(
+      (visibleBroadsheetPage - 1) * PAGE_SIZE,
+      visibleBroadsheetPage * PAGE_SIZE
+    );
+  }, [broadsheetRecordSource, visibleBroadsheetPage]);
+
+  useEffect(() => {
+    setCumulativePage(1);
+  }, [cumulativeRecordSource.length]);
+
+  useEffect(() => {
+    setClassResultPage(1);
+  }, [classResultRecordSource.length]);
+
+  useEffect(() => {
+    setBroadsheetPage(1);
+  }, [broadsheetRecordSource.length]);
+
+  const resultSummarySessions = useMemo(() => {
+    return [
+      ...new Set(
+        [
+          ...resultSummaryRecords.map((result) => result.session),
+          ...cumulativeSummaryRecords.map((result) => result.session),
+          ...classBroadsheetSummaryRecords.map((result) => result.session),
+          ...classResultSummaryRecords.map((result) => result.session),
+        ].filter(Boolean)
+      ),
+    ].sort();
+  }, [
+    classBroadsheetSummaryRecords,
+    classResultSummaryRecords,
+    cumulativeSummaryRecords,
+    resultSummaryRecords,
+  ]);
+
+  const matchesSummaryFilter = (record, { includeTerm = true } = {}) => {
+    const matchesSession =
+      !summaryFilters.session || record.session === summaryFilters.session;
+    const matchesTerm =
+      !includeTerm ||
+      !summaryFilters.term ||
+      record.term === summaryFilters.term;
+
+    return matchesSession && matchesTerm;
+  };
+
+  const resultSummaryItems = [
+    {
+      label: "Term Results",
+      value: resultSummaryRecords.filter((result) => matchesSummaryFilter(result)).length,
+      icon: <FaClipboardCheck />,
+    },
+    {
+      label: "Cumulative Results",
+      value: cumulativeSummaryRecords.filter((result) =>
+        matchesSummaryFilter(result, { includeTerm: false })
+      ).length,
+      icon: <FaFilePdf />,
+    },
+    {
+      label: "Class Broadsheets",
+      value: classBroadsheetSummaryRecords.filter((result) => matchesSummaryFilter(result)).length,
+      icon: <FaBookOpen />,
+    },
+    {
+      label: "Class Results",
+      value: classResultSummaryRecords.filter((result) => matchesSummaryFilter(result)).length,
+      icon: <FaLayerGroup />,
+    },
+  ];
+
+  const handleSummaryFilterChange = (event) => {
+    const { name, value } = event.target;
+
+    setSummaryFilters((currentFilters) => ({
+      ...currentFilters,
+      [name]: value,
+      ...(name === "session"
+        ? { term: normalizeTermForSession(currentFilters.term, value) }
+        : {}),
+    }));
+  };
 
   const handleChange = (event) => {
     const { name, value, files } = event.target;
@@ -420,6 +702,7 @@ function UploadResult() {
         session: value,
         class: "",
         class_record: "",
+        term: normalizeTermForSession(currentForm.term, value),
         studentId: editingResultId ? currentForm.studentId : "",
       }));
       return;
@@ -484,6 +767,7 @@ function UploadResult() {
         session: value,
         class: "",
         class_record: "",
+        term: normalizeTermForSession(currentForm.term, value),
         assigned_teacher: "",
       }));
       return;
@@ -513,6 +797,35 @@ function UploadResult() {
     setBroadsheetAccessForm((currentForm) => ({
       ...currentForm,
       [name]: value,
+      ...(name === "broadsheet_session"
+        ? {
+            broadsheet_term: normalizeTermForSession(
+              currentForm.broadsheet_term,
+              value
+            ),
+          }
+        : {}),
+    }));
+  };
+
+  const handleStudentResultAccessChange = (event) => {
+    const { name, value } = event.target;
+
+    setStudentResultAccessForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+      ...(name === "session"
+        ? { term: normalizeTermForSession(currentForm.term, value) }
+        : {}),
+    }));
+  };
+
+  const handleCumulativeAccessChange = (event) => {
+    const { name, value } = event.target;
+
+    setCumulativeAccessForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
     }));
   };
 
@@ -525,6 +838,7 @@ function UploadResult() {
         session: value,
         class: "",
         class_record: "",
+        term: normalizeTermForSession(currentForm.term, value),
         assigned_teacher: "",
       }));
       return;
@@ -554,6 +868,14 @@ function UploadResult() {
     setClassResultAccessForm((currentForm) => ({
       ...currentForm,
       [name]: value,
+      ...(name === "class_result_session"
+        ? {
+            class_result_term: normalizeTermForSession(
+              currentForm.class_result_term,
+              value
+            ),
+          }
+        : {}),
     }));
   };
 
@@ -568,6 +890,7 @@ function UploadResult() {
       formData.append("session", resultForm.session);
       formData.append("term", resultForm.term);
       formData.append("class", resultForm.class);
+      formData.append("class_record", resultForm.class_record);
       formData.append("pdf", resultForm.pdf);
 
       const endpoint = editingResultId
@@ -686,6 +1009,67 @@ function UploadResult() {
       });
     } finally {
       setUploadingBroadsheet(false);
+    }
+  };
+
+  const handleStudentResultAccessSubmit = async (event) => {
+    event.preventDefault();
+    setSavingStudentResultAccess(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const response = await API.put(
+        "/result-access",
+        studentResultAccessForm
+      );
+      setStudentResultAccessForm({
+        session: response.data.session || "",
+        term: response.data.term || "",
+      });
+      setStatus({
+        type: "success",
+        message: "Student result access updated successfully.",
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Unable to update student result access.",
+      });
+    } finally {
+      setSavingStudentResultAccess(false);
+    }
+  };
+
+  const handleCumulativeAccessSubmit = async (event) => {
+    event.preventDefault();
+    setSavingCumulativeAccess(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const response = await API.put(
+        "/result-access/cumulative",
+        cumulativeAccessForm
+      );
+      setCumulativeAccessForm({
+        cumulative_session: response.data.cumulative_session || "",
+      });
+      setStatus({
+        type: "success",
+        message: "Student cumulative result access updated successfully.",
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Unable to update cumulative result access.",
+      });
+    } finally {
+      setSavingCumulativeAccess(false);
     }
   };
 
@@ -951,45 +1335,19 @@ function UploadResult() {
         </p>
       </div>
 
-      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <AdminStatCard
-          title="Term Results"
-          value={resultTotal}
-          icon={<FaClipboardCheck />}
-        />
-        <AdminStatCard
-          title="Cumulative Results"
-          value={cumulativeResults.length}
-          icon={<FaFilePdf />}
-          tone="muted"
-        />
-        <AdminStatCard
-          title="Class Broadsheets"
-          value={classBroadsheets.length}
-          icon={<FaBookOpen />}
-        />
-        <AdminStatCard
-          title="Class Results"
-          value={classResults.length}
-          icon={<FaLayerGroup />}
-          tone="green"
-        />
-      </section>
+      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl lg:p-10">
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_420px]">
+          <div>
+            <h3 className="text-3xl font-extrabold text-primary">
+              {editingResultId ? "Edit Result" : "Upload Result PDF"}
+            </h3>
+            <p className="mt-3 text-primary/70">
+              The backend accepts PDF files up to 5MB and stores them securely in
+              the database.
+            </p>
 
-      <div className="grid grid-cols-1 gap-8">
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-[2rem] bg-secondary p-8 shadow-2xl lg:p-10"
-        >
-          <h3 className="text-3xl font-extrabold text-primary">
-            {editingResultId ? "Edit Result" : "Upload Result PDF"}
-          </h3>
-          <p className="mt-3 text-primary/70">
-            The backend accepts PDF files up to 5MB and stores them securely in
-            the database.
-          </p>
-
-          <div className="mt-7 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <form onSubmit={handleSubmit} className="mt-7">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <input
               className={inputClass}
               name="session"
@@ -1006,9 +1364,11 @@ function UploadResult() {
               required
             >
               <option value="">Select term</option>
-              <option value="First Term">First Term</option>
-              <option value="Second Term">Second Term</option>
-              <option value="Third Term">Third Term</option>
+              {getVisibleTermsForSession(resultForm.session).map((term) => (
+                <option key={term} value={term}>
+                  {term}
+                </option>
+              ))}
             </select>
 
             <select
@@ -1039,15 +1399,19 @@ function UploadResult() {
               name="studentId"
               value={resultForm.studentId}
               onChange={handleChange}
-              disabled={!resultForm.class || loadingStudents}
+              disabled={
+                !resultForm.class_record ||
+                !resultForm.term ||
+                loadingStudents
+              }
               required
             >
               <option value="">
                 {loadingStudents
                   ? "Loading students..."
-                  : resultForm.class
+                  : resultForm.class_record && resultForm.term
                     ? "Select student"
-                    : "Select class first"}
+                    : "Select class and term first"}
               </option>
               {filteredStudents.map((student) => (
                 <option key={student._id} value={student._id}>
@@ -1066,44 +1430,95 @@ function UploadResult() {
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={uploading || filteredStudents.length === 0}
-            className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              <button
+                type="submit"
+                disabled={uploading || filteredStudents.length === 0}
+                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {uploading
+                  ? editingResultId
+                    ? "Saving result..."
+                    : "Uploading result..."
+                  : editingResultId
+                    ? "Save Result"
+                    : "Upload Result"}
+                {!uploading && <FaArrowRight />}
+              </button>
+              {editingResultId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="mt-4 w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </form>
+          </div>
+
+          <form
+            onSubmit={handleStudentResultAccessSubmit}
+            className="rounded-2xl bg-primary/5 p-6"
           >
-            {uploading
-              ? editingResultId
-                ? "Saving result..."
-                : "Uploading result..."
-              : editingResultId
-                ? "Save Result"
-                : "Upload Result"}
-            {!uploading && <FaArrowRight />}
-          </button>
-          {editingResultId && (
+            <h4 className="text-2xl font-extrabold text-primary">
+              Student Result Access
+            </h4>
+            <p className="mt-2 text-primary/70">
+              Control the session and term students can access in their portal.
+            </p>
+
+            <div className="mt-6 space-y-4">
+              <input
+                className={inputClass}
+                name="session"
+                value={studentResultAccessForm.session}
+                onChange={handleStudentResultAccessChange}
+                placeholder="Approved session e.g. 2025/2026"
+                required
+              />
+              <select
+                className={inputClass}
+                name="term"
+                value={studentResultAccessForm.term}
+                onChange={handleStudentResultAccessChange}
+                required
+              >
+                <option value="">Approved term</option>
+                {getVisibleTermsForSession(studentResultAccessForm.session).map((term) => (
+                  <option key={term} value={term}>
+                    {term}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <button
-              type="button"
-              onClick={handleCancelEdit}
-              className="mt-4 w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+              type="submit"
+              disabled={savingStudentResultAccess}
+              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Cancel Edit
+              {savingStudentResultAccess
+                ? "Saving access..."
+                : "Save Result Access"}
             </button>
-          )}
-        </form>
-      </div>
+          </form>
+        </div>
+      </section>
 
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl lg:p-10">
-        <h3 className="text-3xl font-extrabold text-primary">
-          {editingCumulativeResultId
-            ? "Edit Cumulative Result"
-            : "Upload Cumulative Result PDF"}
-        </h3>
-        <p className="mt-3 text-primary/70">
-          Upload one cumulative PDF result for a student and academic session.
-        </p>
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_420px]">
+          <div>
+            <h3 className="text-3xl font-extrabold text-primary">
+              {editingCumulativeResultId
+                ? "Edit Cumulative Result"
+                : "Upload Cumulative Result PDF"}
+            </h3>
+            <p className="mt-3 text-primary/70">
+              Upload one cumulative PDF result for a student and academic session.
+            </p>
 
-        <form onSubmit={handleCumulativeSubmit}>
-          <div className="mt-7 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <form onSubmit={handleCumulativeSubmit} className="mt-7">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <input
               className={inputClass}
               name="session"
@@ -1166,32 +1581,67 @@ function UploadResult() {
               onChange={handleCumulativeChange}
               required={!editingCumulativeResultId}
             />
+              </div>
+
+              <button
+                type="submit"
+                disabled={uploadingCumulative || cumulativeFilteredStudents.length === 0}
+                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {uploadingCumulative
+                  ? editingCumulativeResultId
+                    ? "Saving cumulative result..."
+                    : "Uploading cumulative result..."
+                  : editingCumulativeResultId
+                    ? "Save Cumulative Result"
+                    : "Upload Cumulative Result"}
+                {!uploadingCumulative && <FaArrowRight />}
+              </button>
+              {editingCumulativeResultId && (
+                <button
+                  type="button"
+                  onClick={handleCancelCumulativeEdit}
+                  className="mt-4 w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+                >
+                  Cancel Cumulative Edit
+                </button>
+              )}
+            </form>
           </div>
 
-          <button
-            type="submit"
-            disabled={uploadingCumulative || cumulativeFilteredStudents.length === 0}
-            className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+          <form
+            onSubmit={handleCumulativeAccessSubmit}
+            className="rounded-2xl bg-primary/5 p-6"
           >
-            {uploadingCumulative
-              ? editingCumulativeResultId
-                ? "Saving cumulative result..."
-                : "Uploading cumulative result..."
-              : editingCumulativeResultId
-                ? "Save Cumulative Result"
-                : "Upload Cumulative Result"}
-            {!uploadingCumulative && <FaArrowRight />}
-          </button>
-          {editingCumulativeResultId && (
+            <h4 className="text-2xl font-extrabold text-primary">
+              Student Cumulative Result Access
+            </h4>
+            <p className="mt-2 text-primary/70">
+              Control the session students can access for cumulative results.
+            </p>
+
+            <div className="mt-6 space-y-4">
+              <input
+                className={inputClass}
+                name="cumulative_session"
+                value={cumulativeAccessForm.cumulative_session}
+                onChange={handleCumulativeAccessChange}
+                placeholder="Approved session e.g. 2025/2026"
+                required
+              />
+            </div>
+
             <button
-              type="button"
-              onClick={handleCancelCumulativeEdit}
-              className="mt-4 w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+              type="submit"
+              disabled={savingCumulativeAccess}
+              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Cancel Cumulative Edit
+              {savingCumulativeAccess
+                ? "Saving access..."
+                : "Save Cumulative Access"}
             </button>
-          )}
-        </form>
+          </form>
+        </div>
       </section>
 
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl lg:p-10">
@@ -1223,9 +1673,11 @@ function UploadResult() {
                   required
                 >
                   <option value="">Select term</option>
-                  <option value="First Term">First Term</option>
-                  <option value="Second Term">Second Term</option>
-                  <option value="Third Term">Third Term</option>
+                  {getVisibleTermsForSession(broadsheetForm.session).map((term) => (
+                    <option key={term} value={term}>
+                      {term}
+                    </option>
+                  ))}
                 </select>
 
                 <select
@@ -1334,9 +1786,11 @@ function UploadResult() {
                 required
               >
                 <option value="">Approved term</option>
-                <option value="First Term">First Term</option>
-                <option value="Second Term">Second Term</option>
-                <option value="Third Term">Third Term</option>
+                {getVisibleTermsForSession(broadsheetAccessForm.broadsheet_session).map((term) => (
+                  <option key={term} value={term}>
+                    {term}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -1381,9 +1835,11 @@ function UploadResult() {
                   required
                 >
                   <option value="">Select term</option>
-                  <option value="First Term">First Term</option>
-                  <option value="Second Term">Second Term</option>
-                  <option value="Third Term">Third Term</option>
+                  {getVisibleTermsForSession(classResultForm.session).map((term) => (
+                    <option key={term} value={term}>
+                      {term}
+                    </option>
+                  ))}
                 </select>
 
                 <select
@@ -1492,9 +1948,11 @@ function UploadResult() {
                 required
               >
                 <option value="">Approved term</option>
-                <option value="First Term">First Term</option>
-                <option value="Second Term">Second Term</option>
-                <option value="Third Term">Third Term</option>
+                {getVisibleTermsForSession(classResultAccessForm.class_result_session).map((term) => (
+                  <option key={term} value={term}>
+                    {term}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -1512,17 +1970,16 @@ function UploadResult() {
       </section>
 
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
-        <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px] lg:items-end">
-          <div>
+        <div className="mb-5">
             <h3 className="text-3xl font-extrabold text-primary">
               Result Records
             </h3>
             <p className="mt-2 text-primary/70">
-              Showing the 25 most recent uploads by default. Use search to filter
-              these records.
+              Showing 15 uploads per page. Use search to filter these records.
             </p>
-          </div>
+        </div>
 
+        <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[360px]">
           <input
             value={resultSearch}
             onChange={(event) => setResultSearch(event.target.value)}
@@ -1558,7 +2015,7 @@ function UploadResult() {
                 displayedResults.map((result, index) => (
                   <tr key={result._id} className="text-primary/80">
                     <td className="px-5 py-4 font-bold text-primary">
-                      {index + 1}
+                      {(visibleResultPage - 1) * PAGE_SIZE + index + 1}
                     </td>
                     <td className="px-5 py-4 font-semibold text-primary">
                       {result.student?.full_name || "Unknown"}
@@ -1588,6 +2045,12 @@ function UploadResult() {
             </tbody>
           </table>
         </div>
+        <PaginationControls
+          currentPage={visibleResultPage}
+          totalItems={filteredResults.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setResultPage}
+        />
       </section>
 
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
@@ -1596,7 +2059,7 @@ function UploadResult() {
             Recent Cumulative Uploads
           </h3>
           <p className="mt-2 text-primary/70">
-            Showing the 25 most recent cumulative result uploads.
+            Showing 15 cumulative result uploads per page.
           </p>
         </div>
 
@@ -1625,7 +2088,7 @@ function UploadResult() {
                 displayedCumulativeResults.map((result, index) => (
                   <tr key={result._id} className="text-primary/80">
                     <td className="px-5 py-4 font-bold text-primary">
-                      {index + 1}
+                      {(visibleCumulativePage - 1) * PAGE_SIZE + index + 1}
                     </td>
                     <td className="px-5 py-4 font-semibold text-primary">
                       {result.student?.full_name || "Unknown"}
@@ -1659,6 +2122,12 @@ function UploadResult() {
             </tbody>
           </table>
         </div>
+        <PaginationControls
+          currentPage={visibleCumulativePage}
+          totalItems={cumulativeRecordSource.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setCumulativePage}
+        />
       </section>
 
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
@@ -1667,7 +2136,7 @@ function UploadResult() {
             Recent Class Results
           </h3>
           <p className="mt-2 text-primary/70">
-            Showing the 25 most recent class result uploads.
+            Showing 15 class result uploads per page.
           </p>
         </div>
 
@@ -1697,7 +2166,7 @@ function UploadResult() {
                 displayedClassResults.map((classResult, index) => (
                   <tr key={classResult._id} className="text-primary/80">
                     <td className="px-5 py-4 font-bold text-primary">
-                      {index + 1}
+                      {(visibleClassResultPage - 1) * PAGE_SIZE + index + 1}
                     </td>
                     <td className="px-5 py-4 font-semibold text-primary">
                       {classResult.class?.toUpperCase() || "Not set"}
@@ -1727,6 +2196,12 @@ function UploadResult() {
             </tbody>
           </table>
         </div>
+        <PaginationControls
+          currentPage={visibleClassResultPage}
+          totalItems={classResultRecordSource.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setClassResultPage}
+        />
       </section>
 
       <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
@@ -1735,7 +2210,7 @@ function UploadResult() {
             Recent Class Broadsheets
           </h3>
           <p className="mt-2 text-primary/70">
-            Showing the 25 most recent class broadsheet uploads.
+            Showing 15 class broadsheet uploads per page.
           </p>
         </div>
 
@@ -1765,7 +2240,7 @@ function UploadResult() {
                 displayedClassBroadsheets.map((broadsheet, index) => (
                   <tr key={broadsheet._id} className="text-primary/80">
                     <td className="px-5 py-4 font-bold text-primary">
-                      {index + 1}
+                      {(visibleBroadsheetPage - 1) * PAGE_SIZE + index + 1}
                     </td>
                     <td className="px-5 py-4 font-semibold text-primary">
                       {broadsheet.class?.toUpperCase() || "Not set"}
@@ -1795,6 +2270,12 @@ function UploadResult() {
             </tbody>
           </table>
         </div>
+        <PaginationControls
+          currentPage={visibleBroadsheetPage}
+          totalItems={broadsheetRecordSource.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setBroadsheetPage}
+        />
       </section>
     </div>
   );

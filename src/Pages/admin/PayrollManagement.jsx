@@ -15,10 +15,10 @@ import {
 import API from "../../api/axios.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
-import AdminStatCard from "../../components/common/AdminStatCard.jsx";
+import { getVisibleTermsForSession } from "../../utils/academicTerms.js";
 
 const DEFAULT_SESSION = "2025/2026";
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 15;
 const categories = [
   {
     value: "academic",
@@ -44,8 +44,6 @@ const monthlyPeriods = [
   "November",
   "December",
 ];
-const termlyPeriods = ["First Term", "Second Term", "Third Term"];
-
 const inputClass =
   "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
@@ -113,8 +111,8 @@ const getRecordId = (record) => record?._id || record || "";
 const getCategoryLabel = (value) =>
   categories.find((category) => category.value === value)?.label || value;
 
-const getPeriodOptions = (periodType) =>
-  periodType === "termly" ? termlyPeriods : monthlyPeriods;
+const getPeriodOptions = (periodType, session = "") =>
+  periodType === "termly" ? getVisibleTermsForSession(session) : monthlyPeriods;
 
 function PaginationControls({ page, totalItems, onPageChange }) {
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
@@ -458,7 +456,17 @@ function PayrollManagement() {
       };
 
       if (name === "period_type") {
-        nextFilters.period = getPeriodOptions(value)[0];
+        nextFilters.period = getPeriodOptions(value, nextFilters.session)[0];
+      }
+
+      if (name === "session") {
+        const periodOptions = getPeriodOptions(
+          nextFilters.period_type,
+          value
+        );
+        nextFilters.period = periodOptions.includes(nextFilters.period)
+          ? nextFilters.period
+          : periodOptions[0];
       }
 
       return nextFilters;
@@ -500,7 +508,14 @@ function PayrollManagement() {
       }
 
       if (name === "period_type") {
-        nextForm.period = getPeriodOptions(value)[0];
+        nextForm.period = getPeriodOptions(value, nextForm.session)[0];
+      }
+
+      if (name === "session") {
+        const periodOptions = getPeriodOptions(nextForm.period_type, value);
+        nextForm.period = periodOptions.includes(nextForm.period)
+          ? nextForm.period
+          : periodOptions[0];
       }
 
       return nextForm;
@@ -915,92 +930,20 @@ function PayrollManagement() {
       />
 
       <div className="mx-auto max-w-[1500px]">
-        <div className="mb-8 flex flex-col gap-4 rounded-[2rem] bg-secondary p-6 shadow-2xl lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm font-bold uppercase text-button">
-              Staff Payroll
-            </p>
-            <h2 className="mt-2 text-3xl font-extrabold text-primary md:text-4xl">
-              Payroll Management
-            </h2>
+        <div className="mb-8">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+            <FaMoneyBillWave />
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <select
-              className={inputClass}
-              name="session"
-              value={filters.session}
-              onChange={handleFilterChange}
-            >
-              {sessionOptions.map((session) => (
-                <option key={session} value={session}>
-                  {session}
-                </option>
-              ))}
-            </select>
-            <select
-              className={inputClass}
-              name="period_type"
-              value={filters.period_type}
-              onChange={handleFilterChange}
-            >
-              <option value="monthly">Monthly</option>
-              <option value="termly">Termly</option>
-            </select>
-            <select
-              className={inputClass}
-              name="period"
-              value={filters.period}
-              onChange={handleFilterChange}
-            >
-              {getPeriodOptions(filters.period_type).map((period) => (
-                <option key={period} value={period}>
-                  {period}
-                </option>
-              ))}
-            </select>
-            <select
-              className={inputClass}
-              name="category"
-              value={filters.category}
-              onChange={handleFilterChange}
-            >
-              <option value="">All staff</option>
-              {categories.map((category) => (
-                <option key={category.value} value={category.value}>
-                  {category.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <h2 className="text-4xl font-extrabold text-secondary">
+            Payroll Management
+          </h2>
+          <p className="mt-3 max-w-2xl text-secondary/75">
+            Manage staff levels, payroll structures, assignments, and salary
+            payment records.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-          <AdminStatCard
-            title="Active Staff"
-            value={totals.activeStaff}
-            icon={<FaUsers />}
-          />
-          <AdminStatCard
-            title="Assigned Staff"
-            value={totals.assignedStaff}
-            icon={<FaUserTie />}
-            tone="muted"
-          />
-          <AdminStatCard
-            title="Expected Payroll"
-            value={formatCurrency(totals.expected)}
-            icon={<FaMoneyBillWave />}
-            tone="green"
-          />
-          <AdminStatCard
-            title="Outstanding"
-            value={formatCurrency(totals.outstanding)}
-            icon={<FaReceipt />}
-            tone="red"
-          />
-        </div>
-
-        <div className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-[420px_1fr]">
+        <div className="mt-8 grid grid-cols-1 gap-8 ">
           <form
             onSubmit={handleLevelSubmit}
             className="rounded-[2rem] bg-secondary p-6 shadow-2xl"
@@ -1367,7 +1310,10 @@ function PayrollManagement() {
                 onChange={handleStructureChange}
                 required
               >
-                {getPeriodOptions(structureForm.period_type).map((period) => (
+                {getPeriodOptions(
+                  structureForm.period_type,
+                  structureForm.session
+                ).map((period) => (
                   <option key={period} value={period}>
                     {period}
                   </option>
@@ -1788,7 +1734,7 @@ function PayrollManagement() {
           />
         </section>
 
-        <section className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-[420px_1fr]">
+        <section className="mt-8 grid grid-cols-1 gap-8 ">
           <form
             onSubmit={handlePaymentSubmit}
             className="rounded-[2rem] bg-secondary p-6 shadow-2xl"

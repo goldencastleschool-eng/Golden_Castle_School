@@ -13,8 +13,8 @@ import {
 
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
-import AdminStatCard from "../../components/common/AdminStatCard.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
+import PaginationControls from "../../components/common/PaginationControls.jsx";
 import {
   formatClassSection,
   getClassSection,
@@ -29,7 +29,7 @@ import {
 } from "../../utils/printBranding.js";
 
 const DEFAULT_SESSION_FILTER = "2025/2026";
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 15;
 
 const initialTeacherForm = {
   full_name: "",
@@ -71,7 +71,7 @@ function ActionMessageModal({ status, onClose }) {
   const isSuccess = status.type === "success";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/60 px-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-20 flex items-center justify-center bg-primary/60 px-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-[2rem] bg-secondary p-7 text-primary shadow-2xl">
         <div
           className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-xl text-white ${
@@ -109,6 +109,7 @@ function TeacherManagement() {
   const [deactivating, setDeactivating] = useState(false);
   const [resettingTeacherId, setResettingTeacherId] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
+  const [teacherPage, setTeacherPage] = useState(1);
 
   const fetchTeacherData = async () => {
     try {
@@ -170,15 +171,21 @@ function TeacherManagement() {
     () => teachers.filter((teacher) => isFormTeacher(teacher)),
     [teachers]
   );
+  useEffect(() => {
+    setTeacherPage(1);
+  }, [formTeachers.length]);
+
+  const visibleTeacherPage = Math.min(
+    teacherPage,
+    Math.max(1, Math.ceil(formTeachers.length / PAGE_SIZE))
+  );
   const displayedFormTeachers = useMemo(
-    () => formTeachers.slice(0, PAGE_SIZE),
-    [formTeachers]
-  );
-  const activeFormTeachers = formTeachers.filter(
-    (teacher) => teacher.status !== "inactive"
-  );
-  const inactiveFormTeachers = formTeachers.filter(
-    (teacher) => teacher.status === "inactive"
+    () =>
+      formTeachers.slice(
+        (visibleTeacherPage - 1) * PAGE_SIZE,
+        visibleTeacherPage * PAGE_SIZE
+      ),
+    [formTeachers, visibleTeacherPage]
   );
 
   const handleChange = (event) => {
@@ -523,32 +530,6 @@ function TeacherManagement() {
         </p>
       </div>
 
-      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <AdminStatCard
-          title="Form Teachers"
-          value={formTeachers.length}
-          icon={<FaChalkboardUser />}
-        />
-        <AdminStatCard
-          title="Active"
-          value={activeFormTeachers.length}
-          icon={<FaUserCheck />}
-          tone="green"
-        />
-        <AdminStatCard
-          title="Inactive"
-          value={inactiveFormTeachers.length}
-          icon={<FaUsers />}
-          tone="red"
-        />
-        <AdminStatCard
-          title="Class Records"
-          value={classes.length}
-          icon={<FaLayerGroup />}
-          tone="muted"
-        />
-      </section>
-
       <div className="grid grid-cols-1 gap-8">
         <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
           <div className="grid grid-cols-1 gap-8 ">
@@ -708,7 +689,7 @@ function TeacherManagement() {
                   displayedFormTeachers.map((teacher, index) => (
                     <tr key={teacher._id} className="text-primary/80">
                       <td className="px-5 py-4 font-bold text-primary">
-                        {index + 1}
+                        {(visibleTeacherPage - 1) * PAGE_SIZE + index + 1}
                       </td>
                       <td className="px-5 py-4 font-semibold text-primary">
                         {teacher.full_name}
@@ -772,6 +753,12 @@ function TeacherManagement() {
               </tbody>
             </table>
           </div>
+          <PaginationControls
+            currentPage={visibleTeacherPage}
+            totalItems={formTeachers.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setTeacherPage}
+          />
         </section>
       </div>
     </div>

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   FaArrowRight,
+  FaBus,
   FaChartPie,
   FaFileLines,
+  FaMoneyBillWave,
   FaPrint,
   FaTriangleExclamation,
   FaUserGraduate,
@@ -12,6 +14,10 @@ import {
 import API from "../../api/axios.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
+import {
+  getVisibleTermsForSession,
+  normalizeTermForSession,
+} from "../../utils/academicTerms.js";
 import { SCHOOL_NAME, schoolLogo } from "../../utils/printBranding.js";
 
 const DEFAULT_REPORT_SESSION = "2025/2026";
@@ -19,11 +25,25 @@ const DEFAULT_REPORT_SESSION = "2025/2026";
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
 
+const getRecordId = (record) => record?._id || record || "";
+
 function AdminReport() {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [results, setResults] = useState([]);
   const [cumulativeResults, setCumulativeResults] = useState([]);
+  const [buses, setBuses] = useState([]);
+  const [busRoutes, setBusRoutes] = useState([]);
+  const [busStructures, setBusStructures] = useState([]);
+  const [busEnrollments, setBusEnrollments] = useState([]);
+  const [busPayments, setBusPayments] = useState([]);
+  const [boardingHouses, setBoardingHouses] = useState([]);
+  const [boardingStructures, setBoardingStructures] = useState([]);
+  const [boardingEnrollments, setBoardingEnrollments] = useState([]);
+  const [boardingPayments, setBoardingPayments] = useState([]);
+  const [payrollStaff, setPayrollStaff] = useState([]);
+  const [payrollAssignments, setPayrollAssignments] = useState([]);
+  const [payrollPayments, setPayrollPayments] = useState([]);
   const [reportFilter, setReportFilter] = useState({
     session: DEFAULT_REPORT_SESSION,
     term: "",
@@ -43,12 +63,36 @@ function AdminReport() {
           resultsRequest,
           cumulativeResultsRequest,
           accessRequest,
+          busesRequest,
+          busRoutesRequest,
+          busStructuresRequest,
+          busEnrollmentsRequest,
+          busPaymentsRequest,
+          boardingHousesRequest,
+          boardingStructuresRequest,
+          boardingEnrollmentsRequest,
+          boardingPaymentsRequest,
+          payrollStaffRequest,
+          payrollAssignmentsRequest,
+          payrollPaymentsRequest,
         ] = await Promise.allSettled([
           API.get("/students"),
           API.get("/classes"),
           API.get("/results"),
           API.get("/cumulative-results"),
           API.get("/result-access"),
+          API.get("/bus-management/buses"),
+          API.get("/bus-management/routes"),
+          API.get("/bus-management/fee-structures"),
+          API.get("/bus-management/enrollments"),
+          API.get("/bus-management/payments"),
+          API.get("/boarding-management/houses"),
+          API.get("/boarding-management/fee-structures"),
+          API.get("/boarding-management/enrollments"),
+          API.get("/boarding-management/payments"),
+          API.get("/payroll/staff"),
+          API.get("/payroll/assignments"),
+          API.get("/payroll/payments"),
         ]);
 
         if (studentsRequest.status === "rejected") {
@@ -78,6 +122,64 @@ function AdminReport() {
         setCumulativeResults(
           cumulativeResultsRequest.status === "fulfilled"
             ? cumulativeResultsRequest.value.data || []
+            : []
+        );
+        setBuses(
+          busesRequest.status === "fulfilled" ? busesRequest.value.data || [] : []
+        );
+        setBusRoutes(
+          busRoutesRequest.status === "fulfilled"
+            ? busRoutesRequest.value.data || []
+            : []
+        );
+        setBusStructures(
+          busStructuresRequest.status === "fulfilled"
+            ? busStructuresRequest.value.data || []
+            : []
+        );
+        setBusEnrollments(
+          busEnrollmentsRequest.status === "fulfilled"
+            ? busEnrollmentsRequest.value.data || []
+            : []
+        );
+        setBusPayments(
+          busPaymentsRequest.status === "fulfilled"
+            ? busPaymentsRequest.value.data || []
+            : []
+        );
+        setBoardingHouses(
+          boardingHousesRequest.status === "fulfilled"
+            ? boardingHousesRequest.value.data || []
+            : []
+        );
+        setBoardingStructures(
+          boardingStructuresRequest.status === "fulfilled"
+            ? boardingStructuresRequest.value.data || []
+            : []
+        );
+        setBoardingEnrollments(
+          boardingEnrollmentsRequest.status === "fulfilled"
+            ? boardingEnrollmentsRequest.value.data || []
+            : []
+        );
+        setBoardingPayments(
+          boardingPaymentsRequest.status === "fulfilled"
+            ? boardingPaymentsRequest.value.data || []
+            : []
+        );
+        setPayrollStaff(
+          payrollStaffRequest.status === "fulfilled"
+            ? payrollStaffRequest.value.data || []
+            : []
+        );
+        setPayrollAssignments(
+          payrollAssignmentsRequest.status === "fulfilled"
+            ? payrollAssignmentsRequest.value.data || []
+            : []
+        );
+        setPayrollPayments(
+          payrollPaymentsRequest.status === "fulfilled"
+            ? payrollPaymentsRequest.value.data || []
             : []
         );
         setReportFilter((currentFilter) => ({
@@ -252,6 +354,346 @@ function AdminReport() {
     ? Math.round((cumulativeUploadedStudentCount / reportStudents.length) * 100)
     : 0;
 
+  const busSummary = useMemo(() => {
+    const selectedEnrollments = busEnrollments.filter(
+      (enrollment) =>
+        enrollment.session === reportFilter.session &&
+        (!reportFilter.term || enrollment.term === reportFilter.term) &&
+        enrollment.status === "active"
+    );
+    const selectedStructures = busStructures.filter(
+      (structure) =>
+        structure.session === reportFilter.session &&
+        (!reportFilter.term || structure.term === reportFilter.term)
+    );
+    const selectedPayments = busPayments.filter(
+      (payment) =>
+        payment.session === reportFilter.session &&
+        (!reportFilter.term || payment.term === reportFilter.term)
+    );
+    const structureByRoute = new Map(
+      selectedStructures.map((structure) => [
+        getRecordId(structure.route),
+        Number(structure.amount || 0),
+      ])
+    );
+    const paidByEnrollment = selectedPayments.reduce((paymentMap, payment) => {
+      const enrollmentId = getRecordId(payment.enrollment);
+      paymentMap.set(
+        enrollmentId,
+        (paymentMap.get(enrollmentId) || 0) + Number(payment.amount || 0)
+      );
+
+      return paymentMap;
+    }, new Map());
+
+    return selectedEnrollments.reduce(
+      (summary, enrollment) => {
+        const expected = structureByRoute.get(getRecordId(enrollment.route)) || 0;
+        const paid = paidByEnrollment.get(getRecordId(enrollment._id)) || 0;
+        const balance = Math.max(expected - paid, 0);
+
+        return {
+          ...summary,
+          activeEnrollments: summary.activeEnrollments + 1,
+          expected: summary.expected + expected,
+          paid: summary.paid + paid,
+          balance: summary.balance + balance,
+          outstandingStudents:
+            summary.outstandingStudents + (balance > 0 ? 1 : 0),
+        };
+      },
+      {
+        buses: buses.length,
+        activeBuses: buses.filter((bus) => bus.status === "active").length,
+        routes: busRoutes.length,
+        activeEnrollments: 0,
+        expected: 0,
+        paid: 0,
+        balance: 0,
+        outstandingStudents: 0,
+        paymentRecords: selectedPayments.length,
+      }
+    );
+  }, [
+    busEnrollments,
+    busPayments,
+    busRoutes,
+    busStructures,
+    buses,
+    reportFilter.session,
+    reportFilter.term,
+  ]);
+
+  const payrollSummary = useMemo(() => {
+    const selectedAssignments = payrollAssignments.filter(
+      (assignment) =>
+        assignment.session === reportFilter.session &&
+        (!reportFilter.term || assignment.period === reportFilter.term) &&
+        assignment.status === "active"
+    );
+    const selectedPayments = payrollPayments.filter(
+      (payment) =>
+        payment.session === reportFilter.session &&
+        (!reportFilter.term || payment.period === reportFilter.term)
+    );
+    const paidByAssignment = selectedPayments.reduce((paymentMap, payment) => {
+      const assignmentId = getRecordId(payment.assignment);
+      paymentMap.set(
+        assignmentId,
+        (paymentMap.get(assignmentId) || 0) + Number(payment.amount || 0)
+      );
+
+      return paymentMap;
+    }, new Map());
+
+    return selectedAssignments.reduce(
+      (summary, assignment) => {
+        const expected = Number(assignment.net_amount || 0);
+        const paid = paidByAssignment.get(getRecordId(assignment._id)) || 0;
+        const balance = Math.max(expected - paid, 0);
+
+        return {
+          ...summary,
+          assignedStaff: summary.assignedStaff + 1,
+          expected: summary.expected + expected,
+          paid: summary.paid + paid,
+          balance: summary.balance + balance,
+          outstandingStaff: summary.outstandingStaff + (balance > 0 ? 1 : 0),
+        };
+      },
+      {
+        activeStaff: payrollStaff.filter((staff) => staff.status === "active").length,
+        assignedStaff: 0,
+        expected: 0,
+        paid: 0,
+        balance: 0,
+        outstandingStaff: 0,
+        paymentRecords: selectedPayments.length,
+      }
+    );
+  }, [
+    payrollAssignments,
+    payrollPayments,
+    payrollStaff,
+    reportFilter.session,
+    reportFilter.term,
+  ]);
+
+  const busReportRows = useMemo(() => {
+    const selectedEnrollments = busEnrollments.filter(
+      (enrollment) =>
+        enrollment.session === reportFilter.session &&
+        (!reportFilter.term || enrollment.term === reportFilter.term) &&
+        enrollment.status === "active"
+    );
+    const selectedStructures = busStructures.filter(
+      (structure) =>
+        structure.session === reportFilter.session &&
+        (!reportFilter.term || structure.term === reportFilter.term)
+    );
+    const selectedPayments = busPayments.filter(
+      (payment) =>
+        payment.session === reportFilter.session &&
+        (!reportFilter.term || payment.term === reportFilter.term)
+    );
+    const routeById = new Map(
+      busRoutes.map((route) => [getRecordId(route), route])
+    );
+    const structureByRoute = new Map(
+      selectedStructures.map((structure) => [
+        getRecordId(structure.route),
+        Number(structure.amount || 0),
+      ])
+    );
+    const paidByEnrollment = selectedPayments.reduce((paymentMap, payment) => {
+      const enrollmentId = getRecordId(payment.enrollment);
+      paymentMap.set(
+        enrollmentId,
+        (paymentMap.get(enrollmentId) || 0) + Number(payment.amount || 0)
+      );
+
+      return paymentMap;
+    }, new Map());
+    const rowMap = new Map();
+
+    selectedEnrollments.forEach((enrollment) => {
+      const routeId = getRecordId(enrollment.route);
+      const route = routeById.get(routeId);
+      const expected = structureByRoute.get(routeId) || 0;
+      const paid = paidByEnrollment.get(getRecordId(enrollment)) || 0;
+      const balance = Math.max(expected - paid, 0);
+
+      if (!rowMap.has(routeId || "no-route")) {
+        rowMap.set(routeId || "no-route", {
+          route_id: routeId,
+          route: route?.name || enrollment.route?.name || "Route not set",
+          active_enrollments: 0,
+          expected: 0,
+          paid: 0,
+          balance: 0,
+          outstanding_students: 0,
+        });
+      }
+
+      const row = rowMap.get(routeId || "no-route");
+      row.active_enrollments += 1;
+      row.expected += expected;
+      row.paid += paid;
+      row.balance += balance;
+      row.outstanding_students += balance > 0 ? 1 : 0;
+    });
+
+    return Array.from(rowMap.values()).sort((firstRow, secondRow) =>
+      firstRow.route.localeCompare(secondRow.route)
+    );
+  }, [
+    busEnrollments,
+    busPayments,
+    busRoutes,
+    busStructures,
+    reportFilter.session,
+    reportFilter.term,
+  ]);
+
+  const payrollReportRows = useMemo(() => {
+    const selectedAssignments = payrollAssignments.filter(
+      (assignment) =>
+        assignment.session === reportFilter.session &&
+        (!reportFilter.term || assignment.period === reportFilter.term) &&
+        assignment.status === "active"
+    );
+    const selectedPayments = payrollPayments.filter(
+      (payment) =>
+        payment.session === reportFilter.session &&
+        (!reportFilter.term || payment.period === reportFilter.term)
+    );
+    const paidByAssignment = selectedPayments.reduce((paymentMap, payment) => {
+      const assignmentId = getRecordId(payment.assignment);
+      paymentMap.set(
+        assignmentId,
+        (paymentMap.get(assignmentId) || 0) + Number(payment.amount || 0)
+      );
+
+      return paymentMap;
+    }, new Map());
+    const rowMap = new Map();
+
+    selectedAssignments.forEach((assignment) => {
+      const rowKey = `${assignment.category}|${assignment.level_name}`;
+      const expected = Number(assignment.net_amount || 0);
+      const paid = paidByAssignment.get(getRecordId(assignment)) || 0;
+      const balance = Math.max(expected - paid, 0);
+
+      if (!rowMap.has(rowKey)) {
+        rowMap.set(rowKey, {
+          key: rowKey,
+          category: assignment.category || "not_set",
+          level_name: assignment.level_name || "Level not set",
+          assigned_staff: 0,
+          expected: 0,
+          paid: 0,
+          balance: 0,
+          outstanding_staff: 0,
+        });
+      }
+
+      const row = rowMap.get(rowKey);
+      row.assigned_staff += 1;
+      row.expected += expected;
+      row.paid += paid;
+      row.balance += balance;
+      row.outstanding_staff += balance > 0 ? 1 : 0;
+    });
+
+    return Array.from(rowMap.values()).sort(
+      (firstRow, secondRow) =>
+        firstRow.category.localeCompare(secondRow.category) ||
+        firstRow.level_name.localeCompare(secondRow.level_name)
+    );
+  }, [
+    payrollAssignments,
+    payrollPayments,
+    reportFilter.session,
+    reportFilter.term,
+  ]);
+
+  const boardingReportRows = useMemo(() => {
+    const selectedEnrollments = boardingEnrollments.filter(
+      (enrollment) =>
+        enrollment.session === reportFilter.session &&
+        (!reportFilter.term || enrollment.term === reportFilter.term) &&
+        enrollment.status === "active"
+    );
+    const selectedStructures = boardingStructures.filter(
+      (structure) =>
+        structure.session === reportFilter.session &&
+        (!reportFilter.term || structure.term === reportFilter.term)
+    );
+    const selectedPayments = boardingPayments.filter(
+      (payment) =>
+        payment.session === reportFilter.session &&
+        (!reportFilter.term || payment.term === reportFilter.term)
+    );
+    const houseById = new Map(
+      boardingHouses.map((house) => [getRecordId(house), house])
+    );
+    const structureByHouse = new Map(
+      selectedStructures.map((structure) => [
+        getRecordId(structure.house),
+        Number(structure.amount || 0),
+      ])
+    );
+    const paidByEnrollment = selectedPayments.reduce((paymentMap, payment) => {
+      const enrollmentId = getRecordId(payment.enrollment);
+      paymentMap.set(
+        enrollmentId,
+        (paymentMap.get(enrollmentId) || 0) + Number(payment.amount || 0)
+      );
+
+      return paymentMap;
+    }, new Map());
+    const rowMap = new Map();
+
+    selectedEnrollments.forEach((enrollment) => {
+      const houseId = getRecordId(enrollment.house);
+      const house = houseById.get(houseId);
+      const expected = structureByHouse.get(houseId) || 0;
+      const paid = paidByEnrollment.get(getRecordId(enrollment)) || 0;
+      const balance = Math.max(expected - paid, 0);
+
+      if (!rowMap.has(houseId || "no-house")) {
+        rowMap.set(houseId || "no-house", {
+          house_id: houseId,
+          house: house?.name || enrollment.house?.name || "House not set",
+          active_enrollments: 0,
+          expected: 0,
+          paid: 0,
+          balance: 0,
+          outstanding_students: 0,
+        });
+      }
+
+      const row = rowMap.get(houseId || "no-house");
+      row.active_enrollments += 1;
+      row.expected += expected;
+      row.paid += paid;
+      row.balance += balance;
+      row.outstanding_students += balance > 0 ? 1 : 0;
+    });
+
+    return Array.from(rowMap.values()).sort((firstRow, secondRow) =>
+      firstRow.house.localeCompare(secondRow.house)
+    );
+  }, [
+    boardingEnrollments,
+    boardingHouses,
+    boardingPayments,
+    boardingStructures,
+    reportFilter.session,
+    reportFilter.term,
+  ]);
+
   const recentStudents = [...reportStudents]
     .sort((firstStudent, secondStudent) => {
       return new Date(secondStudent.createdAt || 0) - new Date(firstStudent.createdAt || 0);
@@ -296,6 +738,9 @@ function AdminReport() {
     setReportFilter((currentFilter) => ({
       ...currentFilter,
       [name]: value,
+      ...(name === "session"
+        ? { term: normalizeTermForSession(currentFilter.term, value) }
+        : {}),
     }));
   };
 
@@ -353,8 +798,7 @@ function AdminReport() {
       </div>
 
       <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_240px_240px_auto] lg:items-end">
-          <div>
+        <div className="mb-5">
             <h3 className="text-3xl font-extrabold text-primary">
               Report Controls
             </h3>
@@ -362,8 +806,9 @@ function AdminReport() {
               Report generated for {reportFilter.session}
               {reportFilter.term ? ` - ${reportFilter.term}` : ""}.
             </p>
-          </div>
+        </div>
 
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-[240px_240px_auto] lg:items-end">
           <div>
             <label className="mb-2 block text-sm font-semibold text-primary/60">
               Session
@@ -393,9 +838,11 @@ function AdminReport() {
               className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
             >
               <option value="">All terms</option>
-              <option value="First Term">First Term</option>
-              <option value="Second Term">Second Term</option>
-              <option value="Third Term">Third Term</option>
+              {getVisibleTermsForSession(reportFilter.session).map((term) => (
+                <option key={term} value={term}>
+                  {term}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -427,6 +874,258 @@ function AdminReport() {
             </div>
           </div>
         ))}
+      </section>
+
+      <section className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-2">
+        <div className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-3xl font-extrabold text-primary">
+                Bus Summary
+              </h3>
+              <p className="mt-2 text-primary/70">
+                Transport collection and enrollment for the selected filter.
+              </p>
+            </div>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+              <FaBus />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl bg-primary/5 p-5">
+              <p className="text-sm font-bold text-primary/60">
+                Active Bus Students
+              </p>
+              <p className="mt-2 text-2xl font-extrabold text-primary">
+                {loading ? "..." : busSummary.activeEnrollments}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-primary/5 p-5">
+              <p className="text-sm font-bold text-primary/60">Routes</p>
+              <p className="mt-2 text-2xl font-extrabold text-primary">
+                {loading ? "..." : busSummary.routes}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-green-500/10 p-5">
+              <p className="text-sm font-bold text-green-300">Paid</p>
+              <p className="mt-2 text-2xl font-extrabold text-green-200">
+                {loading ? "..." : formatCurrency(busSummary.paid)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-red-500/10 p-5">
+              <p className="text-sm font-bold text-red-300">Balance</p>
+              <p className="mt-2 text-2xl font-extrabold text-red-200">
+                {loading ? "..." : formatCurrency(busSummary.balance)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-3xl font-extrabold text-primary">
+                Payroll Summary
+              </h3>
+              <p className="mt-2 text-primary/70">
+                Staff payroll assignment and payment for the selected filter.
+              </p>
+            </div>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+              <FaMoneyBillWave />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl bg-primary/5 p-5">
+              <p className="text-sm font-bold text-primary/60">Active Staff</p>
+              <p className="mt-2 text-2xl font-extrabold text-primary">
+                {loading ? "..." : payrollSummary.activeStaff}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-primary/5 p-5">
+              <p className="text-sm font-bold text-primary/60">
+                Assigned Staff
+              </p>
+              <p className="mt-2 text-2xl font-extrabold text-primary">
+                {loading ? "..." : payrollSummary.assignedStaff}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-green-500/10 p-5">
+              <p className="text-sm font-bold text-green-300">Paid</p>
+              <p className="mt-2 text-2xl font-extrabold text-green-200">
+                {loading ? "..." : formatCurrency(payrollSummary.paid)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-red-500/10 p-5">
+              <p className="text-sm font-bold text-red-300">Balance</p>
+              <p className="mt-2 text-2xl font-extrabold text-red-200">
+                {loading ? "..." : formatCurrency(payrollSummary.balance)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <div className="mb-6">
+          <h3 className="text-3xl font-extrabold text-primary">
+            Bus Report
+          </h3>
+          <p className="mt-2 text-primary/70">
+            Route-level transport enrollment and payment report.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <table className="w-full min-w-[920px] text-left">
+            <thead className="bg-primary/10 text-primary">
+              <tr>
+                <th className="px-5 py-4 font-bold">Route</th>
+                <th className="px-5 py-4 font-bold">Students</th>
+                <th className="px-5 py-4 font-bold">Expected</th>
+                <th className="px-5 py-4 font-bold">Paid</th>
+                <th className="px-5 py-4 font-bold">Balance</th>
+                <th className="px-5 py-4 font-bold">Outstanding Students</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-primary/10">
+              {loading ? (
+                <TableSkeleton columns={6} />
+              ) : busReportRows.length === 0 ? (
+                <tr>
+                  <td className="px-5 py-6 text-primary/70" colSpan="6">
+                    No bus record found for this filter.
+                  </td>
+                </tr>
+              ) : (
+                busReportRows.map((row) => (
+                  <tr key={row.route_id || row.route} className="text-primary/80">
+                    <td className="px-5 py-4 font-bold text-primary">
+                      {row.route}
+                    </td>
+                    <td className="px-5 py-4">{row.active_enrollments}</td>
+                    <td className="px-5 py-4">{formatCurrency(row.expected)}</td>
+                    <td className="px-5 py-4 font-bold text-primary">
+                      {formatCurrency(row.paid)}
+                    </td>
+                    <td className="px-5 py-4">{formatCurrency(row.balance)}</td>
+                    <td className="px-5 py-4">{row.outstanding_students}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <div className="mb-6">
+          <h3 className="text-3xl font-extrabold text-primary">
+            Payroll Report
+          </h3>
+          <p className="mt-2 text-primary/70">
+            Staff payroll by category and level for the selected filter.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <table className="w-full min-w-[980px] text-left">
+            <thead className="bg-primary/10 text-primary">
+              <tr>
+                <th className="px-5 py-4 font-bold">Category</th>
+                <th className="px-5 py-4 font-bold">Level</th>
+                <th className="px-5 py-4 font-bold">Assigned Staff</th>
+                <th className="px-5 py-4 font-bold">Expected</th>
+                <th className="px-5 py-4 font-bold">Paid</th>
+                <th className="px-5 py-4 font-bold">Balance</th>
+                <th className="px-5 py-4 font-bold">Outstanding Staff</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-primary/10">
+              {loading ? (
+                <TableSkeleton columns={7} />
+              ) : payrollReportRows.length === 0 ? (
+                <tr>
+                  <td className="px-5 py-6 text-primary/70" colSpan="7">
+                    No payroll record found for this filter.
+                  </td>
+                </tr>
+              ) : (
+                payrollReportRows.map((row) => (
+                  <tr key={row.key} className="text-primary/80">
+                    <td className="px-5 py-4 font-bold text-primary">
+                      {row.category === "non_academic"
+                        ? "Non Academic"
+                        : "Academic"}
+                    </td>
+                    <td className="px-5 py-4">{row.level_name}</td>
+                    <td className="px-5 py-4">{row.assigned_staff}</td>
+                    <td className="px-5 py-4">{formatCurrency(row.expected)}</td>
+                    <td className="px-5 py-4 font-bold text-primary">
+                      {formatCurrency(row.paid)}
+                    </td>
+                    <td className="px-5 py-4">{formatCurrency(row.balance)}</td>
+                    <td className="px-5 py-4">{row.outstanding_staff}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <div className="mb-6">
+          <h3 className="text-3xl font-extrabold text-primary">
+            Boarding Report
+          </h3>
+          <p className="mt-2 text-primary/70">
+            House-level boarding registration and payment report.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <table className="w-full min-w-[920px] text-left">
+            <thead className="bg-primary/10 text-primary">
+              <tr>
+                <th className="px-5 py-4 font-bold">House</th>
+                <th className="px-5 py-4 font-bold">Students</th>
+                <th className="px-5 py-4 font-bold">Expected</th>
+                <th className="px-5 py-4 font-bold">Paid</th>
+                <th className="px-5 py-4 font-bold">Balance</th>
+                <th className="px-5 py-4 font-bold">Outstanding Students</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-primary/10">
+              {loading ? (
+                <TableSkeleton columns={6} />
+              ) : boardingReportRows.length === 0 ? (
+                <tr>
+                  <td className="px-5 py-6 text-primary/70" colSpan="6">
+                    No boarding record found for this filter.
+                  </td>
+                </tr>
+              ) : (
+                boardingReportRows.map((row) => (
+                  <tr key={row.house_id || row.house} className="text-primary/80">
+                    <td className="px-5 py-4 font-bold text-primary">
+                      {row.house}
+                    </td>
+                    <td className="px-5 py-4">{row.active_enrollments}</td>
+                    <td className="px-5 py-4">{formatCurrency(row.expected)}</td>
+                    <td className="px-5 py-4 font-bold text-primary">
+                      {formatCurrency(row.paid)}
+                    </td>
+                    <td className="px-5 py-4">{formatCurrency(row.balance)}</td>
+                    <td className="px-5 py-4">{row.outstanding_students}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-[1.4fr_.8fr]">

@@ -13,10 +13,13 @@ import API from "../../api/axios.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
 import { sortStudentsByName } from "../../utils/students.js";
+import {
+  getVisibleTermsForSession,
+  normalizeTermForSession,
+} from "../../utils/academicTerms.js";
 
 const DEFAULT_SESSION = "2025/2026";
-const PAGE_SIZE = 25;
-const terms = ["First Term", "Second Term", "Third Term"];
+const PAGE_SIZE = 15;
 
 const initialBusForm = {
   name: "",
@@ -80,6 +83,60 @@ const getRecordId = (record) => record?._id || record || "";
 
 const isActiveStudent = (student) =>
   !student.status || student.status === "active";
+
+const TERM_ORDER = ["First Term", "Second Term", "Third Term"];
+
+const getTermIndex = (term = "") => {
+  const termIndex = TERM_ORDER.indexOf(term);
+
+  return termIndex === -1 ? TERM_ORDER.length : termIndex;
+};
+
+const getStudentTermEnrollment = (student, session, term) => {
+  const enrollments = Array.isArray(student?.fee_enrollments)
+    ? student.fee_enrollments
+    : [];
+
+  return enrollments.find(
+    (enrollment) =>
+      enrollment.session === session &&
+      enrollment.term === term
+  );
+};
+
+const getStudentEffectiveTermEnrollment = (student, session, term) => {
+  const enrollments = Array.isArray(student?.fee_enrollments)
+    ? student.fee_enrollments
+    : [];
+  const targetTermIndex = getTermIndex(term);
+
+  return enrollments
+    .filter(
+      (enrollment) =>
+        enrollment.session === session &&
+        getTermIndex(enrollment.term) <= targetTermIndex
+    )
+    .sort(
+      (firstEnrollment, secondEnrollment) =>
+        getTermIndex(secondEnrollment.term) - getTermIndex(firstEnrollment.term)
+    )[0];
+};
+
+const studentBelongsToTermClass = (student, classRecord, session, term) => {
+  const enrollment = getStudentEffectiveTermEnrollment(student, session, term);
+
+  if (!enrollment || !classRecord) {
+    return false;
+  }
+
+  const enrollmentClassRecordId = getRecordId(enrollment.class_record);
+  const classRecordId = getRecordId(classRecord);
+
+  return (
+    enrollmentClassRecordId === classRecordId ||
+    normalizeClassName(enrollment.class) === normalizeClassName(classRecord.name)
+  );
+};
 
 const inputClass =
   "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
@@ -165,6 +222,7 @@ function BusManagement() {
   const [status, setStatus] = useState({ type: "", message: "" });
   const [enrollmentPage, setEnrollmentPage] = useState(1);
   const [paymentPage, setPaymentPage] = useState(1);
+  const [structurePage, setStructurePage] = useState(1);
   const [enrollmentTotal, setEnrollmentTotal] = useState(0);
   const [paymentTotal, setPaymentTotal] = useState(0);
   const [filters, setFilters] = useState({
@@ -240,6 +298,10 @@ function BusManagement() {
     fetchBusData();
   }, [enrollmentPage, filters, paymentPage]);
 
+  useEffect(() => {
+    setStructurePage(1);
+  }, [structures.length]);
+
   const sessionOptions = useMemo(() => {
     return [
       ...new Set([
@@ -275,26 +337,29 @@ function BusManagement() {
   );
 
   const classStudentOptions = useMemo(() => {
-    if (!selectedEnrollmentClass) {
+    if (!selectedEnrollmentClass || !enrollmentForm.term) {
       return [];
     }
 
     return sortStudentsByName(
       students.filter((student) => {
-        const studentClassRecordId = getRecordId(student.class_record);
-
         return (
           isActiveStudent(student) &&
-          student.current_session === enrollmentForm.session &&
-          (
-            studentClassRecordId === selectedEnrollmentClass._id ||
-            normalizeClassName(student.class) ===
-            normalizeClassName(selectedEnrollmentClass.name)
+          studentBelongsToTermClass(
+            student,
+            selectedEnrollmentClass,
+            enrollmentForm.session,
+            enrollmentForm.term
           )
         );
       })
     );
-  }, [enrollmentForm.session, selectedEnrollmentClass, students]);
+  }, [
+    enrollmentForm.session,
+    enrollmentForm.term,
+    selectedEnrollmentClass,
+    students,
+  ]);
 
   const existingEnrollmentStudentIds = useMemo(() => {
     return new Set(
@@ -423,6 +488,14 @@ function BusManagement() {
   const visiblePaymentPage = paymentPage;
   const paginatedEnrollments = enrollmentRows;
   const paginatedPayments = paymentRows;
+  const visibleStructurePage = Math.min(
+    structurePage,
+    Math.max(1, Math.ceil(structures.length / PAGE_SIZE))
+  );
+  const paginatedStructures = structures.slice(
+    (visibleStructurePage - 1) * PAGE_SIZE,
+    visibleStructurePage * PAGE_SIZE
+  );
 
   const totals = useMemo(() => {
     const activeRows = enrollmentRows.filter(
@@ -445,11 +518,18 @@ function BusManagement() {
       ),
     };
   }, [enrollmentRows]);
+  const busSummaryWindow = [
+    filters.session || "All sessions",
+    filters.term || "All terms",
+  ].join(" | ");
 
   const handleFilterChange = (field, value) => {
     setFilters((currentFilters) => ({
       ...currentFilters,
       [field]: value,
+      ...(field === "session"
+        ? { term: normalizeTermForSession(currentFilters.term, value) }
+        : {}),
     }));
     setEnrollmentPage(1);
     setPaymentPage(1);
@@ -476,6 +556,9 @@ function BusManagement() {
     setStructureForm((currentForm) => ({
       ...currentForm,
       [name]: value,
+      ...(name === "session"
+        ? { term: normalizeTermForSession(currentForm.term, value) }
+        : {}),
     }));
   };
 
@@ -523,6 +606,7 @@ function BusManagement() {
       setEnrollmentForm((currentForm) => ({
         ...currentForm,
         session: value,
+        term: normalizeTermForSession(currentForm.term, value),
         class_record: "",
         student_ids: [],
       }));
@@ -940,24 +1024,8 @@ function BusManagement() {
         </p>
       </div>
 
-      <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Registered Buses" value={buses.length} icon={<FaBus />} />
-        <StatCard title="Routes" value={routes.length} icon={<FaRoute />} />
-        <StatCard
-          title="Active Bus Students"
-          value={totals.activeEnrollments}
-          icon={<FaUsers />}
-        />
-        <StatCard
-          title="Outstanding"
-          value={loading ? "..." : formatCurrency(totals.balance)}
-          icon={<FaMoneyBillWave />}
-        />
-      </section>
-
       <section className="mb-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
-        <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_200px_200px_240px_auto] xl:items-end">
-          <div>
+        <div className="mb-5">
             <h3 className="text-2xl font-extrabold text-primary">
               Bus Transport Summary
             </h3>
@@ -965,7 +1033,9 @@ function BusManagement() {
               {filters.session || "All sessions"}
               {filters.term ? ` - ${filters.term}` : ""}
             </p>
-          </div>
+        </div>
+
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2  xl:items-end">
           <select
             className={inputClass}
             name="session"
@@ -990,7 +1060,7 @@ function BusManagement() {
             }
           >
             <option value="">All terms</option>
-            {terms.map((term) => (
+            {getVisibleTermsForSession(filters.session).map((term) => (
               <option key={term} value={term}>
                 {term}
               </option>
@@ -1044,7 +1114,7 @@ function BusManagement() {
       </section>
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+        <section className="grid grid-cols-1 gap-8">
           <form
             onSubmit={handleBusSubmit}
             className="rounded-[2rem] bg-secondary p-6 shadow-2xl"
@@ -1194,7 +1264,7 @@ function BusManagement() {
           </section>
         </section>
 
-        <section className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+        <section className="grid grid-cols-1 gap-8">
           <form
             onSubmit={handleRouteSubmit}
             className="rounded-[2rem] bg-secondary p-6 shadow-2xl"
@@ -1371,7 +1441,7 @@ function BusManagement() {
                 required
               >
                 <option value="">Select term</option>
-                {terms.map((term) => (
+                {getVisibleTermsForSession(structureForm.session).map((term) => (
                   <option key={term} value={term}>
                     {term}
                   </option>
@@ -1464,14 +1534,16 @@ function BusManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary/10 text-primary/80">
-                {structures.length === 0 ? (
+                {loading ? (
+                  <TableSkeleton columns={6} />
+                ) : structures.length === 0 ? (
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="6">
                       No bus payment structure has been created yet.
                     </td>
                   </tr>
                 ) : (
-                  structures.map((structure) => (
+                  paginatedStructures.map((structure) => (
                     <tr key={structure._id}>
                       <td className="px-5 py-4 font-bold text-primary">
                         {structure.route?.name || "Deleted route"}
@@ -1516,6 +1588,11 @@ function BusManagement() {
               </tbody>
             </table>
           </div>
+          <PaginationControls
+            page={visibleStructurePage}
+            totalItems={structures.length}
+            onPageChange={setStructurePage}
+          />
         </section>
 
         <section className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
@@ -1540,7 +1617,7 @@ function BusManagement() {
                 required
               >
                 <option value="">Select term</option>
-                {terms.map((term) => (
+                {getVisibleTermsForSession(enrollmentForm.session).map((term) => (
                   <option key={term} value={term}>
                     {term}
                   </option>
@@ -1764,7 +1841,7 @@ function BusManagement() {
           />
         </section>
 
-        <section className="grid grid-cols-1 gap-8 xl:grid-cols-[420px_1fr]">
+        <section className="grid grid-cols-1 gap-8">
           <form
             onSubmit={handlePaymentSubmit}
             className="rounded-[2rem] bg-secondary p-6 shadow-2xl"
