@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { motion } from "framer-motion";
 
 import {
-  FaArrowRightFromBracket,
   FaRegUser,
 } from "react-icons/fa6";
 
@@ -20,7 +19,7 @@ import HeroSkeleton from "./Skeleton";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-[700px] overflow-hidden bg-background sm:min-h-screen">
+    <section className="relative min-h-[640px] overflow-hidden bg-background sm:min-h-[calc(100vh-73px)]">
 
       {/* =========================
           BACKGROUND SLIDER
@@ -36,7 +35,7 @@ export default function Hero() {
           DARK OVERLAY
       ========================= */}
 
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/30" />
 
 
 
@@ -65,16 +64,10 @@ export default function Hero() {
                 text-4xl font-extrabold leading-tight text-primary
                 sm:text-5xl
                 md:text-6xl
-                lg:text-7xl
+                lg:text-6xl
               "
             >
-              Build Future Leaders with{" "}
-
-              <span className="text-button">
-                Excellence
-              </span>{" "}
-
-              and Integrity
+              Golden Castle International School
             </h1>
 
 
@@ -93,10 +86,9 @@ export default function Hero() {
                 lg:text-xl
               "
             >
-              At Golden Castle International School Oba, we provide
-              a world-class education that nurtures creativity,
-              discipline, leadership, and academic excellence in a
-              safe and inspiring learning environment.
+              Build future leaders with excellence and integrity through
+              disciplined learning, creativity, leadership, and academic growth
+              in a safe school environment.
             </p>
 
 
@@ -113,12 +105,12 @@ export default function Hero() {
                 to="/login"
                 className="
                   group inline-flex items-center justify-center gap-3
-                  rounded-2xl bg-button
+                  rounded-lg bg-button
                   px-6 py-4
                   font-semibold text-secondary
-                  shadow-2xl
+                  shadow-lg
                   transition-all duration-300
-                  hover:scale-105
+                  hover:-translate-y-0.5
                   hover:shadow-button/30
                 "
               >
@@ -135,16 +127,15 @@ export default function Hero() {
                 to="/programs"
                 className="
                   group inline-flex items-center justify-center gap-3
-                  rounded-2xl bg-button
+                  rounded-lg border border-primary/30 bg-secondary/15
                   px-6 py-4
-                  font-semibold text-secondary
-                  shadow-2xl
+                  font-semibold text-primary
+                  shadow-lg backdrop-blur
                   transition-all duration-300
-                  hover:scale-105
-                  hover:shadow-button/30
+                  hover:-translate-y-0.5 hover:bg-button hover:text-secondary
                 "
               >
-                <span>Explore now</span>
+                <span>Explore Programs</span>
 
                 <FaRegUser className="transition duration-300 group-hover:rotate-12" />
               </NavLink>

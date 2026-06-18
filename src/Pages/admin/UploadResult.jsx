@@ -1275,10 +1275,10 @@ function UploadResult() {
   };
 
   const inputClass =
-    "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
+    "w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}
@@ -1323,10 +1323,10 @@ function UploadResult() {
       />
 
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaClipboardCheck />
         </div>
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           Result Uploads
         </h2>
         <p className="mt-3 max-w-2xl text-secondary/75">
@@ -1335,7 +1335,7 @@ function UploadResult() {
         </p>
       </div>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl lg:p-10">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg lg:p-8">
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_420px]">
           <div>
             <h3 className="text-3xl font-extrabold text-primary">
@@ -1372,7 +1372,7 @@ function UploadResult() {
             </select>
 
             <select
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               name="class_record"
               value={resultForm.class_record}
               onChange={handleChange}
@@ -1395,7 +1395,7 @@ function UploadResult() {
             )}
 
             <select
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               name="studentId"
               value={resultForm.studentId}
               onChange={handleChange}
@@ -1433,7 +1433,7 @@ function UploadResult() {
               <button
                 type="submit"
                 disabled={uploading || filteredStudents.length === 0}
-                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {uploading
                   ? editingResultId
@@ -1448,7 +1448,7 @@ function UploadResult() {
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="mt-4 w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+                  className="mt-4 w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
                 >
                   Cancel Edit
                 </button>
@@ -1458,7 +1458,7 @@ function UploadResult() {
 
           <form
             onSubmit={handleStudentResultAccessSubmit}
-            className="rounded-2xl bg-primary/5 p-6"
+            className="rounded-lg bg-primary/5 p-6"
           >
             <h4 className="text-2xl font-extrabold text-primary">
               Student Result Access
@@ -1495,7 +1495,7 @@ function UploadResult() {
             <button
               type="submit"
               disabled={savingStudentResultAccess}
-              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {savingStudentResultAccess
                 ? "Saving access..."
@@ -1505,7 +1505,7 @@ function UploadResult() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl lg:p-10">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg lg:p-8">
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_420px]">
           <div>
             <h3 className="text-3xl font-extrabold text-primary">
@@ -1529,7 +1529,7 @@ function UploadResult() {
             />
 
             <select
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               name="class_record"
               value={cumulativeForm.class_record}
               onChange={handleCumulativeChange}
@@ -1552,7 +1552,7 @@ function UploadResult() {
             )}
 
             <select
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               name="studentId"
               value={cumulativeForm.studentId}
               onChange={handleCumulativeChange}
@@ -1586,7 +1586,7 @@ function UploadResult() {
               <button
                 type="submit"
                 disabled={uploadingCumulative || cumulativeFilteredStudents.length === 0}
-                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {uploadingCumulative
                   ? editingCumulativeResultId
@@ -1601,7 +1601,7 @@ function UploadResult() {
                 <button
                   type="button"
                   onClick={handleCancelCumulativeEdit}
-                  className="mt-4 w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+                  className="mt-4 w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
                 >
                   Cancel Cumulative Edit
                 </button>
@@ -1611,7 +1611,7 @@ function UploadResult() {
 
           <form
             onSubmit={handleCumulativeAccessSubmit}
-            className="rounded-2xl bg-primary/5 p-6"
+            className="rounded-lg bg-primary/5 p-6"
           >
             <h4 className="text-2xl font-extrabold text-primary">
               Student Cumulative Result Access
@@ -1634,7 +1634,7 @@ function UploadResult() {
             <button
               type="submit"
               disabled={savingCumulativeAccess}
-              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {savingCumulativeAccess
                 ? "Saving access..."
@@ -1644,7 +1644,7 @@ function UploadResult() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl lg:p-10">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg lg:p-8">
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_420px]">
           <div>
             <h3 className="text-3xl font-extrabold text-primary">
@@ -1748,7 +1748,7 @@ function UploadResult() {
                   !broadsheetForm.assigned_teacher ||
                   !broadsheetForm.pdf
                 }
-                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {uploadingBroadsheet
                   ? "Uploading broadsheet..."
@@ -1760,7 +1760,7 @@ function UploadResult() {
 
           <form
             onSubmit={handleBroadsheetAccessSubmit}
-            className="rounded-2xl bg-primary/5 p-6"
+            className="rounded-lg bg-primary/5 p-6"
           >
             <h4 className="text-2xl font-extrabold text-primary">
               Teacher Broadsheet Access
@@ -1797,7 +1797,7 @@ function UploadResult() {
             <button
               type="submit"
               disabled={savingBroadsheetAccess}
-              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {savingBroadsheetAccess ? "Saving access..." : "Save Broadsheet Access"}
             </button>
@@ -1805,7 +1805,7 @@ function UploadResult() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl lg:p-10">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg lg:p-8">
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_420px]">
           <div>
             <h3 className="text-3xl font-extrabold text-primary">
@@ -1910,7 +1910,7 @@ function UploadResult() {
                   !classResultForm.assigned_teacher ||
                   !classResultForm.pdf
                 }
-                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {uploadingClassResult
                   ? "Uploading class result..."
@@ -1922,7 +1922,7 @@ function UploadResult() {
 
           <form
             onSubmit={handleClassResultAccessSubmit}
-            className="rounded-2xl bg-primary/5 p-6"
+            className="rounded-lg bg-primary/5 p-6"
           >
             <h4 className="text-2xl font-extrabold text-primary">
               Teacher Class Result Access
@@ -1959,7 +1959,7 @@ function UploadResult() {
             <button
               type="submit"
               disabled={savingClassResultAccess}
-              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {savingClassResultAccess
                 ? "Saving access..."
@@ -1969,7 +1969,7 @@ function UploadResult() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-5">
             <h3 className="text-3xl font-extrabold text-primary">
               Result Records
@@ -1984,11 +1984,11 @@ function UploadResult() {
             value={resultSearch}
             onChange={(event) => setResultSearch(event.target.value)}
             placeholder="Search result records"
-            className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+            className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
           />
         </div>
 
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[900px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -2053,7 +2053,7 @@ function UploadResult() {
         />
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-6">
           <h3 className="text-3xl font-extrabold text-primary">
             Recent Cumulative Uploads
@@ -2063,7 +2063,7 @@ function UploadResult() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[860px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -2130,7 +2130,7 @@ function UploadResult() {
         />
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-6">
           <h3 className="text-3xl font-extrabold text-primary">
             Recent Class Results
@@ -2140,7 +2140,7 @@ function UploadResult() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[860px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -2204,7 +2204,7 @@ function UploadResult() {
         />
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-6">
           <h3 className="text-3xl font-extrabold text-primary">
             Recent Class Broadsheets
@@ -2214,7 +2214,7 @@ function UploadResult() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[860px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -2282,3 +2282,4 @@ function UploadResult() {
 }
 
 export default UploadResult;
+

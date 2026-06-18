@@ -27,24 +27,24 @@ export default function TeamCards() {
   ];
 
   return (
-    <section className="w-full bg-background py-10 px-6 lg:px-16">
+    <section className="w-full bg-background px-6 py-12 lg:px-10">
       
       {/* Heading */}
-      <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-secondary">
+      <div className="mb-10 text-center">
+        <h2 className="text-3xl font-extrabold text-secondary md:text-4xl">
           Our Team
-        </h1>
+        </h2>
 
-        <div className="w-24 h-1.5 bg-button mx-auto mt-4 rounded-full"></div>
+        <div className="mx-auto mt-4 h-1.5 w-20 rounded-full bg-button"></div>
 
-        <p className="max-w-2xl mx-auto mt-6 text-secondary/70 text-lg leading-relaxed">
+        <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-secondary/70 md:text-lg">
           Meet the dedicated leaders and educators committed to nurturing
           excellence, character, and success at Golden Castle International School.
         </p>
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2  md:grid-cols-3 gap-10 max-w-7xl mx-auto">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
 
         {staffData.map((staff, index) => (
           <motion.div
@@ -57,10 +57,9 @@ export default function TeamCards() {
             }}
             viewport={{ once: true, amount: 0.2 }}
             whileHover={{
-              y: -10,
-              scale: 1.03,
+              y: -4,
             }}
-            className="group relative overflow-hidden rounded-3xl bg-secondary shadow-2xl"
+            className="group relative overflow-hidden rounded-lg bg-secondary shadow-md"
           >
 
             {/* Image */}
@@ -68,7 +67,7 @@ export default function TeamCards() {
               <img
                 src={`${staff.image}?w=800`}
                 alt={staff.name}
-                className="w-full h-[420px] object-cover group-hover:scale-110 transition duration-700"
+                className="h-[380px] w-full object-cover transition duration-700 group-hover:scale-105"
               />
             </div>
 
@@ -78,13 +77,13 @@ export default function TeamCards() {
             {/* Content */}
             <div className="absolute bottom-0 left-0 w-full p-6 text-primary">
 
-              <span className="inline-block px-4 py-1 bg-button text-secondary text-sm font-semibold rounded-full mb-4">
+              <span className="mb-4 inline-block rounded-full bg-button px-4 py-1 text-sm font-semibold text-secondary">
                 {staff.title}
               </span>
 
-              <h2 className="text-2xl font-bold tracking-wide">
+              <h3 className="text-2xl font-bold tracking-wide">
                 {staff.name}
-              </h2>
+              </h3>
 
               <div className="w-16 h-1 bg-button rounded-full mt-3"></div>
             </div>

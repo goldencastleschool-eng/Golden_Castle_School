@@ -75,7 +75,7 @@ const galleryImages = [
 export default function Gallery() {
   return (
     <>
-      <section className="relative overflow-hidden bg-background py-20 px-4 sm:px-6 lg:px-12">
+      <section className="relative overflow-hidden bg-background px-4 py-12 sm:px-6 lg:px-10">
 
         {/* Background Glow */}
         <div className="absolute top-0 left-0 w-72 h-72 bg-button/10 rounded-full blur-3xl"></div>
@@ -93,7 +93,7 @@ export default function Gallery() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="mb-10 text-center"
           >
 
             {/* Badge */}
@@ -104,6 +104,15 @@ export default function Gallery() {
                 School Gallery
               </span>
             </div>
+
+            <h1 className="mt-6 text-3xl font-extrabold text-secondary md:text-4xl">
+              School Gallery
+            </h1>
+
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-secondary/70 md:text-lg">
+              A look at memorable school events, creativity, culture, and
+              student life at Golden Castle International School.
+            </p>
           </motion.div>
 
           {/* =========================
@@ -115,7 +124,7 @@ export default function Gallery() {
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7 }}
             viewport={{ once: true }}
-            className="bg-secondary rounded-[2rem] overflow-hidden shadow-2xl border border-primary/10"
+            className="bg-secondary rounded-lg overflow-hidden shadow-lg border border-primary/10"
           >
 
             {/* Top Header */}
@@ -135,7 +144,7 @@ export default function Gallery() {
               </div>
 
               {/* Gallery Count */}
-              <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-button text-secondary font-semibold shadow-lg w-fit">
+              <div className="flex items-center gap-3 px-5 py-3 rounded-lg bg-button text-secondary font-semibold shadow-lg w-fit">
 
                 <FaImages />
 

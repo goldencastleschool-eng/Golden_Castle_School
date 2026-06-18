@@ -43,7 +43,7 @@ function StudentDashboard() {
 
   return (
     <div className="min-h-screen overflow-hidden">
-      <section className="relative overflow-hidden bg-secondary px-6 py-12 lg:px-12">
+      <section className="relative overflow-hidden bg-secondary px-6 py-8 lg:px-10">
         <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-button/20 blur-3xl"></div>
 
         <div className="hidden md:block relative max-w-5xl">
@@ -52,7 +52,7 @@ function StudentDashboard() {
             <span className="font-semibold">Student Result Portal</span>
           </div>
 
-          <h2 className="text-4xl font-extrabold leading-tight text-primary md:text-6xl">
+          <h2 className="text-3xl font-extrabold leading-tight text-primary md:text-4xl">
             Welcome,{" "}
             <span className="text-button">{user?.full_name || "Student"}</span>
           </h2>
@@ -64,9 +64,9 @@ function StudentDashboard() {
         </div>
       </section>
 
-      <section className="px-6 py-10 lg:px-12">
+      <section className="px-6 py-8 lg:px-10">
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
+          <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
             {error}
           </div>
         )}
@@ -76,8 +76,8 @@ function StudentDashboard() {
             <CardSkeleton count={3} />
           ) : (
           <>
-          <div className="rounded-[2rem] bg-secondary p-7 shadow-xl">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+          <div className="rounded-lg bg-secondary p-5 shadow-md">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
               <FaIdCard />
             </div>
             <p className="font-medium text-primary/70">Admission Number</p>
@@ -86,8 +86,8 @@ function StudentDashboard() {
             </h3>
           </div>
 
-          <div className="rounded-[2rem] bg-secondary p-7 shadow-xl">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+          <div className="rounded-lg bg-secondary p-5 shadow-md">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
               <FaBookOpen />
             </div>
             <p className="font-medium text-primary/70">Class</p>
@@ -99,8 +99,8 @@ function StudentDashboard() {
             </p>
           </div>
 
-          <div className="rounded-[2rem] bg-secondary p-7 shadow-xl">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+          <div className="rounded-lg bg-secondary p-5 shadow-md">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
               <FaFilePdf />
             </div>
             <p className="font-medium text-primary/70">Available Results</p>
@@ -112,7 +112,7 @@ function StudentDashboard() {
           )}
         </div>
 
-        <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-3xl font-extrabold text-primary">
             Latest Result
           </h3>
@@ -120,7 +120,7 @@ function StudentDashboard() {
             Your most recently uploaded academic result record.
           </p>
 
-          <div className="mt-7 rounded-2xl border border-primary/10 bg-primary/5 p-6">
+          <div className="mt-7 rounded-lg border border-primary/10 bg-primary/5 p-6">
             {loadingResults ? (
               <div className="animate-pulse">
                 <div className="h-7 w-40 rounded-full bg-primary/15"></div>
@@ -152,3 +152,4 @@ function StudentDashboard() {
 }
 
 export default StudentDashboard;
+

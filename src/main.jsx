@@ -101,6 +101,7 @@ const ExecutiveReportPortal = lazy(() =>
 // ERROR PAGE
 const PageNotFound = lazy(() => import("./Pages/public/PageNotFound.jsx"));
 
+// Cache portal data briefly so returning to dashboards feels instant while still refreshing in the background.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

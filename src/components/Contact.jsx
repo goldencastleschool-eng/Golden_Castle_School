@@ -68,25 +68,20 @@ export default function Location() {
   };
 
   return (
-    <section className="relative w-full bg-background overflow-hidden py-10 px-5 sm:px-8 lg:px-16">
-
-      {/* Background Glow */}
-      <div className="absolute top-0 left-0 w-72 h-72 bg-button/10 rounded-full blur-3xl"></div>
-
-      <div className="absolute bottom-0 right-0 w-72 h-72 bg-secondary/10 rounded-full blur-3xl"></div>
+    <section className="relative w-full overflow-hidden bg-background px-5 py-12 sm:px-8 lg:px-10">
 
       <div className="relative z-10 max-w-7xl mx-auto">
 
         {/* Heading */}
-        <div className="text-center mb-10">
+        <div className="mb-10 text-center">
 
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-secondary mt-4">
+          <h2 className="mt-4 text-3xl font-extrabold text-secondary sm:text-4xl">
             Contact Us
-          </h1>
+          </h2>
 
-          <div className="w-24 h-1.5 bg-button mx-auto mt-5 rounded-full"></div>
+          <div className="mx-auto mt-5 h-1.5 w-20 rounded-full bg-button"></div>
 
-          <p className="max-w-3xl mx-auto mt-6 text-lg text-secondary/70 leading-relaxed">
+          <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-secondary/70 md:text-lg">
                   We'd love to hear from you. Contact us for information about
                   admissions, programs, boarding facilities, or any other enquiries.
                 
@@ -105,7 +100,7 @@ export default function Location() {
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7 }}
             viewport={{ once: true }}
-            className="relative min-h-[420px] overflow-hidden rounded-[2rem] bg-secondary/10 shadow-2xl sm:min-h-[500px]"
+            className="relative min-h-[420px] overflow-hidden rounded-lg bg-secondary/10 shadow-lg sm:min-h-[500px]"
           >
 
             <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
@@ -135,11 +130,11 @@ export default function Location() {
             ></iframe>
 
             {/* Floating Info Card */}
-            <div className="absolute bottom-5 left-5 right-5 bg-secondary/95 backdrop-blur-lg rounded-2xl p-5 shadow-xl border border-primary/10">
+            <div className="absolute bottom-5 left-5 right-5 rounded-lg border border-primary/10 bg-secondary/95 p-5 shadow-md backdrop-blur-lg">
 
               <div className="flex items-start gap-4">
 
-                <div className="w-14 h-14 rounded-2xl bg-button/10 flex items-center justify-center text-button text-2xl">
+                <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-button/10 text-2xl text-button">
                   <FaMapMarkerAlt />
                 </div>
 
@@ -164,7 +159,7 @@ export default function Location() {
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7 }}
             viewport={{ once: true }}
-            className="bg-secondary rounded-[2rem] shadow-2xl overflow-hidden"
+            className="overflow-hidden rounded-lg bg-secondary shadow-lg"
           >
 
             <div className="p-8 sm:p-10">
@@ -185,11 +180,11 @@ export default function Location() {
               {/* Contact Quick Info */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
 
-                <div className="bg-primary/5 border border-primary/10 rounded-2xl p-5">
+                <div className="rounded-lg border border-primary/10 bg-primary/5 p-5">
 
                   <div className="flex items-center gap-4">
 
-                    <div className="w-12 h-12 rounded-xl bg-button/10 flex items-center justify-center text-button">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-button/10 text-button">
                       <FaEnvelope />
                     </div>
 
@@ -199,17 +194,17 @@ export default function Location() {
                       </h4>
 
                       <p className="text-primary/70 text-sm">
-                        info@goldencastle.edu
+                        goldencastlegci@gmail.com
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-primary/5 border border-primary/10 rounded-2xl p-5">
+                <div className="rounded-lg border border-primary/10 bg-primary/5 p-5">
 
                   <div className="flex items-center gap-4">
 
-                    <div className="w-12 h-12 rounded-xl bg-button/10 flex items-center justify-center text-button">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-button/10 text-button">
                       <FaPhoneAlt />
                     </div>
 
@@ -219,7 +214,7 @@ export default function Location() {
                       </h4>
 
                       <p className="text-primary/70 text-sm">
-                        +234 XXX XXX XXXX
+                        +234 803 5008 212
                       </p>
                     </div>
                   </div>
@@ -247,7 +242,7 @@ export default function Location() {
                     placeholder="Enter your full name"
                     required
                     autoComplete="name"
-                    className="w-full bg-primary/5 border border-primary/10 rounded-2xl px-5 py-4 text-primary outline-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
+                    className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                   />
                 </div>
 
@@ -263,7 +258,7 @@ export default function Location() {
                     placeholder="Enter your email address"
                     required
                     autoComplete="email"
-                    className="w-full bg-primary/5 border border-primary/10 rounded-2xl px-5 py-4 text-primary outline-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
+                    className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                   />
                 </div>
 
@@ -278,7 +273,7 @@ export default function Location() {
                     name="message"
                     placeholder="Write your message here..."
                     required
-                    className="w-full bg-primary/5 border border-primary/10 rounded-2xl px-5 py-4 text-primary outline-none resize-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
+                    className="w-full resize-none rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                   ></textarea>
                 </div>
 
@@ -286,7 +281,7 @@ export default function Location() {
                   <div
                     role="status"
                     aria-live="polite"
-                    className={`rounded-2xl border px-5 py-4 font-semibold ${
+                    className={`rounded-lg border px-5 py-4 font-semibold ${
                       status.type === "success"
                         ? "border-green-300/40 bg-green-500/10 text-green-100"
                         : "border-button/40 bg-button/10 text-primary"
@@ -300,7 +295,7 @@ export default function Location() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="group w-full bg-button text-secondary font-bold py-4 rounded-2xl shadow-xl hover:scale-[1.02] hover:shadow-button/30 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
+                  className="group w-full cursor-pointer rounded-lg bg-button py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-button/30 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
                 >
 
                   <span className="flex items-center justify-center gap-3">

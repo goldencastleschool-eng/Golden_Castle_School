@@ -96,7 +96,7 @@ export default function About() {
 
         {/* ================= HERO ================= */}
 
-        <section className="relative py-10 px-5 sm:px-8 lg:px-16">
+        <section className="relative px-5 py-12 sm:px-8 lg:px-10">
 
           {/* Background Glow */}
           <div className="absolute top-0 left-0 w-72 h-72 bg-button/10 rounded-full blur-3xl"></div>
@@ -112,7 +112,7 @@ export default function About() {
                 About Our School
               </span>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-secondary mt-4">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-secondary mt-4">
                 Building Future Leaders
               </h1>
 
@@ -131,7 +131,7 @@ export default function About() {
                 className="space-y-8"
               >
 
-                <div className="bg-secondary/5 border border-secondary/10 backdrop-blur-sm rounded-3xl p-8 shadow-xl">
+                <div className="bg-secondary/5 border border-secondary/10 backdrop-blur-sm rounded-lg p-6 shadow-md">
 
                   <p className="text-secondary text-lg leading-relaxed first-letter:text-6xl first-letter:text-button first-letter:font-bold">
                     Golden Castle International School, Oba is a center
@@ -166,7 +166,7 @@ export default function About() {
                 viewport={{ once: true }}
               >
 
-                <div className="bg-secondary text-primary rounded-3xl p-12 shadow-2xl">
+                <div className="bg-secondary text-primary rounded-lg p-12 shadow-lg">
 
                   <h2 className="text-3xl font-bold mb-8">
                     Our Core Values
@@ -204,13 +204,13 @@ export default function About() {
 
         {/* ================= VALUES ================= */}
 
-        <section className="py-10 px-5 sm:px-8 lg:px-16">
+        <section className="px-5 py-12 sm:px-8 lg:px-10">
 
           <div className="max-w-7xl mx-auto">
 
-            <div className="text-center mb-16">
+            <div className="mb-10 text-center">
 
-              <h2 className="text-4xl font-bold text-secondary">
+              <h2 className="text-3xl font-bold text-secondary">
                 What Defines Us
               </h2>
 
@@ -232,11 +232,11 @@ export default function About() {
                     delay: index * 0.1,
                   }}
                   viewport={{ once: true }}
-                  whileHover={{ y: -10 }}
-                  className="group bg-secondary text-primary rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300"
+                  whileHover={{ y: -4 }}
+                  className="group bg-secondary text-primary rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-300"
                 >
 
-                  <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-4xl text-button mb-6 group-hover:scale-110 transition duration-300">
+                  <div className="w-20 h-20 rounded-lg bg-primary/10 flex items-center justify-center text-4xl text-button mb-6 group-hover:scale-105 transition duration-300">
                     {value.icon}
                   </div>
 
@@ -256,7 +256,7 @@ export default function About() {
 
         {/* ================= VISION MISSION ================= */}
 
-        <section className="py-10 px-5 sm:px-8 lg:px-16 ">
+        <section className="px-5 py-12 sm:px-8 lg:px-10 ">
 
           <div className="max-w-7xl mx-auto">
 
@@ -272,10 +272,10 @@ export default function About() {
                     delay: index * 0.2,
                   }}
                   viewport={{ once: true }}
-                  className="bg-primary/5 border border-primary/10 rounded-3xl p-8 text-primary shadow-xl backdrop-blur-sm bg-secondary"
+                  className="bg-primary/5 border border-primary/10 rounded-lg p-8 text-primary shadow-md backdrop-blur-sm bg-secondary"
                 >
 
-                  <div className="w-20 h-20 rounded-2xl bg-button/10 flex items-center justify-center text-4xl text-button mb-8">
+                  <div className="w-20 h-20 rounded-lg bg-button/10 flex items-center justify-center text-4xl text-button mb-8">
                     {item.icon}
                   </div>
 
@@ -295,7 +295,7 @@ export default function About() {
 
         {/* ================= CHANT & ANTHEM ================= */}
 
-        <section className="py-10 px-5 sm:px-8 lg:px-16">
+        <section className="px-5 py-12 sm:px-8 lg:px-10">
 
           <div className="max-w-7xl mx-auto">
 
@@ -307,7 +307,7 @@ export default function About() {
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
-                className="bg-secondary text-primary rounded-3xl p-10 shadow-2xl"
+                className="bg-secondary text-primary rounded-lg p-6 shadow-lg"
               >
 
                 <h2 className="text-3xl font-bold mb-8 text-center">
@@ -339,7 +339,7 @@ export default function About() {
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
-                className="bg-secondary text-primary rounded-3xl p-10 shadow-2xl"
+                className="bg-secondary text-primary rounded-lg p-6 shadow-lg"
               >
 
                 <h2 className="text-3xl font-bold mb-8 text-center">

@@ -75,7 +75,7 @@ const CHART_COLORS = {
 };
 
 const inputClass =
-  "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20";
+  "w-full rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20";
 
 const tableHeadClass = "bg-primary/10 text-primary";
 const tableCellClass = "px-5 py-4";
@@ -145,14 +145,14 @@ function SummaryCard({ title, value, icon, tone = "default" }) {
   };
 
   return (
-    <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+    <div className="rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold uppercase text-primary/60">{title}</p>
-          <p className="mt-3 text-3xl font-extrabold text-primary">{value}</p>
+          <p className="mt-2 text-2xl font-extrabold text-primary">{value}</p>
         </div>
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl ${
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-lg ${
             toneClasses[tone] || toneClasses.default
           }`}
         >
@@ -165,7 +165,7 @@ function SummaryCard({ title, value, icon, tone = "default" }) {
 
 function ChartEmptyState({ message = "No chart data available for this filter." }) {
   return (
-    <div className="flex h-64 items-center justify-center rounded-2xl border border-primary/10 bg-primary/5 px-5 text-center text-sm font-semibold text-primary/60">
+    <div className="flex h-64 items-center justify-center rounded-lg border border-primary/10 bg-primary/5 px-5 text-center text-sm font-semibold text-primary/60">
       {message}
     </div>
   );
@@ -209,9 +209,9 @@ function NumberTooltip({ active, payload, label }) {
 
 function ReportChartCard({ title, subtitle, children }) {
   return (
-    <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+    <div className="rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
       <div className="mb-5">
-        <h2 className="text-2xl font-extrabold text-primary">{title}</h2>
+        <h2 className="text-xl font-extrabold text-primary">{title}</h2>
         {subtitle && (
           <p className="mt-1 text-sm font-semibold text-primary/60">
             {subtitle}
@@ -235,7 +235,7 @@ function StudentTable({ title, students, loading }) {
   }, [students, visiblePage]);
 
   return (
-    <section className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+    <section className="rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
       <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h3 className="text-2xl font-extrabold text-primary">{title}</h3>
@@ -245,7 +245,7 @@ function StudentTable({ title, students, loading }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-primary/10">
+      <div className="overflow-x-auto rounded-lg border border-primary/10">
         <table className="w-full min-w-[860px] text-left text-sm">
           <thead className={tableHeadClass}>
             <tr>
@@ -600,10 +600,10 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
       className={embedded ? "px-6 py-10 lg:px-12" : "min-h-screen bg-background"}
     >
       {!embedded && (
-      <header className="bg-secondary shadow-2xl">
+      <header className="border-b border-secondary/10 bg-secondary shadow-lg">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-5 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-button text-lg text-secondary">
               <FaChartPie />
             </div>
             <div>
@@ -617,7 +617,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-2">
+            <div className="rounded-lg border border-primary/10 bg-primary/5 px-4 py-2">
               <p className="text-xs font-bold uppercase text-primary/60">
                 Signed in as
               </p>
@@ -631,7 +631,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-button px-4 py-3 font-bold text-secondary shadow-lg transition hover:scale-[1.02]"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-button px-4 py-3 font-bold text-secondary shadow-lg transition hover:scale-[1.02]"
             >
               <FaArrowRightFromBracket />
               Logout
@@ -643,16 +643,20 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
 
       <div className={embedded ? "" : "mx-auto max-w-7xl px-5 py-8 lg:px-8"}>
         {embedded && (
-          <div className="mb-8">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
-              <FaChartPie />
+          <div className="mb-8 rounded-lg border border-secondary/10 bg-secondary p-6 shadow-lg">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-button text-xl text-secondary">
+                  <FaChartPie />
+                </div>
+                <h2 className="text-3xl font-extrabold text-primary">
+                  Admin Report
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm font-semibold text-primary/70">
+                  Review fee, bus, boarding, payroll, and student population reports.
+                </p>
+              </div>
             </div>
-            <h2 className="text-4xl font-extrabold text-secondary">
-              Admin Report
-            </h2>
-            <p className="mt-3 max-w-2xl text-secondary/75">
-              Review fee, bus, boarding, payroll, and student population reports.
-            </p>
           </div>
         )}
 
@@ -662,7 +666,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`rounded-2xl px-5 py-3 text-sm font-bold shadow-lg transition ${
+                className={`rounded-lg px-5 py-3 text-sm font-bold shadow-lg transition ${
                   activePage === item.page
                     ? "bg-button text-secondary"
                     : "bg-secondary text-primary hover:bg-button hover:text-secondary"
@@ -674,7 +678,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
           </nav>
         )}
 
-        <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="mb-6 rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
           <div
             className={`grid grid-cols-1 gap-4 lg:items-end ${
               showFeePage
@@ -748,7 +752,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
             <button
               type="button"
               onClick={handleRefresh}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02]"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-lg transition hover:scale-[1.02]"
             >
               <FaRotateRight />
               Refresh
@@ -757,7 +761,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
         </section>
 
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 font-semibold text-red-200">
+          <div className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 px-5 py-4 font-semibold text-red-200">
             {error}
           </div>
         )}
@@ -791,7 +795,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
         </section>
 
         <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <div className="rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
             <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
               <div>
                 <h2 className="text-2xl font-extrabold text-primary">
@@ -801,25 +805,25 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
                   {selectedSession || "No session"} - {selectedTerm}
                 </p>
               </div>
-              <div className="rounded-full bg-green-500/10 px-4 py-2 text-sm font-bold text-green-300">
+              <div className="rounded-lg bg-green-500/10 px-4 py-2 text-sm font-bold text-green-300">
                 {loading ? "..." : `${paidPercentage}% paid`}
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="rounded-2xl bg-primary/5 p-5">
+              <div className="rounded-lg bg-primary/5 p-5">
                 <p className="text-sm font-bold text-primary/60">Total Fee</p>
                 <p className="mt-2 text-2xl font-extrabold text-primary">
                   {loading ? "..." : formatCurrency(summary.expected)}
                 </p>
               </div>
-              <div className="rounded-2xl bg-green-500/10 p-5">
+              <div className="rounded-lg bg-green-500/10 p-5">
                 <p className="text-sm font-bold text-green-300">Paid</p>
                 <p className="mt-2 text-2xl font-extrabold text-green-200">
                   {loading ? "..." : formatCurrency(summary.paid)}
                 </p>
               </div>
-              <div className="rounded-2xl bg-red-500/10 p-5">
+              <div className="rounded-lg bg-red-500/10 p-5">
                 <p className="text-sm font-bold text-red-300">Balance</p>
                 <p className="mt-2 text-2xl font-extrabold text-red-200">
                   {loading ? "..." : formatCurrency(summary.balance)}
@@ -828,7 +832,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
             </div>
           </div>
 
-          <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <div className="rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
             <h2 className="text-2xl font-extrabold text-primary">
               Population Split
             </h2>
@@ -997,7 +1001,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
           }`}
         >
           {showBusPage && (
-          <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <div className="rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-extrabold text-primary">
@@ -1007,13 +1011,13 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
                   {selectedSession || "No session"} - {selectedTerm}
                 </p>
               </div>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-button text-lg text-secondary">
                 <FaBus />
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl bg-primary/5 p-5">
+              <div className="rounded-lg bg-primary/5 p-5">
                 <p className="text-sm font-bold text-primary/60">
                   Active Bus Students
                 </p>
@@ -1021,19 +1025,19 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
                   {loading ? "..." : busSummary.active_enrollments || 0}
                 </p>
               </div>
-              <div className="rounded-2xl bg-primary/5 p-5">
+              <div className="rounded-lg bg-primary/5 p-5">
                 <p className="text-sm font-bold text-primary/60">Routes</p>
                 <p className="mt-2 text-2xl font-extrabold text-primary">
                   {loading ? "..." : busSummary.routes || 0}
                 </p>
               </div>
-              <div className="rounded-2xl bg-green-500/10 p-5">
+              <div className="rounded-lg bg-green-500/10 p-5">
                 <p className="text-sm font-bold text-green-300">Paid</p>
                 <p className="mt-2 text-2xl font-extrabold text-green-200">
                   {loading ? "..." : formatCurrency(busSummary.paid)}
                 </p>
               </div>
-              <div className="rounded-2xl bg-red-500/10 p-5">
+              <div className="rounded-lg bg-red-500/10 p-5">
                 <p className="text-sm font-bold text-red-300">Balance</p>
                 <p className="mt-2 text-2xl font-extrabold text-red-200">
                   {loading ? "..." : formatCurrency(busSummary.balance)}
@@ -1044,7 +1048,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
           )}
 
           {showBoardingPage && (
-          <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <div className="rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-extrabold text-primary">
@@ -1054,31 +1058,31 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
                   {selectedSession || "No session"} - {selectedTerm}
                 </p>
               </div>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-button text-lg text-secondary">
                 <FaUserGraduate />
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl bg-primary/5 p-5">
+              <div className="rounded-lg bg-primary/5 p-5">
                 <p className="text-sm font-bold text-primary/60">Boarding Students</p>
                 <p className="mt-2 text-2xl font-extrabold text-primary">
                   {loading ? "..." : boardingSummary.active_enrollments || 0}
                 </p>
               </div>
-              <div className="rounded-2xl bg-primary/5 p-5">
+              <div className="rounded-lg bg-primary/5 p-5">
                 <p className="text-sm font-bold text-primary/60">Houses</p>
                 <p className="mt-2 text-2xl font-extrabold text-primary">
                   {loading ? "..." : boardingSummary.houses || 0}
                 </p>
               </div>
-              <div className="rounded-2xl bg-green-500/10 p-5">
+              <div className="rounded-lg bg-green-500/10 p-5">
                 <p className="text-sm font-bold text-green-300">Paid</p>
                 <p className="mt-2 text-2xl font-extrabold text-green-200">
                   {loading ? "..." : formatCurrency(boardingSummary.paid)}
                 </p>
               </div>
-              <div className="rounded-2xl bg-red-500/10 p-5">
+              <div className="rounded-lg bg-red-500/10 p-5">
                 <p className="text-sm font-bold text-red-300">Balance</p>
                 <p className="mt-2 text-2xl font-extrabold text-red-200">
                   {loading ? "..." : formatCurrency(boardingSummary.balance)}
@@ -1089,7 +1093,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
           )}
 
           {showPayrollPage && (
-            <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+            <div className="rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-extrabold text-primary">
@@ -1099,13 +1103,13 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
                     {selectedSession || "No session"} - {selectedTerm}
                   </p>
                 </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-button text-lg text-secondary">
                   <FaMoneyBillWave />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl bg-primary/5 p-5">
+                <div className="rounded-lg bg-primary/5 p-5">
                   <p className="text-sm font-bold text-primary/60">
                     Active Staff
                   </p>
@@ -1113,7 +1117,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
                     {loading ? "..." : payrollSummary.active_staff || 0}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-primary/5 p-5">
+                <div className="rounded-lg bg-primary/5 p-5">
                   <p className="text-sm font-bold text-primary/60">
                     Assigned Staff
                   </p>
@@ -1121,13 +1125,13 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
                     {loading ? "..." : payrollSummary.assigned_staff || 0}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-green-500/10 p-5">
+                <div className="rounded-lg bg-green-500/10 p-5">
                   <p className="text-sm font-bold text-green-300">Paid</p>
                   <p className="mt-2 text-2xl font-extrabold text-green-200">
                     {loading ? "..." : formatCurrency(payrollSummary.paid)}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-red-500/10 p-5">
+                <div className="rounded-lg bg-red-500/10 p-5">
                   <p className="text-sm font-bold text-red-300">Balance</p>
                   <p className="mt-2 text-2xl font-extrabold text-red-200">
                     {loading ? "..." : formatCurrency(payrollSummary.balance)}
@@ -1197,7 +1201,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
         )}
 
         {showBusPage && (
-        <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="mb-6 rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
           <div className="mb-4">
             <h2 className="text-2xl font-extrabold text-primary">
               Bus Report
@@ -1207,7 +1211,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[920px] text-left text-sm">
               <thead className={tableHeadClass}>
                 <tr>
@@ -1314,7 +1318,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
         )}
 
         {showBoardingPage && (
-        <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="mb-6 rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
           <div className="mb-4">
             <h2 className="text-2xl font-extrabold text-primary">
               Boarding Report
@@ -1324,7 +1328,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[920px] text-left text-sm">
               <thead className={tableHeadClass}>
                 <tr>
@@ -1425,7 +1429,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
         )}
 
         {showPayrollPage && (
-          <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <section className="mb-6 rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
             <div className="mb-4">
               <h2 className="text-2xl font-extrabold text-primary">
                 Payroll Report
@@ -1435,7 +1439,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
               </p>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-primary/10">
+            <div className="overflow-x-auto rounded-lg border border-primary/10">
               <table className="w-full min-w-[920px] text-left text-sm">
                 <thead className={tableHeadClass}>
                   <tr>
@@ -1488,7 +1492,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
 
         {showFeePage && (
         <>
-        <section className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="mb-6 rounded-lg border border-primary/10 bg-secondary p-5 shadow-lg">
           <div className="mb-4">
             <h2 className="text-2xl font-extrabold text-primary">
               Class Report
@@ -1500,7 +1504,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[1080px] text-left text-sm">
               <thead className={tableHeadClass}>
                 <tr>

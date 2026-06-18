@@ -252,7 +252,7 @@ function FeeManagement() {
   const [status, setStatus] = useState({ type: "", message: "" });
 
   const inputClass =
-    "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
+    "w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
   const fetchFeeData = async () => {
     try {
@@ -1583,7 +1583,7 @@ function FeeManagement() {
   };
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}
@@ -1620,10 +1620,10 @@ function FeeManagement() {
       />
 
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaReceipt />
         </div>
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           Fee Management
         </h2>
         <p className="mt-3 max-w-2xl text-secondary/75">
@@ -1632,7 +1632,7 @@ function FeeManagement() {
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
           <div className="grid grid-cols-1 gap-8">
             <div>
               <h3 className="text-3xl font-extrabold text-primary">
@@ -1697,7 +1697,7 @@ function FeeManagement() {
                 <option value="returning">Returning/Old Student</option>
               </select>
               {selectedStructureClass && structureForm.term && (
-                <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
+                <div className="rounded-lg border border-primary/10 bg-primary/5 p-4">
                   <p className="text-sm font-bold uppercase text-primary/60">
                     {selectedStructureClass.name.toUpperCase()} Category Structures
                   </p>
@@ -1731,7 +1731,7 @@ function FeeManagement() {
                 .map((category) => (
                   <div
                     key={category.key}
-                    className="rounded-2xl border border-primary/10 bg-primary/5 p-4"
+                    className="rounded-lg border border-primary/10 bg-primary/5 p-4"
                   >
                     <div className="mb-4 flex items-center justify-between gap-4">
                       <div>
@@ -1805,7 +1805,7 @@ function FeeManagement() {
               <button
                 type="submit"
                 disabled={!editingStructureId && Boolean(selectedExistingStructure)}
-                className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {editingStructureId
                   ? "Save Structure"
@@ -1818,7 +1818,7 @@ function FeeManagement() {
                 <button
                   type="button"
                   onClick={handleCancelStructureEdit}
-                  className="w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+                  className="w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
                 >
                   Cancel Edit
                 </button>
@@ -1827,7 +1827,7 @@ function FeeManagement() {
           </div>
         </section>
 
-        <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
           <div className="mb-6">
             <h3 className="text-3xl font-extrabold text-primary">
               Payment Structure Records
@@ -1838,7 +1838,7 @@ function FeeManagement() {
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[840px] text-left">
               <thead className="bg-primary/10 text-primary">
                 <tr>
@@ -1929,7 +1929,7 @@ function FeeManagement() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-[2rem] bg-secondary p-8 shadow-2xl"
+          className="rounded-lg bg-secondary p-6 shadow-lg"
         >
           <h3 className="text-3xl font-extrabold text-primary">
             {editingFeeId ? "Edit Fee Payment" : "Record Fee Payment"}
@@ -2085,7 +2085,7 @@ function FeeManagement() {
             />
           </div>
 
-          <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/5 p-5">
+          <div className="mt-6 rounded-lg border border-primary/10 bg-primary/5 p-5">
             <p className="text-sm font-bold uppercase text-primary/60">
               Expected Payment
             </p>
@@ -2107,7 +2107,7 @@ function FeeManagement() {
             {selectedFormStructure ? (
               <>
                 {selectedFormStructure.items?.length > 0 && (
-                  <div className="mt-4 rounded-2xl border border-primary/10 bg-secondary p-4">
+                  <div className="mt-4 rounded-lg border border-primary/10 bg-secondary p-4">
                     <p className="text-sm font-bold uppercase text-primary/60">
                       Fee Items
                     </p>
@@ -2181,7 +2181,7 @@ function FeeManagement() {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+            className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {submitting
               ? "Saving payment..."
@@ -2195,15 +2195,15 @@ function FeeManagement() {
             <button
               type="button"
               onClick={handleCancelEdit}
-              className="mt-4 w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+              className="mt-4 w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
             >
               Cancel Edit
             </button>
           )}
         </form>
 
-        <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
-          <div className="mb-6 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
+          <div className="mb-6 rounded-lg bg-secondary p-6 shadow-lg">
             <div className="mb-5">
               <p className="text-sm font-bold uppercase text-button">
                 Fee Filters
@@ -2274,7 +2274,7 @@ function FeeManagement() {
               <button
                 type="button"
                 onClick={fetchFeeData}
-                className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-semibold text-secondary shadow-lg transition-all duration-300 hover:scale-105"
+                className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-semibold text-secondary shadow-lg transition-all duration-300 hover:scale-105"
               >
                 Refresh
                 <FaArrowRight />
@@ -2284,7 +2284,7 @@ function FeeManagement() {
                 type="button"
                 onClick={handlePrintQueriedClassPayments}
                 disabled={!selectedFilterClass || !filters.term}
-                className="flex cursor-pointer items-center justify-center rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex cursor-pointer items-center justify-center rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Print
               </button>
@@ -2292,14 +2292,14 @@ function FeeManagement() {
           </div>
 
           <input
-            className="mb-6 w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+            className="mb-6 w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
             name="search"
             value={filters.search}
             onChange={handleFilterChange}
             placeholder="Search student, admission number, receipt, or payment method"
           />
 
-          <div className="mb-8 rounded-2xl border border-primary/10 bg-primary/5 p-5">
+          <div className="mb-8 rounded-lg border border-primary/10 bg-primary/5 p-5">
             <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-4">
               <div>
                 <p className="text-sm font-bold uppercase text-primary/60">
@@ -2347,7 +2347,7 @@ function FeeManagement() {
                 {filters.session}, {filters.term}.
               </p>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border border-primary/10 bg-secondary">
+              <div className="overflow-x-auto rounded-lg border border-primary/10 bg-secondary">
                 <table className="w-full min-w-[760px] text-left">
                   <thead className="bg-primary/10 text-primary">
                     <tr>
@@ -2410,7 +2410,7 @@ function FeeManagement() {
             )}
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[1080px] text-left">
               <thead className="bg-primary/10 text-primary">
                 <tr>
@@ -2523,3 +2523,4 @@ function FeeManagement() {
 }
 
 export default FeeManagement;
+

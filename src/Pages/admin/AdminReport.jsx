@@ -758,7 +758,7 @@ function AdminReport() {
   };
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <div className="hidden items-center gap-4 border-b border-primary pb-5 print:mb-6 print:flex">
         <img
           src={schoolLogo}
@@ -785,10 +785,10 @@ function AdminReport() {
       />
 
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaFileLines />
         </div>
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           Admin Report
         </h2>
         <p className="mt-3 max-w-3xl text-secondary/75">
@@ -797,7 +797,7 @@ function AdminReport() {
         </p>
       </div>
 
-      <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-5">
             <h3 className="text-3xl font-extrabold text-primary">
               Report Controls
@@ -817,7 +817,7 @@ function AdminReport() {
               name="session"
               value={reportFilter.session}
               onChange={handleFilterChange}
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
             >
               {sessionOptions.map((session) => (
                 <option key={session} value={session}>
@@ -835,7 +835,7 @@ function AdminReport() {
               name="term"
               value={reportFilter.term}
               onChange={handleFilterChange}
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
             >
               <option value="">All terms</option>
               {getVisibleTermsForSession(reportFilter.session).map((term) => (
@@ -850,7 +850,7 @@ function AdminReport() {
             type="button"
             onClick={handlePrintReport}
             aria-label="Print admin report"
-            className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02]"
           >
             <FaPrint />
             Print
@@ -860,15 +860,15 @@ function AdminReport() {
 
       <section className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-6">
         {statCards.map((card) => (
-          <div key={card.title} className="rounded-[2rem] bg-secondary p-7 shadow-xl">
+          <div key={card.title} className="rounded-lg bg-secondary p-5 shadow-md">
             <div className="flex items-center justify-between gap-5">
               <div>
                 <p className="font-medium text-primary/70">{card.title}</p>
-                <h3 className="mt-4 text-4xl font-extrabold text-primary">
+                <h3 className="mt-4 text-3xl font-extrabold text-primary">
                   {card.value}
                 </h3>
               </div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
                 {card.icon}
               </div>
             </div>
@@ -877,7 +877,7 @@ function AdminReport() {
       </section>
 
       <section className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-2">
-        <div className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <div className="rounded-lg bg-secondary p-6 shadow-lg">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <h3 className="text-3xl font-extrabold text-primary">
@@ -887,13 +887,13 @@ function AdminReport() {
                 Transport collection and enrollment for the selected filter.
               </p>
             </div>
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-button text-xl text-secondary">
               <FaBus />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl bg-primary/5 p-5">
+            <div className="rounded-lg bg-primary/5 p-5">
               <p className="text-sm font-bold text-primary/60">
                 Active Bus Students
               </p>
@@ -901,19 +901,19 @@ function AdminReport() {
                 {loading ? "..." : busSummary.activeEnrollments}
               </p>
             </div>
-            <div className="rounded-2xl bg-primary/5 p-5">
+            <div className="rounded-lg bg-primary/5 p-5">
               <p className="text-sm font-bold text-primary/60">Routes</p>
               <p className="mt-2 text-2xl font-extrabold text-primary">
                 {loading ? "..." : busSummary.routes}
               </p>
             </div>
-            <div className="rounded-2xl bg-green-500/10 p-5">
+            <div className="rounded-lg bg-green-500/10 p-5">
               <p className="text-sm font-bold text-green-300">Paid</p>
               <p className="mt-2 text-2xl font-extrabold text-green-200">
                 {loading ? "..." : formatCurrency(busSummary.paid)}
               </p>
             </div>
-            <div className="rounded-2xl bg-red-500/10 p-5">
+            <div className="rounded-lg bg-red-500/10 p-5">
               <p className="text-sm font-bold text-red-300">Balance</p>
               <p className="mt-2 text-2xl font-extrabold text-red-200">
                 {loading ? "..." : formatCurrency(busSummary.balance)}
@@ -922,7 +922,7 @@ function AdminReport() {
           </div>
         </div>
 
-        <div className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <div className="rounded-lg bg-secondary p-6 shadow-lg">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <h3 className="text-3xl font-extrabold text-primary">
@@ -932,19 +932,19 @@ function AdminReport() {
                 Staff payroll assignment and payment for the selected filter.
               </p>
             </div>
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-button text-xl text-secondary">
               <FaMoneyBillWave />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl bg-primary/5 p-5">
+            <div className="rounded-lg bg-primary/5 p-5">
               <p className="text-sm font-bold text-primary/60">Active Staff</p>
               <p className="mt-2 text-2xl font-extrabold text-primary">
                 {loading ? "..." : payrollSummary.activeStaff}
               </p>
             </div>
-            <div className="rounded-2xl bg-primary/5 p-5">
+            <div className="rounded-lg bg-primary/5 p-5">
               <p className="text-sm font-bold text-primary/60">
                 Assigned Staff
               </p>
@@ -952,13 +952,13 @@ function AdminReport() {
                 {loading ? "..." : payrollSummary.assignedStaff}
               </p>
             </div>
-            <div className="rounded-2xl bg-green-500/10 p-5">
+            <div className="rounded-lg bg-green-500/10 p-5">
               <p className="text-sm font-bold text-green-300">Paid</p>
               <p className="mt-2 text-2xl font-extrabold text-green-200">
                 {loading ? "..." : formatCurrency(payrollSummary.paid)}
               </p>
             </div>
-            <div className="rounded-2xl bg-red-500/10 p-5">
+            <div className="rounded-lg bg-red-500/10 p-5">
               <p className="text-sm font-bold text-red-300">Balance</p>
               <p className="mt-2 text-2xl font-extrabold text-red-200">
                 {loading ? "..." : formatCurrency(payrollSummary.balance)}
@@ -968,7 +968,7 @@ function AdminReport() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-6">
           <h3 className="text-3xl font-extrabold text-primary">
             Bus Report
@@ -978,7 +978,7 @@ function AdminReport() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[920px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -1020,7 +1020,7 @@ function AdminReport() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-6">
           <h3 className="text-3xl font-extrabold text-primary">
             Payroll Report
@@ -1030,7 +1030,7 @@ function AdminReport() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[980px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -1076,7 +1076,7 @@ function AdminReport() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-6">
           <h3 className="text-3xl font-extrabold text-primary">
             Boarding Report
@@ -1086,7 +1086,7 @@ function AdminReport() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[920px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -1129,7 +1129,7 @@ function AdminReport() {
       </section>
 
       <section className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-[1.4fr_.8fr]">
-        <div className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <div className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-3xl font-extrabold text-primary">
             Class Performance Summary
           </h3>
@@ -1137,7 +1137,7 @@ function AdminReport() {
             Enrollment and result upload coverage by class.
           </p>
 
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[760px] text-left">
               <thead className="bg-primary/10 text-primary">
                 <tr>
@@ -1198,7 +1198,7 @@ function AdminReport() {
           </div>
         </div>
 
-        <div className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <div className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-3xl font-extrabold text-primary">
             Student Summary
           </h3>
@@ -1208,14 +1208,14 @@ function AdminReport() {
 
           <div className="mt-6 space-y-4">
             {Object.keys(genderSummary).length === 0 ? (
-              <p className="rounded-2xl bg-primary/5 p-5 text-primary/70">
+              <p className="rounded-lg bg-primary/5 p-5 text-primary/70">
                 No student record found for this session.
               </p>
             ) : (
               Object.entries(genderSummary).map(([gender, count]) => (
                 <div
                   key={gender}
-                  className="flex items-center justify-between rounded-2xl bg-primary/5 p-5 text-primary"
+                  className="flex items-center justify-between rounded-lg bg-primary/5 p-5 text-primary"
                 >
                   <span className="font-bold">{gender}</span>
                   <span className="text-2xl font-extrabold">{count}</span>
@@ -1224,7 +1224,7 @@ function AdminReport() {
             )}
           </div>
 
-          <div className="mt-6 rounded-2xl bg-primary/5 p-5 text-primary">
+          <div className="mt-6 rounded-lg bg-primary/5 p-5 text-primary">
             <p className="text-sm font-bold uppercase text-primary/60">
               Cumulative Coverage
             </p>
@@ -1238,7 +1238,7 @@ function AdminReport() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-6">
           <h3 className="text-3xl font-extrabold text-primary">
             Recent Registrations
@@ -1248,7 +1248,7 @@ function AdminReport() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[760px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -1288,7 +1288,7 @@ function AdminReport() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-6">
           <h3 className="text-3xl font-extrabold text-primary">
             Left School Records
@@ -1299,7 +1299,7 @@ function AdminReport() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[860px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -1352,7 +1352,7 @@ function AdminReport() {
           type="button"
           onClick={handlePrintReport}
           aria-label="Print admin report"
-          className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"
+          className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02]"
         >
           Print Report
           <FaArrowRight />
@@ -1363,3 +1363,4 @@ function AdminReport() {
 }
 
 export default AdminReport;
+

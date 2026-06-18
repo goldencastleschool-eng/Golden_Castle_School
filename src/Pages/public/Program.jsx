@@ -23,7 +23,7 @@ const programs = [
 
     classLevel: "JSS 1 - SS 3",
 
-    link: "/Programs/secondary-education",
+    link: "/programs/secondary-education",
   },
 
   {
@@ -39,7 +39,7 @@ const programs = [
 
     classLevel: "Basic 1 - 5",
 
-    link: "/Programs/basic-education",
+    link: "/programs/basic-education",
   },
 
   {
@@ -55,7 +55,7 @@ const programs = [
 
     classLevel: "Creche - Nursery 3",
 
-    link: "/Programs/nursery-education",
+    link: "/programs/nursery-education",
   },
 
   {
@@ -71,7 +71,7 @@ const programs = [
 
     classLevel: "All Classes",
 
-    link: "/Programs/computer-training",
+    link: "/programs/computer-training",
   },
 
   {
@@ -87,7 +87,7 @@ const programs = [
 
     classLevel: "JSS 1 - SS 3",
 
-    link: "/Programs/boarding-school",
+    link: "/programs/boarding-school",
   },
 
   {
@@ -103,7 +103,7 @@ const programs = [
 
     classLevel: "All Classes",
 
-    link: "/Programs/music-and-arts",
+    link: "/programs/music-and-arts",
   },
 ];
 
@@ -114,17 +114,17 @@ const programs = [
 export default function ProgramCards() {
   return (
     <>
-        <section className="w-full bg-background py-10 px-6 lg:px-16">
+        <section className="w-full bg-background px-6 py-12 lg:px-10">
 
             {/* =========================
                 SECTION HEADER
             ========================= */}
 
-            <div className="text-center mb-16">
-              <h2 className="mt-6 text-4xl md:text-5xl font-extrabold text-secondary leading-tight">
+            <div className="mb-10 text-center">
+              <h1 className="mt-6 text-3xl md:text-4xl font-extrabold text-secondary leading-tight">
 
                 Explore Our Learning Programs
-              </h2>
+              </h1>
 
               <p className="max-w-3xl mx-auto mt-5 text-secondary/70 text-lg leading-relaxed">
 
@@ -139,7 +139,7 @@ export default function ProgramCards() {
             PROGRAM GRID
         ========================= */}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
 
           {programs.map((program, index) => (
 
@@ -169,7 +169,7 @@ export default function ProgramCards() {
                 y: -10,
               }}
 
-              className="group bg-secondary rounded-[2rem] overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500"
+              className="group bg-secondary rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-500"
             >
 
               {/* =========================
@@ -181,7 +181,7 @@ export default function ProgramCards() {
                 <img
                   src={program.image}
                   alt={program.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-700"
                 />
 
                 {/* Overlay */}
@@ -213,7 +213,7 @@ export default function ProgramCards() {
                 {/* Info */}
                 <div className="space-y-3 mb-8">
 
-                  <div className="flex items-center justify-between bg-primary/5 rounded-2xl px-4 py-3">
+                  <div className="flex items-center justify-between bg-primary/5 rounded-lg px-4 py-3">
 
                     <span className="text-primary/70 font-medium">
                       Age Range
@@ -224,7 +224,7 @@ export default function ProgramCards() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between bg-primary/5 rounded-2xl px-4 py-3">
+                  <div className="flex items-center justify-between bg-primary/5 rounded-lg px-4 py-3">
 
                     <span className="text-primary/70 font-medium">
                       Classes
@@ -239,7 +239,7 @@ export default function ProgramCards() {
                 {/* CTA BUTTON */}
                 <NavLink
                   to={program.link}
-                  className="group/button w-full bg-button hover:bg-primary text-secondary hover:text-secondary font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 shadow-lg hover:shadow-button/30"
+                  className="group/button w-full bg-button hover:bg-primary text-secondary hover:text-secondary font-bold py-4 rounded-lg flex items-center justify-center gap-3 transition-all duration-300 shadow-lg hover:shadow-button/30"
                 >
 
                   Learn More

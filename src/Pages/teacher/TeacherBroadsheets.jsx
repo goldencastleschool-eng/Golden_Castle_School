@@ -140,12 +140,12 @@ function TeacherBroadsheets() {
   };
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaFilePdf />
         </div>
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           Class Broadsheets
         </h2>
         <p className="mt-3 max-w-2xl text-secondary/75">
@@ -154,13 +154,13 @@ function TeacherBroadsheets() {
       </div>
 
       {error && (
-        <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
+        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-8">
-        <aside className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <aside className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">
             Approved Records
           </h3>
@@ -173,14 +173,14 @@ function TeacherBroadsheets() {
               Array.from({ length: 3 }, (_, index) => (
                 <div
                   key={`broadsheet-skeleton-${index}`}
-                  className="animate-pulse rounded-2xl bg-primary/5 p-5"
+                  className="animate-pulse rounded-lg bg-primary/5 p-5"
                 >
                   <div className="h-4 w-32 rounded-full bg-primary/15"></div>
                   <div className="mt-3 h-3 w-44 rounded-full bg-primary/10"></div>
                 </div>
               ))
             ) : broadsheets.length === 0 ? (
-              <p className="rounded-2xl bg-primary/5 p-5 text-primary/70">
+              <p className="rounded-lg bg-primary/5 p-5 text-primary/70">
                 No class broadsheet is currently available.
               </p>
             ) : (
@@ -189,7 +189,7 @@ function TeacherBroadsheets() {
                   key={broadsheet._id}
                   type="button"
                   onClick={() => setSelectedBroadsheetId(broadsheet._id)}
-                  className={`w-full rounded-2xl border p-5 text-left transition-all duration-300 ${
+                  className={`w-full rounded-lg border p-5 text-left transition-all duration-300 ${
                     selectedBroadsheetId === broadsheet._id
                       ? "border-button bg-button text-secondary"
                       : "border-primary/10 bg-primary/5 text-primary hover:border-button"
@@ -209,7 +209,7 @@ function TeacherBroadsheets() {
 
         <section
           ref={viewerRef}
-          className="rounded-[2rem] bg-secondary p-8 shadow-2xl"
+          className="rounded-lg bg-secondary p-6 shadow-lg"
         >
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
@@ -244,3 +244,4 @@ function TeacherBroadsheets() {
 }
 
 export default TeacherBroadsheets;
+

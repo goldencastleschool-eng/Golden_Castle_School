@@ -38,24 +38,20 @@ export default function Values() {
   ];
 
   return (
-    <section className="relative w-full bg-background py-10 px-6 lg:px-16 overflow-hidden">
-      
-      {/* Background Blur Effects */}
-      <div className="absolute top-0 left-0 w-72 h-72 bg-button/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 right-0 w-72 h-72 bg-secondary/10 rounded-full blur-3xl"></div>
+    <section className="relative w-full overflow-hidden bg-background px-6 py-12 lg:px-10">
 
       <div className="relative z-10 max-w-7xl mx-auto">
 
         {/* Heading */}
-        <div className="flex flex-col items-center text-center mb-16">
+        <div className="mb-10 flex flex-col items-center text-center">
 
-          <h1 className="text-4xl md:text-5xl font-extrabold text-secondary mt-2">
+          <h2 className="mt-2 text-3xl font-extrabold text-secondary md:text-4xl">
             About Us
-          </h1>
+          </h2>
 
-          <div className="w-24 h-1.5 bg-button rounded-full mt-4"></div>
+          <div className="mt-4 h-1.5 w-20 rounded-full bg-button"></div>
 
-          <p className="max-w-3xl mt-6 text-lg text-secondary/70 leading-relaxed">
+          <p className="mt-6 max-w-3xl text-base leading-relaxed text-secondary/70 md:text-lg">
               Discover a learning environment where academic excellence,
               character development, and innovation come together to inspire
               students to grow, lead, and succeed.
@@ -63,12 +59,12 @@ export default function Values() {
         </div>
 
         {/* Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+        <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
 
           {/* Left Content */}
           <div className="space-y-8">
 
-            <div className="bg-secondary/5 border border-secondary/10 rounded-3xl p-8 backdrop-blur-sm shadow-xl">
+            <div className="rounded-lg border border-secondary/10 bg-secondary/5 p-6 shadow-md">
 
               <p className="text-secondary text-lg leading-relaxed first-letter:text-6xl first-letter:font-bold first-letter:text-button">
                 Golden Castle International School, Oba is a center of
@@ -93,7 +89,7 @@ export default function Values() {
               <div className="mt-8">
                 <NavLink
                   to="/about"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-button text-secondary font-bold rounded-xl shadow-lg hover:scale-105 hover:bg-secondary hover:text-primary transition-all duration-300"
+                  className="inline-flex items-center gap-2 rounded-lg bg-button px-6 py-3 font-bold text-secondary shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-secondary hover:text-primary"
                 >
                   Learn More
                 </NavLink>
@@ -103,12 +99,12 @@ export default function Values() {
           </div>
 
           {/* Right Content - Values */}
-          <div className="grid grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 gap-4 sm:gap-5">
 
             {values.map((value, index) => (
               <div
                 key={index}
-                className="group relative bg-secondary text-primary rounded-2xl p-5 shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl sm:rounded-3xl sm:p-8 overflow-hidden"
+                className="group relative overflow-hidden rounded-lg bg-secondary p-5 text-primary shadow-md transition-all duration-300 hover:-translate-y-1 sm:p-6"
               >
 
                 {/* Hover Glow */}
@@ -117,14 +113,14 @@ export default function Values() {
                 <div className="relative z-10 flex flex-col items-center text-center gap-5">
 
                   {/* Icon */}
-                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-3xl text-primary transition duration-300 group-hover:scale-110 sm:h-20 sm:w-20 sm:text-4xl">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10 text-3xl text-primary transition duration-300 group-hover:bg-button group-hover:text-secondary sm:h-16 sm:w-16">
                     {value.icon}
                   </div>
 
                   {/* Title */}
-                  <h2 className="text-lg font-bold tracking-wide sm:text-2xl">
+                  <h3 className="text-lg font-bold tracking-wide sm:text-xl">
                     {value.title}
-                  </h2>
+                  </h3>
 
                 </div>
               </div>

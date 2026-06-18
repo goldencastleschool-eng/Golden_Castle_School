@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import BackToProgramsLink from "../../components/common/BackToProgramsLink.jsx";
 
 import {
   FaGraduationCap,
@@ -130,7 +131,7 @@ export default function NurseryEducation() {
                 transition={{ duration: 0.7 }}
               >
 
-                <h1 className="text-4xl md:text-6xl font-extrabold text-primary leading-tight">
+                <h1 className="text-3xl md:text-5xl font-extrabold text-primary leading-tight">
 
                   Nursery Education
                 </h1>
@@ -150,7 +151,9 @@ export default function NurseryEducation() {
             ABOUT SECTION
         ========================= */}
 
-        <section className="py-10 px-6 lg:px-16">
+        <BackToProgramsLink />
+
+        <section className="px-6 py-12 lg:px-10">
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
@@ -161,7 +164,7 @@ export default function NurseryEducation() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-4xl font-extrabold text-secondary mt-6 leading-tight">
+              <h2 className="text-3xl font-extrabold text-secondary mt-6 leading-tight">
 
                 Building Strong Foundations For Lifelong Learning
               </h2>
@@ -196,12 +199,12 @@ export default function NurseryEducation() {
               <img
                 src={coverImage}
                 alt="Nursery School"
-                className="rounded-[2rem] shadow-2xl object-cover h-[500px] w-full"
+                className="rounded-lg shadow-lg object-cover h-[500px] w-full"
               />
 
-              <div className="absolute -bottom-6 -left-6 bg-secondary text-primary rounded-3xl px-8 py-6 shadow-2xl">
+              <div className="absolute -bottom-6 -left-6 bg-secondary text-primary rounded-lg px-6 py-5 shadow-md">
 
-                <h3 className="text-4xl font-extrabold">
+                <h3 className="text-3xl font-extrabold">
                   6
                 </h3>
 
@@ -217,9 +220,9 @@ export default function NurseryEducation() {
             CLASSES + SUBJECTS
         ========================= */}
 
-        <section className="px-6 lg:px-16 pb-20">
+        <section className="px-6 pb-12 lg:px-10">
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
 
             {/* Classes */}
             <motion.div
@@ -227,10 +230,10 @@ export default function NurseryEducation() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="bg-secondary rounded-[2rem] p-8 shadow-xl"
+              className="bg-secondary rounded-lg p-6 shadow-md"
             >
 
-              <h3 className="text-3xl font-bold text-primary mb-8">
+              <h3 className="mb-6 text-2xl font-bold text-primary">
 
                 Section Classes
               </h3>
@@ -240,7 +243,7 @@ export default function NurseryEducation() {
                 {classes.map((item, index) => (
                   <div
                     key={index}
-                    className="bg-primary/5 border border-primary/10 rounded-2xl px-5 py-4 text-primary font-semibold text-center hover:bg-button hover:text-secondary transition-all duration-300 cursor-pointer"
+                    className="bg-primary/5 border border-primary/10 rounded-lg px-5 py-4 text-primary font-semibold text-center hover:bg-button hover:text-secondary transition-all duration-300 "
                   >
                     {item}
                   </div>
@@ -254,10 +257,10 @@ export default function NurseryEducation() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              className="bg-secondary rounded-[2rem] p-8 shadow-xl"
+              className="bg-secondary rounded-lg p-6 shadow-md"
             >
 
-              <h3 className="text-3xl font-bold text-primary mb-8">
+              <h3 className="mb-6 text-2xl font-bold text-primary">
 
                 Learning Areas
               </h3>
@@ -267,7 +270,7 @@ export default function NurseryEducation() {
                 {subjects.map((subject, index) => (
                   <div
                     key={index}
-                    className="bg-primary/5 border border-primary/10 rounded-2xl px-5 py-4 text-primary font-medium hover:bg-button hover:text-secondary transition-all duration-300 cursor-pointer"
+                    className="bg-primary/5 border border-primary/10 rounded-lg px-5 py-4 text-primary font-medium hover:bg-button hover:text-secondary transition-all duration-300 "
                   >
                     {subject}
                   </div>
@@ -281,10 +284,10 @@ export default function NurseryEducation() {
             TEACHERS SECTION
         ========================= */}
 
-        <section className="pb-24 px-6 lg:px-16">
+        <section className="px-6 pb-16 lg:px-10">
 
           {/* Heading */}
-          <div className="text-center mb-16">
+          <div className="mb-10 text-center">
 
             <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-secondary/10 text-secondary font-semibold text-sm">
 
@@ -293,7 +296,7 @@ export default function NurseryEducation() {
               Our Teachers
             </span>
 
-            <h2 className="text-4xl md:text-5xl font-extrabold text-secondary mt-6">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-secondary mt-6">
 
               Meet Our Caring Educators
             </h2>
@@ -307,7 +310,7 @@ export default function NurseryEducation() {
           </div>
 
           {/* Teacher Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
 
             {teachers.map((teacher, index) => (
               <motion.div
@@ -326,9 +329,9 @@ export default function NurseryEducation() {
                   delay: index * 0.1,
                 }}
                 whileHover={{
-                  y: -10,
+                  y: -4,
                 }}
-                className="group bg-secondary rounded-[2rem] overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500"
+                className="group bg-secondary rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-500"
               >
 
                 {/* Image */}
@@ -337,7 +340,7 @@ export default function NurseryEducation() {
                   <img
                     src={teacher.image}
                     alt={teacher.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
 
@@ -346,7 +349,7 @@ export default function NurseryEducation() {
 
                   <div className="flex items-center gap-3 mb-4">
 
-                    <div className="w-12 h-12 rounded-2xl bg-button/20 flex items-center justify-center text-button">
+                    <div className="w-12 h-12 rounded-lg bg-button/20 flex items-center justify-center text-button">
                       <FaChild />
                     </div>
 

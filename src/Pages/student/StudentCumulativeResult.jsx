@@ -167,13 +167,13 @@ function StudentCumulativeResult() {
   };
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaFilePdf />
         </div>
 
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           Cumulative Results
         </h2>
 
@@ -183,13 +183,13 @@ function StudentCumulativeResult() {
       </div>
 
       {error && (
-        <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
+        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-8">
-        <aside className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <aside className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">
             Cumulative Records
           </h3>
@@ -200,11 +200,11 @@ function StudentCumulativeResult() {
 
           <div className="mt-7 space-y-4">
             {loadingResults ? (
-              <div className="rounded-2xl bg-primary/5 p-5 text-primary/70">
+              <div className="rounded-lg bg-primary/5 p-5 text-primary/70">
                 Loading cumulative results...
               </div>
             ) : results.length === 0 ? (
-              <div className="rounded-2xl bg-primary/5 p-5 text-primary/70">
+              <div className="rounded-lg bg-primary/5 p-5 text-primary/70">
                 No cumulative result has been uploaded yet.
               </div>
             ) : (
@@ -212,7 +212,7 @@ function StudentCumulativeResult() {
                 <button
                   key={result._id}
                   onClick={() => setSelectedResultId(result._id)}
-                  className={`w-full rounded-2xl border p-5 text-left transition-all duration-300 ${
+                  className={`w-full rounded-lg border p-5 text-left transition-all duration-300 ${
                     selectedResultId === result._id
                       ? "border-button bg-button text-secondary"
                       : "border-primary/10 bg-primary/5 text-primary hover:border-button"
@@ -233,7 +233,7 @@ function StudentCumulativeResult() {
 
         <section
           ref={viewerRef}
-          className="rounded-[2rem] bg-secondary p-6 shadow-2xl lg:p-8"
+          className="rounded-lg bg-secondary p-6 shadow-lg lg:p-8"
         >
           <div className="mb-6 flex flex-col justify-between gap-5 md:flex-row md:items-center">
             <div>
@@ -267,3 +267,4 @@ function StudentCumulativeResult() {
 }
 
 export default StudentCumulativeResult;
+

@@ -128,7 +128,7 @@ const countUniqueClassRecords = (records = []) =>
 
 function ChartEmptyState({ message = "No chart data available for this filter." }) {
   return (
-    <div className="flex h-64 items-center justify-center rounded-2xl border border-primary/10 bg-primary/5 px-5 text-center text-sm font-semibold text-primary/60">
+    <div className="flex h-64 items-center justify-center rounded-lg border border-secondary/10 bg-secondary/60 px-5 text-center text-sm font-semibold text-primary/65">
       {message}
     </div>
   );
@@ -140,7 +140,7 @@ function CurrencyTooltip({ active, payload, label }) {
   }
 
   return (
-    <div className="rounded-2xl border border-primary/10 bg-secondary px-4 py-3 text-sm shadow-xl">
+    <div className="rounded-lg border border-primary/10 bg-secondary px-4 py-3 text-sm shadow-md">
       <p className="mb-2 font-extrabold text-primary">{label}</p>
       {payload.map((entry) => (
         <p key={entry.dataKey} className="font-semibold text-primary/70">
@@ -158,7 +158,7 @@ function NumberTooltip({ active, payload, label }) {
   }
 
   return (
-    <div className="rounded-2xl border border-primary/10 bg-secondary px-4 py-3 text-sm shadow-xl">
+    <div className="rounded-lg border border-primary/10 bg-secondary px-4 py-3 text-sm shadow-md">
       <p className="mb-2 font-extrabold text-primary">{label}</p>
       {payload.map((entry) => (
         <p key={entry.dataKey} className="font-semibold text-primary/70">
@@ -172,9 +172,9 @@ function NumberTooltip({ active, payload, label }) {
 
 function DashboardChartCard({ title, subtitle, children }) {
   return (
-    <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+    <div className="rounded-lg border border-secondary/10 bg-secondary p-5 shadow-lg">
       <div className="mb-5">
-        <h4 className="text-xl font-extrabold text-primary">{title}</h4>
+        <h4 className="text-lg font-extrabold text-primary">{title}</h4>
         {subtitle && (
           <p className="mt-1 text-sm font-semibold text-primary/60">
             {subtitle}
@@ -1104,50 +1104,69 @@ function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen overflow-hidden">
+    <div className="min-h-screen overflow-hidden bg-background">
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}
       />
 
-      <section className="hidden relative overflow-hidden bg-secondary px-6 py-12 lg:block px-12">
-        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-button/20 blur-3xl"></div>
+      <section className="px-6 pt-8 lg:px-12">
+        <div className="rounded-lg border border-secondary/10 bg-secondary p-6 shadow-lg">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-3 inline-flex items-center gap-3 rounded-lg border border-primary/10 bg-primary/10 px-4 py-2 text-sm font-bold text-primary">
+                <FaChartLine className="text-button" />
+                Admin Command Center
+              </div>
+              <h2 className="text-3xl font-extrabold leading-tight text-primary md:text-4xl">
+                Welcome Back,{" "}
+                <span className="text-button">
+                  {user?.username || "Administrator"}
+                </span>
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm font-semibold leading-relaxed text-primary/70">
+                Monitor population, fees, result coverage, transport, boarding, and payroll from one operational view.
+              </p>
+            </div>
 
-        <div className=" relative max-w-5xl">
-          <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-primary/10 bg-primary/10 px-5 py-3 text-primary">
-            <FaChartLine className="text-button" />
-            <span className="font-semibold">School Result Portal</span>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]">
+              {[
+                ["Students", activeSessionStudents.length],
+                ["Classes", activeSessionClasses.length],
+                ["Fees Paid", formatCurrency(feeSummary.paid)],
+                ["Outstanding", formatCurrency(feeSummary.outstanding)],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-lg bg-primary/10 p-4">
+                  <p className="text-xs font-bold uppercase text-primary/60">
+                    {label}
+                  </p>
+                  <p className="mt-2 text-lg font-extrabold text-primary">
+                    {loading ? "..." : value}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-
-          <h2 className="text-4xl font-extrabold leading-tight text-primary md:text-6xl">
-            Welcome Back,{" "}
-            <span className="text-button">
-              {user?.username || "Administrator"}
-            </span>
-          </h2>
-
-          <p className="mt-6 max-w-3xl text-lg leading-relaxed text-primary/70">
-            Track result upload coverage by class and control the session and
-            term students can access from their portal.
-          </p>
         </div>
       </section>
 
-      <section className="px-6 py-10 lg:px-12">
-        <div className="mb-5">
-          <div className="mb-4">
-            <h3 className="text-3xl font-extrabold text-secondary">
+      <section className="px-6 py-8 lg:px-10">
+        <div className="mb-6 rounded-lg border border-secondary/10 bg-secondary p-5 shadow-lg">
+          <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+            <h3 className="text-2xl font-extrabold text-primary">
               Active Population Summary
             </h3>
-            <p className="mt-2 text-sm font-semibold text-secondary/75">
+            <p className="mt-1 text-sm font-semibold text-primary/65">
               Showing active population data for {populationSessionFilter}
               {populationTermFilter ? ` - ${populationTermFilter}` : ""}.
             </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[260px_260px]">
             <div>
-            <label className="mb-2 block text-sm font-semibold text-secondary/75">
+            <label className="mb-2 block text-sm font-semibold text-primary/65">
               Session
             </label>
             <select
@@ -1155,7 +1174,7 @@ function AdminDashboard() {
               onChange={(event) =>
                 handlePopulationSessionChange(event.target.value)
               }
-              className="w-full rounded-2xl border border-secondary/10 bg-secondary px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
             >
               {populationSessionOptions.map((session) => (
                 <option key={session} value={session}>
@@ -1166,13 +1185,13 @@ function AdminDashboard() {
             </div>
 
             <div>
-            <label className="mb-2 block text-sm font-semibold text-secondary/75">
+            <label className="mb-2 block text-sm font-semibold text-primary/65">
               Term
             </label>
             <select
               value={populationTermFilter}
               onChange={(event) => setPopulationTermFilter(event.target.value)}
-              className="w-full rounded-2xl border border-secondary/10 bg-secondary px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
             >
               {populationTermOptions.map((term) => (
                 <option key={term} value={term}>
@@ -1189,31 +1208,31 @@ function AdminDashboard() {
               <h4 className="mb-4 text-xl font-extrabold text-secondary">
                 {group.title}
               </h4>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {loading ? (
                   <CardSkeleton count={group.items.length} />
                 ) : (
                   group.items.map((stat) => (
                     <div
                       key={stat.title}
-                      className="group rounded-[2rem] bg-secondary p-7 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl"
+                      className="group rounded-lg border border-secondary/10 bg-secondary p-5 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
                     >
                       <div className="flex items-center justify-between gap-5">
                         <div>
                           <p className="font-medium text-primary/70">
                             {stat.title}
                           </p>
-                          <h3 className="mt-4 text-4xl font-extrabold text-primary">
+                          <h3 className="mt-3 text-2xl font-extrabold text-primary">
                             {stat.value}
                           </h3>
                         </div>
 
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary shadow-lg transition-all duration-300 group-hover:scale-110">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-button text-lg text-secondary shadow-md transition-all duration-300 group-hover:scale-105">
                           {stat.icon}
                         </div>
                       </div>
 
-                      <div className="mt-7 h-1 w-14 rounded-full bg-button transition-all duration-500 group-hover:w-24"></div>
+                      <div className="mt-5 h-1 w-12 rounded-full bg-button transition-all duration-500 group-hover:w-20"></div>
                     </div>
                   ))
                 )}
@@ -1340,10 +1359,10 @@ function AdminDashboard() {
           </DashboardChartCard>
         </section>
 
-        <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <section className="mt-8 rounded-lg border border-secondary/10 bg-secondary p-6 shadow-lg">
           <div className="mb-8">
             <div className="mb-5">
-              <h3 className="text-3xl font-extrabold text-primary">
+              <h3 className="text-2xl font-extrabold text-primary">
                 Result Upload Coverage
               </h3>
               <p className="mt-2 text-primary/70">
@@ -1353,13 +1372,13 @@ function AdminDashboard() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-[260px_260px]">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[260px_260px]">
               <div>
               <label className="mb-2 block text-sm font-semibold text-primary/60">
                 Session
               </label>
               <select
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 value={coverageSessionFilter}
                 onChange={(event) =>
                   handleCoverageSessionChange(event.target.value)
@@ -1378,7 +1397,7 @@ function AdminDashboard() {
                 Term
               </label>
               <select
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 value={coverageTermFilter}
                 onChange={(event) => setCoverageTermFilter(event.target.value)}
               >
@@ -1393,16 +1412,16 @@ function AdminDashboard() {
           </div>
 
           {classes.length === 0 ? (
-            <div className="rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+            <div className="rounded-lg border border-primary/10 bg-primary/5 p-6 text-primary/70">
               No class has been created yet. Create class records by session to
               view upload coverage.
             </div>
           ) : classCoverage.length === 0 ? (
-            <div className="rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+            <div className="rounded-lg border border-primary/10 bg-primary/5 p-6 text-primary/70">
               No class has been created for {coverageSessionFilter} yet.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-primary/10">
+            <div className="overflow-hidden rounded-lg border border-primary/10">
               <div className="hidden grid-cols-[1.4fr_1fr_auto] gap-4 bg-primary/10 px-5 py-4 text-sm font-bold uppercase text-primary/60 md:grid">
                 <span>Class</span>
                 <span>Coverage</span>
@@ -1433,7 +1452,7 @@ function AdminDashboard() {
 
                   <Link
                     to={`/admin/classes/${item.id}/coverage`}
-                    className="inline-flex w-full items-center justify-center rounded-2xl bg-button px-4 py-3 text-sm font-bold text-secondary transition duration-300 hover:scale-[1.02] md:w-auto"
+                    className="inline-flex w-full items-center justify-center rounded-lg bg-button px-4 py-3 text-sm font-bold text-secondary transition duration-300 hover:scale-[1.02] md:w-auto"
                   >
                     Coverage Overview
                   </Link>
@@ -1449,3 +1468,4 @@ function AdminDashboard() {
 }
 
 export default AdminDashboard;
+

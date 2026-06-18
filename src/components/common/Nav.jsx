@@ -104,7 +104,7 @@ export default function Nav() {
   const mobileNavStyle = ({ isActive }) =>
     `
       flex items-center justify-between
-      px-5 py-4 rounded-2xl
+      px-5 py-4 rounded-lg
       text-lg font-semibold
       transition-all duration-300
       
@@ -165,7 +165,7 @@ export default function Nav() {
         onClick={() => setIsMenuOpen(true)}
         className="
           flex h-12 w-12 items-center justify-center
-          rounded-2xl border border-secondary/10
+          rounded-lg border border-secondary/10
           bg-secondary/10 text-xl text-primary
           transition-all duration-300
           hover:bg-button hover:text-secondary
@@ -211,7 +211,7 @@ export default function Nav() {
               className="
                 fixed right-0 top-0 z-50
                 flex h-screen w-[85%] flex-col
-                bg-secondary shadow-2xl
+                bg-secondary shadow-lg
                 sm:w-[400px]
               "
             >
@@ -234,7 +234,7 @@ export default function Nav() {
                   onClick={() => setIsMenuOpen(false)}
                   className="
                     flex h-12 w-12 items-center justify-center
-                    rounded-2xl bg-primary/10
+                    rounded-lg bg-primary/10
                     text-primary transition-all duration-300
                     hover:bg-button hover:text-secondary
                   "

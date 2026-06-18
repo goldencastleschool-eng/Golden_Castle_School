@@ -45,7 +45,7 @@ const monthlyPeriods = [
   "December",
 ];
 const inputClass =
-  "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
+  "w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
 const smallButtonClass =
   "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60";
@@ -931,10 +931,10 @@ function PayrollManagement() {
 
       <div className="mx-auto max-w-[1500px]">
         <div className="mb-8">
-          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
             <FaMoneyBillWave />
           </div>
-          <h2 className="text-4xl font-extrabold text-secondary">
+          <h2 className="text-3xl font-extrabold text-secondary">
             Payroll Management
           </h2>
           <p className="mt-3 max-w-2xl text-secondary/75">
@@ -946,7 +946,7 @@ function PayrollManagement() {
         <div className="mt-8 grid grid-cols-1 gap-8 ">
           <form
             onSubmit={handleLevelSubmit}
-            className="rounded-[2rem] bg-secondary p-6 shadow-2xl"
+            className="rounded-lg bg-secondary p-6 shadow-lg"
           >
             <h3 className="text-2xl font-extrabold text-primary">
               Staff Levels
@@ -986,7 +986,7 @@ function PayrollManagement() {
             <button
               type="submit"
               disabled={submitting === "level"}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting === "level"
                 ? "Saving level..."
@@ -997,11 +997,11 @@ function PayrollManagement() {
             </button>
           </form>
 
-          <section className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <section className="rounded-lg bg-secondary p-6 shadow-lg">
             <h3 className="text-2xl font-extrabold text-primary">
               Level Records
             </h3>
-            <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+            <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
               <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="bg-primary/10 text-primary">
                   <tr>
@@ -1065,7 +1065,7 @@ function PayrollManagement() {
           </section>
         </div>
 
-        <section className="mt-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">
             Payroll Staff
           </h3>
@@ -1165,7 +1165,7 @@ function PayrollManagement() {
             <button
               type="submit"
               disabled={submitting === "staff"}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting === "staff"
                 ? "Saving staff..."
@@ -1176,7 +1176,7 @@ function PayrollManagement() {
             </button>
           </form>
 
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[980px] text-left text-sm">
               <thead className="bg-primary/10 text-primary">
                 <tr>
@@ -1252,7 +1252,7 @@ function PayrollManagement() {
           </div>
         </section>
 
-        <section className="mt-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">
             Payroll Structure
           </h3>
@@ -1322,7 +1322,7 @@ function PayrollManagement() {
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <div className="rounded-2xl border border-primary/10 bg-primary/5 p-5">
+              <div className="rounded-lg border border-primary/10 bg-primary/5 p-5">
                 <div className="flex items-center justify-between gap-4">
                   <h4 className="font-extrabold text-primary">Earnings</h4>
                   <button
@@ -1382,7 +1382,7 @@ function PayrollManagement() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-primary/10 bg-primary/5 p-5">
+              <div className="rounded-lg border border-primary/10 bg-primary/5 p-5">
                 <div className="flex items-center justify-between gap-4">
                   <h4 className="font-extrabold text-primary">Deductions</h4>
                   <button
@@ -1395,7 +1395,7 @@ function PayrollManagement() {
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-3">
                   {structureForm.deductions.length === 0 ? (
-                    <p className="rounded-2xl bg-secondary/60 px-5 py-4 text-sm font-semibold text-primary/60">
+                    <p className="rounded-lg bg-secondary/60 px-5 py-4 text-sm font-semibold text-primary/60">
                       No deductions added.
                     </p>
                   ) : (
@@ -1453,7 +1453,7 @@ function PayrollManagement() {
             <button
               type="submit"
               disabled={submitting === "structure"}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting === "structure"
                 ? "Saving structure..."
@@ -1464,7 +1464,7 @@ function PayrollManagement() {
             </button>
           </form>
 
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[980px] text-left text-sm">
               <thead className="bg-primary/10 text-primary">
                 <tr>
@@ -1538,7 +1538,7 @@ function PayrollManagement() {
           </div>
         </section>
 
-        <section className="mt-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">
             Assign Payroll
           </h3>
@@ -1577,7 +1577,7 @@ function PayrollManagement() {
               </button>
             </div>
 
-            <div className="mt-5 max-h-72 overflow-y-auto rounded-2xl border border-primary/10 bg-primary/5">
+            <div className="mt-5 max-h-72 overflow-y-auto rounded-lg border border-primary/10 bg-primary/5">
               {availableAssignmentStaff.length === 0 ? (
                 <p className="px-5 py-5 text-primary/70">
                   No active unassigned staff matches the selected payroll structure.
@@ -1613,7 +1613,7 @@ function PayrollManagement() {
                 submitting === "assignment" ||
                 assignmentForm.staff_ids.length === 0
               }
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting === "assignment"
                 ? "Assigning payroll..."
@@ -1623,11 +1623,11 @@ function PayrollManagement() {
           </form>
         </section>
 
-        <section className="mt-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">
             Payroll Assignments
           </h3>
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[1120px] text-left text-sm">
               <thead className="bg-primary/10 text-primary">
                 <tr>
@@ -1737,7 +1737,7 @@ function PayrollManagement() {
         <section className="mt-8 grid grid-cols-1 gap-8 ">
           <form
             onSubmit={handlePaymentSubmit}
-            className="rounded-[2rem] bg-secondary p-6 shadow-2xl"
+            className="rounded-lg bg-secondary p-6 shadow-lg"
           >
             <h3 className="text-2xl font-extrabold text-primary">
               Record Payroll Payment
@@ -1759,7 +1759,7 @@ function PayrollManagement() {
                 ))}
               </select>
               {selectedPaymentAssignment && (
-                <div className="rounded-2xl bg-primary/5 p-5 text-primary">
+                <div className="rounded-lg bg-primary/5 p-5 text-primary">
                   <p className="text-sm font-bold text-primary/60">Balance</p>
                   <p className="mt-2 text-2xl font-extrabold">
                     {formatCurrency(selectedPaymentAssignment.balance)}
@@ -1803,7 +1803,7 @@ function PayrollManagement() {
             <button
               type="submit"
               disabled={submitting === "payment"}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting === "payment"
                 ? "Recording payment..."
@@ -1812,11 +1812,11 @@ function PayrollManagement() {
             </button>
           </form>
 
-          <section className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <section className="rounded-lg bg-secondary p-6 shadow-lg">
             <h3 className="text-2xl font-extrabold text-primary">
               Payroll Payments
             </h3>
-            <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+            <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
               <table className="w-full min-w-[960px] text-left text-sm">
                 <thead className="bg-primary/10 text-primary">
                   <tr>
@@ -1895,3 +1895,4 @@ function PayrollManagement() {
 }
 
 export default PayrollManagement;
+

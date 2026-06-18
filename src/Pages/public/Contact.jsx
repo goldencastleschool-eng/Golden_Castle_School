@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import Header from "../../components/common/Header"
-import Footer from "../../components/common/Footer"
+import { useRef, useState } from "react";
+import emailjs from "@emailjs/browser";
 
 import {
   FaMapMarkerAlt,
@@ -9,14 +9,59 @@ import {
 } from "react-icons/fa";
 
 export default function Location() {
+  const formRef = useRef(null);
+  const [status, setStatus] = useState({ message: "", type: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const emailConfig = {
+    serviceId: import.meta.env.VITE_EMAILJS_SERVICE_ID,
+    templateId: import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+    publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
+  };
+
+  const isEmailConfigured = Object.values(emailConfig).every(Boolean);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!isEmailConfigured) {
+      setStatus({
+        type: "error",
+        message: "Email service is not configured yet. Please contact the school directly.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStatus({ message: "", type: "" });
+
+    try {
+      await emailjs.sendForm(
+        emailConfig.serviceId,
+        emailConfig.templateId,
+        formRef.current,
+        { publicKey: emailConfig.publicKey }
+      );
+
+      formRef.current.reset();
+      setStatus({
+        type: "success",
+        message: "Message sent successfully. We will get back to you soon.",
+      });
+    } catch (error) {
+      console.error("EmailJS send failed:", error);
+      setStatus({
+        type: "error",
+        message: "Message could not be sent. Please try again or contact us directly.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <>
-       <section className="relative w-full bg-background overflow-hidden py-10 px-5 sm:px-8 lg:px-16">
-
-                {/* Background Glow */}
-                <div className="absolute top-0 left-0 w-72 h-72 bg-button/10 rounded-full blur-3xl"></div>
-
-                <div className="absolute bottom-0 right-0 w-72 h-72 bg-secondary/10 rounded-full blur-3xl"></div>
+       <section className="relative w-full bg-background overflow-hidden px-5 py-12 sm:px-8 lg:px-10">
 
                 <div className="relative z-10 max-w-7xl mx-auto">
 
@@ -27,7 +72,7 @@ export default function Location() {
                       Get In Touch
                     </span>
 
-                    <h1 className="text-4xl sm:text-5xl font-extrabold text-secondary mt-4">
+                    <h1 className="mt-4 text-3xl font-extrabold text-secondary sm:text-4xl">
                       Contact Us
                     </h1>
 
@@ -50,7 +95,7 @@ export default function Location() {
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.7 }}
                       viewport={{ once: true }}
-                      className="relative overflow-hidden rounded-[2rem] shadow-2xl"
+                      className="relative overflow-hidden rounded-lg shadow-lg"
                     >
 
                       {/* Map */}
@@ -66,11 +111,11 @@ export default function Location() {
                       ></iframe>
 
                       {/* Floating Info Card */}
-                      <div className="absolute bottom-5 left-5 right-5 bg-secondary/95 backdrop-blur-lg rounded-2xl p-5 shadow-xl border border-primary/10">
+                      <div className="absolute bottom-5 left-5 right-5 bg-secondary/95 backdrop-blur-lg rounded-lg p-5 shadow-md border border-primary/10">
 
                         <div className="flex items-start gap-4">
 
-                          <div className="w-14 h-14 rounded-2xl bg-button/10 flex items-center justify-center text-button text-2xl">
+                          <div className="w-14 h-14 rounded-lg bg-button/10 flex items-center justify-center text-button text-2xl">
                             <FaMapMarkerAlt />
                           </div>
 
@@ -95,7 +140,7 @@ export default function Location() {
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.7 }}
                       viewport={{ once: true }}
-                      className="bg-secondary rounded-[2rem] shadow-2xl overflow-hidden"
+                      className="bg-secondary rounded-lg shadow-lg overflow-hidden"
                     >
 
                       <div className="p-8 sm:p-10">
@@ -116,7 +161,7 @@ export default function Location() {
                         {/* Contact Quick Info */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
 
-                          <div className="bg-primary/5 border border-primary/10 rounded-2xl p-5">
+                          <div className="bg-primary/5 border border-primary/10 rounded-lg p-5">
 
                             <div className="flex items-center gap-4">
 
@@ -130,13 +175,13 @@ export default function Location() {
                                 </h4>
 
                                 <p className="text-primary/70 text-sm">
-                                  info@goldencastle.edu
+                                  goldencastlegci@gmail.com
                                 </p>
                               </div>
                             </div>
                           </div>
 
-                          <div className="bg-primary/5 border border-primary/10 rounded-2xl p-5">
+                          <div className="bg-primary/5 border border-primary/10 rounded-lg p-5">
 
                             <div className="flex items-center gap-4">
 
@@ -150,7 +195,7 @@ export default function Location() {
                                 </h4>
 
                                 <p className="text-primary/70 text-sm">
-                                  +234 XXX XXX XXXX
+                                  +234 803 5008 212
                                 </p>
                               </div>
                             </div>
@@ -158,7 +203,12 @@ export default function Location() {
                         </div>
 
                         {/* Form */}
-                        <form className="space-y-6">
+                        <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+                          <input
+                            type="hidden"
+                            name="to_email"
+                            value={import.meta.env.VITE_CONTACT_RECEIVER_EMAIL || "goldencastlegci@gmail.com"}
+                          />
 
                           {/* Name */}
                           <div>
@@ -168,8 +218,11 @@ export default function Location() {
 
                             <input
                               type="text"
+                              name="from_name"
                               placeholder="Enter your full name"
-                              className="w-full bg-primary/5 border border-primary/10 rounded-2xl px-5 py-4 text-primary outline-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
+                              required
+                              autoComplete="name"
+                              className="w-full bg-primary/5 border border-primary/10 rounded-lg px-5 py-4 text-primary outline-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
                             />
                           </div>
 
@@ -181,8 +234,11 @@ export default function Location() {
 
                             <input
                               type="email"
+                              name="reply_to"
                               placeholder="Enter your email address"
-                              className="w-full bg-primary/5 border border-primary/10 rounded-2xl px-5 py-4 text-primary outline-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
+                              required
+                              autoComplete="email"
+                              className="w-full bg-primary/5 border border-primary/10 rounded-lg px-5 py-4 text-primary outline-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
                             />
                           </div>
 
@@ -194,20 +250,37 @@ export default function Location() {
 
                             <textarea
                               rows="6"
+                              name="message"
                               placeholder="Write your message here..."
-                              className="w-full bg-primary/5 border border-primary/10 rounded-2xl px-5 py-4 text-primary outline-none resize-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
+                              required
+                              className="w-full bg-primary/5 border border-primary/10 rounded-lg px-5 py-4 text-primary outline-none resize-none focus:border-button focus:ring-2 focus:ring-button/20 transition-all duration-300"
                             ></textarea>
                           </div>
+
+                          {status.message && (
+                            <div
+                              role="status"
+                              aria-live="polite"
+                              className={`rounded-lg border px-5 py-4 font-semibold ${
+                                status.type === "success"
+                                  ? "border-green-300/40 bg-green-500/10 text-green-100"
+                                  : "border-button/40 bg-button/10 text-primary"
+                              }`}
+                            >
+                              {status.message}
+                            </div>
+                          )}
 
                           {/* Submit Button */}
                           <button
                             type="submit"
-                            className="group w-full bg-button text-secondary font-bold py-4 rounded-2xl shadow-xl hover:scale-[1.02] hover:shadow-button/30 transition-all duration-300 cursor-pointer"
+                            disabled={isSubmitting}
+                            className="group w-full rounded-lg bg-button py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-button/30 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
                           >
 
                             <span className="flex items-center justify-center gap-3">
 
-                              Send Message
+                              {isSubmitting ? "Sending..." : "Send Message"}
 
                               <FaEnvelope className="group-hover:translate-x-1 transition duration-300" />
                             </span>

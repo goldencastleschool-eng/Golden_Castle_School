@@ -191,7 +191,7 @@ function ClassCoverage() {
   ];
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}
@@ -200,16 +200,16 @@ function ClassCoverage() {
       <div className="mb-8">
         <Link
           to="/admin"
-          className="mb-6 inline-flex items-center gap-3 rounded-2xl bg-secondary px-5 py-3 font-bold text-primary shadow-lg transition duration-300 hover:bg-button hover:text-secondary"
+          className="mb-6 inline-flex items-center gap-3 rounded-lg bg-secondary px-5 py-3 font-bold text-primary shadow-lg transition duration-300 hover:bg-button hover:text-secondary"
         >
           <FaArrowLeft />
           Overview
         </Link>
 
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaClipboardCheck />
         </div>
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           {classRecord ? `${classRecord.name.toUpperCase()} Coverage` : "Class Coverage"}
         </h2>
         <p className="mt-3 max-w-3xl text-secondary/75">
@@ -223,7 +223,7 @@ function ClassCoverage() {
       </div>
 
       {!loading && !classRecord ? (
-        <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-3xl font-extrabold text-primary">
             Class Not Found
           </h3>
@@ -233,13 +233,13 @@ function ClassCoverage() {
         </section>
       ) : (
         <>
-          <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+          <section className="rounded-lg bg-secondary p-6 shadow-lg">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px] lg:items-center">
               <div>
                 <p className="text-sm font-bold uppercase tracking-wide text-primary/50">
                   Upload Coverage
                 </p>
-                <h3 className="mt-3 text-5xl font-extrabold text-primary">
+                <h3 className="mt-3 text-4xl font-extrabold text-primary">
                   {loading ? "..." : `${coveragePercent}%`}
                 </h3>
                 <div className="mt-6 h-4 overflow-hidden rounded-full bg-primary/10">
@@ -252,7 +252,7 @@ function ClassCoverage() {
 
               <Link
                 to="/admin/results"
-                className="flex items-center justify-center rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                className="flex items-center justify-center rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02]"
               >
                 Upload Result
               </Link>
@@ -263,16 +263,16 @@ function ClassCoverage() {
             {statCards.map((card) => (
               <div
                 key={card.title}
-                className="rounded-[2rem] bg-secondary p-7 shadow-xl"
+                className="rounded-lg bg-secondary p-5 shadow-md"
               >
                 <div className="flex items-center justify-between gap-5">
                   <div>
                     <p className="font-medium text-primary/70">{card.title}</p>
-                    <h3 className="mt-4 text-4xl font-extrabold text-primary">
+                    <h3 className="mt-4 text-3xl font-extrabold text-primary">
                       {loading ? "..." : card.value}
                     </h3>
                   </div>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
                     {card.icon}
                   </div>
                 </div>
@@ -280,7 +280,7 @@ function ClassCoverage() {
             ))}
           </section>
 
-          <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+          <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
             <div className="mb-6">
               <h3 className="text-3xl font-extrabold text-primary">
                 Students Awaiting Result Upload
@@ -291,7 +291,7 @@ function ClassCoverage() {
               </p>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-primary/10">
+            <div className="overflow-x-auto rounded-lg border border-primary/10">
               <table className="w-full min-w-[720px] text-left">
                 <thead className="bg-primary/10 text-primary">
                   <tr>
@@ -344,3 +344,4 @@ function ClassCoverage() {
 }
 
 export default ClassCoverage;
+

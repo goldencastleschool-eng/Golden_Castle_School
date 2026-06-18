@@ -1072,7 +1072,7 @@ function ClassManagement() {
   };
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}
@@ -1089,10 +1089,10 @@ function ClassManagement() {
       />
 
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaLayerGroup />
         </div>
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           Class Management
         </h2>
         <p className="mt-3 max-w-2xl text-secondary/75">
@@ -1101,7 +1101,7 @@ function ClassManagement() {
         </p>
       </div>
 
-      <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="rounded-lg bg-secondary p-6 shadow-lg">
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_360px]">
           <div>
             <h3 className="text-3xl font-extrabold text-primary">
@@ -1119,20 +1119,20 @@ function ClassManagement() {
               onChange={handleClassNameChange}
               placeholder="Class name e.g. basic-1"
               required
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
             />
             <input
               value={classSession}
               onChange={(event) => setClassSession(event.target.value)}
               placeholder="Session e.g. 2025/2026"
               required
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
             />
             <select
               value={classSection}
               onChange={(event) => setClassSection(event.target.value)}
               required
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
             >
               <option value="">Class section</option>
               {CLASS_SECTION_OPTIONS.map((sectionOption) => (
@@ -1143,7 +1143,7 @@ function ClassManagement() {
             </select>
             <button
               type="submit"
-              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02]"
+              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02]"
             >
               {editingClassId ? "Save Class" : "Create Class"}
               <FaArrowRight />
@@ -1152,7 +1152,7 @@ function ClassManagement() {
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                className="w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+                className="w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
               >
                 Cancel Edit
               </button>
@@ -1161,7 +1161,7 @@ function ClassManagement() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-5">
             <h3 className="text-3xl font-extrabold text-primary">
               Class Records
@@ -1177,7 +1177,7 @@ function ClassManagement() {
               Session
             </label>
             <select
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-3 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-3 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               value={sessionFilter}
               onChange={handleSessionFilterChange}
             >
@@ -1191,7 +1191,7 @@ function ClassManagement() {
 
           <button
             onClick={fetchClassData}
-            className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-3 font-semibold text-secondary shadow-lg transition-all duration-300 hover:scale-105"
+            className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-3 font-semibold text-secondary shadow-lg transition-all duration-300 hover:scale-105"
           >
             Refresh
             <FaArrowRight />
@@ -1199,12 +1199,12 @@ function ClassManagement() {
         </div>
 
         {classes.length === 0 ? (
-          <div className="rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+          <div className="rounded-lg border border-primary/10 bg-primary/5 p-6 text-primary/70">
             No class has been created yet. Create a class with a session to
             start registering students.
           </div>
         ) : filteredClasses.length === 0 ? (
-          <div className="rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+          <div className="rounded-lg border border-primary/10 bg-primary/5 p-6 text-primary/70">
             No class has been created for {sessionFilter} yet.
           </div>
         ) : (
@@ -1212,7 +1212,7 @@ function ClassManagement() {
             {groupedClassRecords.map((sectionGroup) => (
               <div
                 key={sectionGroup.value}
-                className="overflow-hidden rounded-2xl border border-primary/10"
+                className="overflow-hidden rounded-lg border border-primary/10"
               >
                 <div className="flex flex-col gap-2 bg-primary/10 px-5 py-4 text-primary md:flex-row md:items-center md:justify-between">
                   <div>
@@ -1287,7 +1287,7 @@ function ClassManagement() {
         )}
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
 
          <div className="mb-5">
             <h3 className="text-3xl font-extrabold text-primary">
@@ -1309,7 +1309,7 @@ function ClassManagement() {
               Session
             </label>
             <select
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               value={studentViewSessionFilter}
               onChange={handleStudentViewSessionChange}
             >
@@ -1326,7 +1326,7 @@ function ClassManagement() {
               Selected Class
             </label>
             <select
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               value={studentViewClassId}
               onChange={(event) => setStudentViewClassId(event.target.value)}
             >
@@ -1344,7 +1344,7 @@ function ClassManagement() {
               Sort
             </label>
             <select
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               value={studentNameSort}
               onChange={(event) => setStudentNameSort(event.target.value)}
             >
@@ -1357,7 +1357,7 @@ function ClassManagement() {
             type="button"
             onClick={handleExportClassStudents}
             disabled={!selectedClassRecord || sortedClassStudents.length === 0}
-            className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-lg transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-lg transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Export Excel
           </button>
@@ -1366,28 +1366,28 @@ function ClassManagement() {
             type="button"
             onClick={handlePrintClassStudents}
             disabled={!selectedClassRecord || sortedClassStudents.length === 0}
-            className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
           >
             Print
           </button>
         </div>
 
         {studentViewSessionFilter && studentViewClasses.length === 0 && (
-          <div className="mb-6 rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+          <div className="mb-6 rounded-lg border border-primary/10 bg-primary/5 p-6 text-primary/70">
             No class has been created for {studentViewSessionFilter} yet.
           </div>
         )}
 
-        <div className="mb-6 rounded-2xl bg-primary/5 p-5">
+        <div className="mb-6 rounded-lg bg-primary/5 p-5">
           <p className="text-sm font-semibold text-primary/50">
             Students in Selected Class
           </p>
-          <p className="mt-3 text-4xl font-extrabold text-primary">
+          <p className="mt-3 text-3xl font-extrabold text-primary">
             {selectedClassRecord ? sortedClassStudents.length : "0"}
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[720px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -1445,10 +1445,10 @@ function ClassManagement() {
         />
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_520px]">
           <div>
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
               <FaGraduationCap />
             </div>
             <h3 className="text-3xl font-extrabold text-primary">
@@ -1460,11 +1460,11 @@ function ClassManagement() {
               session, and term.
             </p>
 
-            <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/5 p-5">
+            <div className="mt-6 rounded-lg border border-primary/10 bg-primary/5 p-5">
               <p className="text-sm font-bold uppercase text-primary/60">
                 Students Selected
               </p>
-              <p className="mt-3 text-4xl font-extrabold text-primary">
+              <p className="mt-3 text-3xl font-extrabold text-primary">
                 {selectedPromotionStudentIds.length} / {promotionCandidates.length}
               </p>
             </div>
@@ -1477,7 +1477,7 @@ function ClassManagement() {
                 value={promotionForm.sourceSession}
                 onChange={handlePromotionChange}
                 required
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               >
                 <option value="">Source session</option>
                 {promotionSessionOptions.map((session) => (
@@ -1493,7 +1493,7 @@ function ClassManagement() {
                 onChange={handlePromotionChange}
                 required
                 disabled={!promotionForm.sourceSession}
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               >
                 <option value="">
                   {promotionForm.sourceSession
@@ -1514,7 +1514,7 @@ function ClassManagement() {
                 value={promotionForm.toSession}
                 onChange={handlePromotionChange}
                 required
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               >
                 <option value="">Destination session</option>
                 {promotionSessionOptions.map((session) => (
@@ -1530,7 +1530,7 @@ function ClassManagement() {
                 onChange={handlePromotionChange}
                 required
                 disabled={!promotionForm.toSession}
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               >
                 <option value="">
                   {promotionForm.toSession
@@ -1549,7 +1549,7 @@ function ClassManagement() {
               name="targetFeeTerm"
               value={promotionForm.targetFeeTerm}
               onChange={handlePromotionChange}
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
             >
               <option value="">Create returning fee record for term</option>
               {getVisibleTermsForSession(promotionForm.toSession).map((term) => (
@@ -1559,7 +1559,7 @@ function ClassManagement() {
               ))}
             </select>
 
-            <div className="rounded-2xl border border-primary/10 bg-primary/5 p-5">
+            <div className="rounded-lg border border-primary/10 bg-primary/5 p-5">
               <div className="mb-4 flex flex-col justify-between gap-3 md:flex-row md:items-center">
                 <div>
                   <p className="text-sm font-bold uppercase text-primary/60">
@@ -1593,7 +1593,7 @@ function ClassManagement() {
                 </div>
               </div>
 
-              <div className="max-h-64 overflow-y-auto rounded-2xl border border-primary/10 bg-secondary">
+              <div className="max-h-64 overflow-y-auto rounded-lg border border-primary/10 bg-secondary">
                 {promotionCandidates.length === 0 ? (
                   <p className="px-5 py-4 text-primary/60">
                     Select a class/session to load students.
@@ -1634,7 +1634,7 @@ function ClassManagement() {
                 !promotionForm.toSession ||
                 !promotionForm.toClassRecord
               }
-              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {promoting ? "Moving students..." : "Move Selected Students"}
               {!promoting && <FaArrowRight />}
@@ -1648,7 +1648,7 @@ function ClassManagement() {
                 promotionCandidates.length === 0 ||
                 selectedPromotionStudentIds.length === 0
               }
-              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
             >
               {graduating ? "Graduating students..." : "Graduate Selected Students"}
             </button>
@@ -1656,10 +1656,10 @@ function ClassManagement() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_520px]">
           <div>
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 text-xl text-red-700">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-red-500/10 text-xl text-red-700">
               <FaUsers />
             </div>
             <h3 className="text-3xl font-extrabold text-primary">
@@ -1671,11 +1671,11 @@ function ClassManagement() {
               class, promotion, and result upload lists.
             </p>
 
-            <div className="mt-6 rounded-2xl border border-primary/10 bg-primary/5 p-5">
+            <div className="mt-6 rounded-lg border border-primary/10 bg-primary/5 p-5">
               <p className="text-sm font-bold uppercase text-primary/60">
                 Students Selected
               </p>
-              <p className="mt-3 text-4xl font-extrabold text-primary">
+              <p className="mt-3 text-3xl font-extrabold text-primary">
                 {selectedLeftSchoolStudentIds.length} / {leftSchoolCandidates.length}
               </p>
             </div>
@@ -1687,7 +1687,7 @@ function ClassManagement() {
                 name="sourceSession"
                 value={leftSchoolActionForm.sourceSession}
                 onChange={handleLeftSchoolChange}
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               >
                 <option value="">Source session</option>
                 {promotionSessionOptions.map((session) => (
@@ -1702,7 +1702,7 @@ function ClassManagement() {
                 value={leftSchoolActionForm.fromClassRecord}
                 onChange={handleLeftSchoolChange}
                 disabled={!leftSchoolActionForm.sourceSession}
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               >
                 <option value="">
                   {leftSchoolActionForm.sourceSession
@@ -1717,7 +1717,7 @@ function ClassManagement() {
               </select>
             </div>
 
-            <div className="rounded-2xl border border-primary/10 bg-primary/5 p-5">
+            <div className="rounded-lg border border-primary/10 bg-primary/5 p-5">
               <div className="mb-4 flex flex-col justify-between gap-3 md:flex-row md:items-center">
                 <div>
                   <p className="text-sm font-bold uppercase text-primary/60">
@@ -1752,7 +1752,7 @@ function ClassManagement() {
                 </div>
               </div>
 
-              <div className="max-h-64 overflow-y-auto rounded-2xl border border-primary/10 bg-secondary">
+              <div className="max-h-64 overflow-y-auto rounded-lg border border-primary/10 bg-secondary">
                 {leftSchoolCandidates.length === 0 ? (
                   <p className="px-5 py-4 text-primary/60">
                     Select a class/session to load active students.
@@ -1789,13 +1789,13 @@ function ClassManagement() {
                 value={leftSchoolActionForm.leftSession}
                 onChange={handleLeftSchoolChange}
                 placeholder="Left session e.g. 2025/2026"
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
               />
               <select
                 name="leftTerm"
                 value={leftSchoolActionForm.leftTerm}
                 onChange={handleLeftSchoolChange}
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
               >
                 <option value="">Left term</option>
                 {getVisibleTermsForSession(leftSchoolActionForm.leftSession).map((term) => (
@@ -1816,7 +1816,7 @@ function ClassManagement() {
                 !leftSchoolActionForm.leftSession ||
                 !leftSchoolActionForm.leftTerm
               }
-              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-red-500/10 px-5 py-4 font-bold text-red-700 transition-all duration-300 hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-red-500/10 px-5 py-4 font-bold text-red-700 transition-all duration-300 hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {markingLeftSchool
                 ? "Saving left-school records..."
@@ -1826,7 +1826,7 @@ function ClassManagement() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-5">
             <h3 className="text-3xl font-extrabold text-primary">
               Graduate List
@@ -1843,7 +1843,7 @@ function ClassManagement() {
             value={graduateFilter.session}
             onChange={handleGraduateFilterChange}
             placeholder="Filter session"
-            className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+            className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
           />
 
           <input
@@ -1851,11 +1851,11 @@ function ClassManagement() {
             value={graduateFilter.search}
             onChange={handleGraduateFilterChange}
             placeholder="Search graduated students"
-            className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+            className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
           />
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[860px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -1922,7 +1922,7 @@ function ClassManagement() {
         />
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-5">
             <h3 className="text-3xl font-extrabold text-primary">
               Left School Records
@@ -1939,14 +1939,14 @@ function ClassManagement() {
             value={leftSchoolFilter.session}
             onChange={handleLeftSchoolFilterChange}
             placeholder="Session"
-            className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+            className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
           />
 
           <select
             name="term"
             value={leftSchoolFilter.term}
             onChange={handleLeftSchoolFilterChange}
-            className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+            className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
           >
             <option value="">All terms</option>
             {getVisibleTermsForSession(leftSchoolFilter.session).map((term) => (
@@ -1961,11 +1961,11 @@ function ClassManagement() {
             value={leftSchoolFilter.search}
             onChange={handleLeftSchoolFilterChange}
             placeholder="Search left-school records"
-            className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+            className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
           />
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[860px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -2027,3 +2027,4 @@ function ClassManagement() {
 }
 
 export default ClassManagement;
+

@@ -76,12 +76,12 @@ function TeacherClassList() {
   }, [students]);
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaUsers />
         </div>
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           Class List
         </h2>
         <p className="mt-3 max-w-2xl text-secondary/75">
@@ -90,19 +90,19 @@ function TeacherClassList() {
       </div>
 
       {!canViewClassList && (
-        <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
+        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
           Class list is available to form teachers only.
         </div>
       )}
 
       {error && (
-        <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
+        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
           {error}
         </div>
       )}
 
       {canViewClassList && (
-      <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+      <section className="rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h3 className="text-3xl font-extrabold text-primary">
@@ -120,7 +120,7 @@ function TeacherClassList() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl bg-primary/5 px-5 py-4 text-primary">
+            <div className="rounded-lg bg-primary/5 px-5 py-4 text-primary">
               <p className="text-xs font-bold uppercase text-primary/50">
                 Total
               </p>
@@ -129,7 +129,7 @@ function TeacherClassList() {
             {Object.entries(genderSummary).map(([gender, count]) => (
               <div
                 key={gender}
-                className="rounded-2xl bg-primary/5 px-5 py-4 text-primary"
+                className="rounded-lg bg-primary/5 px-5 py-4 text-primary"
               >
                 <p className="text-xs font-bold uppercase text-primary/50">
                   {gender}
@@ -140,7 +140,7 @@ function TeacherClassList() {
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[760px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -198,3 +198,4 @@ function TeacherClassList() {
 }
 
 export default TeacherClassList;
+

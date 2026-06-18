@@ -139,7 +139,7 @@ const studentBelongsToTermClass = (student, classRecord, session, term) => {
 };
 
 const inputClass =
-  "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
+  "w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
 const smallButtonClass =
   "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60";
@@ -187,13 +187,13 @@ function PaginationControls({ page, totalItems, onPageChange }) {
 
 function StatCard({ title, value, icon }) {
   return (
-    <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+    <div className="rounded-lg bg-secondary p-6 shadow-lg">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold uppercase text-primary/60">{title}</p>
           <p className="mt-3 text-3xl font-extrabold text-primary">{value}</p>
         </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           {icon}
         </div>
       </div>
@@ -1005,17 +1005,17 @@ function BusManagement() {
   };
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}
       />
 
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaBus />
         </div>
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           Bus Management
         </h2>
         <p className="mt-3 max-w-2xl text-secondary/75">
@@ -1024,7 +1024,7 @@ function BusManagement() {
         </p>
       </div>
 
-      <section className="mb-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+      <section className="mb-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-5">
             <h3 className="text-2xl font-extrabold text-primary">
               Bus Transport Summary
@@ -1084,7 +1084,7 @@ function BusManagement() {
           <button
             type="button"
             onClick={fetchBusData}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02]"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition hover:scale-[1.02]"
           >
             Refresh
             <FaArrowRight />
@@ -1092,19 +1092,19 @@ function BusManagement() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-2xl bg-primary/5 p-5">
+          <div className="rounded-lg bg-primary/5 p-5">
             <p className="text-sm font-bold text-primary/60">Expected</p>
             <p className="mt-2 text-2xl font-extrabold text-primary">
               {formatCurrency(totals.expected)}
             </p>
           </div>
-          <div className="rounded-2xl bg-green-500/10 p-5">
+          <div className="rounded-lg bg-green-500/10 p-5">
             <p className="text-sm font-bold text-green-300">Paid</p>
             <p className="mt-2 text-2xl font-extrabold text-green-200">
               {formatCurrency(totals.paid)}
             </p>
           </div>
-          <div className="rounded-2xl bg-red-500/10 p-5">
+          <div className="rounded-lg bg-red-500/10 p-5">
             <p className="text-sm font-bold text-red-300">Balance</p>
             <p className="mt-2 text-2xl font-extrabold text-red-200">
               {formatCurrency(totals.balance)}
@@ -1117,7 +1117,7 @@ function BusManagement() {
         <section className="grid grid-cols-1 gap-8">
           <form
             onSubmit={handleBusSubmit}
-            className="rounded-[2rem] bg-secondary p-6 shadow-2xl"
+            className="rounded-lg bg-secondary p-6 shadow-lg"
           >
             <h3 className="text-2xl font-extrabold text-primary">
               {editingBusId ? "Edit Bus" : "Register Bus"}
@@ -1175,7 +1175,7 @@ function BusManagement() {
             <button
               type="submit"
               disabled={submitting === "bus"}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting === "bus"
                 ? "Saving bus..."
@@ -1191,16 +1191,16 @@ function BusManagement() {
                   setEditingBusId("");
                   setBusForm(initialBusForm);
                 }}
-                className="mt-3 w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary"
+                className="mt-3 w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary"
               >
                 Cancel Edit
               </button>
             )}
           </form>
 
-          <section className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <section className="rounded-lg bg-secondary p-6 shadow-lg">
             <h3 className="text-2xl font-extrabold text-primary">Bus Records</h3>
-            <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+            <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="bg-primary/10 text-primary">
                   <tr>
@@ -1267,7 +1267,7 @@ function BusManagement() {
         <section className="grid grid-cols-1 gap-8">
           <form
             onSubmit={handleRouteSubmit}
-            className="rounded-[2rem] bg-secondary p-6 shadow-2xl"
+            className="rounded-lg bg-secondary p-6 shadow-lg"
           >
             <h3 className="text-2xl font-extrabold text-primary">
               {editingRouteId ? "Edit Route" : "Create Route"}
@@ -1315,7 +1315,7 @@ function BusManagement() {
             <button
               type="submit"
               disabled={submitting === "route"}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting === "route"
                 ? "Saving route..."
@@ -1331,16 +1331,16 @@ function BusManagement() {
                   setEditingRouteId("");
                   setRouteForm(initialRouteForm);
                 }}
-                className="mt-3 w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary"
+                className="mt-3 w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary"
               >
                 Cancel Edit
               </button>
             )}
           </form>
 
-          <section className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <section className="rounded-lg bg-secondary p-6 shadow-lg">
             <h3 className="text-2xl font-extrabold text-primary">Routes</h3>
-            <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+            <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
               <table className="w-full min-w-[780px] text-left text-sm">
                 <thead className="bg-primary/10 text-primary">
                   <tr>
@@ -1405,7 +1405,7 @@ function BusManagement() {
           </section>
         </section>
 
-        <section className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">
             Bus Payment Structure
           </h3>
@@ -1497,7 +1497,7 @@ function BusManagement() {
               <button
                 type="submit"
                 disabled={submitting === "structure"}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 md:col-span-2"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 md:col-span-2"
               >
                 {submitting === "structure"
                   ? "Saving structure..."
@@ -1514,14 +1514,14 @@ function BusManagement() {
                   setEditingStructureId("");
                   setStructureForm(initialStructureForm);
                 }}
-                className="mt-3 w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary"
+                className="mt-3 w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary"
               >
                 Cancel Edit
               </button>
             )}
           </form>
 
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[860px] text-left text-sm">
               <thead className="bg-primary/10 text-primary">
                 <tr>
@@ -1595,7 +1595,7 @@ function BusManagement() {
           />
         </section>
 
-        <section className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">
             Enroll Students for Bus
           </h3>
@@ -1686,7 +1686,7 @@ function BusManagement() {
               </div>
             </div>
 
-            <div className="mt-5 max-h-72 overflow-y-auto rounded-2xl border border-primary/10 bg-primary/5">
+            <div className="mt-5 max-h-72 overflow-y-auto rounded-lg border border-primary/10 bg-primary/5">
               {availableStudentOptions.length === 0 ? (
                 <p className="px-5 py-5 text-primary/70">
                   No unenrolled active student matches the selected class, session,
@@ -1723,7 +1723,7 @@ function BusManagement() {
                 submitting === "enrollment" ||
                 enrollmentForm.student_ids.length === 0
               }
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting === "enrollment"
                 ? "Enrolling students..."
@@ -1733,11 +1733,11 @@ function BusManagement() {
           </form>
         </section>
 
-        <section className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">
             Bus Enrollments
           </h3>
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[1060px] text-left text-sm">
               <thead className="bg-primary/10 text-primary">
                 <tr>
@@ -1844,7 +1844,7 @@ function BusManagement() {
         <section className="grid grid-cols-1 gap-8">
           <form
             onSubmit={handlePaymentSubmit}
-            className="rounded-[2rem] bg-secondary p-6 shadow-2xl"
+            className="rounded-lg bg-secondary p-6 shadow-lg"
           >
             <h3 className="text-2xl font-extrabold text-primary">
               Record Bus Payment
@@ -1866,7 +1866,7 @@ function BusManagement() {
                 ))}
               </select>
               {selectedPaymentEnrollment && (
-                <div className="rounded-2xl bg-primary/5 p-5 text-primary">
+                <div className="rounded-lg bg-primary/5 p-5 text-primary">
                   <p className="text-sm font-bold text-primary/60">Balance</p>
                   <p className="mt-2 text-2xl font-extrabold">
                     {formatCurrency(selectedPaymentEnrollment.balance)}
@@ -1910,18 +1910,18 @@ function BusManagement() {
             <button
               type="submit"
               disabled={submitting === "payment"}
-              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting === "payment" ? "Recording payment..." : "Record Payment"}
               <FaArrowRight />
             </button>
           </form>
 
-          <section className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+          <section className="rounded-lg bg-secondary p-6 shadow-lg">
             <h3 className="text-2xl font-extrabold text-primary">
               Bus Payment Records
             </h3>
-            <div className="mt-6 overflow-x-auto rounded-2xl border border-primary/10">
+            <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
               <table className="w-full min-w-[960px] text-left text-sm">
                 <thead className="bg-primary/10 text-primary">
                   <tr>
@@ -1998,3 +1998,4 @@ function BusManagement() {
 }
 
 export default BusManagement;
+

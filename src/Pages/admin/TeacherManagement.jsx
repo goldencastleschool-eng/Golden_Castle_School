@@ -72,9 +72,9 @@ function ActionMessageModal({ status, onClose }) {
 
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-primary/60 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-[2rem] bg-secondary p-7 text-primary shadow-2xl">
+      <div className="w-full max-w-md rounded-lg bg-secondary p-7 text-primary shadow-lg">
         <div
-          className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-xl text-white ${
+          className={`mb-5 flex h-14 w-14 items-center justify-center rounded-lg text-xl text-white ${
             isSuccess ? "bg-green-600" : "bg-red-600"
           }`}
         >
@@ -87,7 +87,7 @@ function ActionMessageModal({ status, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary transition-all duration-300 hover:scale-[1.02]"
+          className="mt-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary transition-all duration-300 hover:scale-[1.02]"
         >
           Close
           <FaXmark />
@@ -495,10 +495,10 @@ function TeacherManagement() {
   };
 
   const inputClass =
-    "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
+    "w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <ActionMessageModal
         status={status}
         onClose={() => setStatus({ type: "", message: "" })}
@@ -519,10 +519,10 @@ function TeacherManagement() {
       />
 
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaChalkboardUser />
         </div>
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           Teacher Management
         </h2>
         <p className="mt-3 max-w-2xl text-secondary/75">
@@ -531,7 +531,7 @@ function TeacherManagement() {
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
           <div className="grid grid-cols-1 gap-8 ">
             <div>
               <h3 className="text-3xl font-extrabold text-primary">
@@ -613,7 +613,7 @@ function TeacherManagement() {
               <button
                 type="submit"
                 disabled={submitting || availableClasses.length === 0}
-                className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {submitting
                   ? editingTeacherId
@@ -629,7 +629,7 @@ function TeacherManagement() {
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+                  className="w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
                 >
                   Cancel Edit
                 </button>
@@ -638,7 +638,7 @@ function TeacherManagement() {
           </div>
         </section>
 
-        <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
           <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h3 className="text-3xl font-extrabold text-primary">
@@ -654,14 +654,14 @@ function TeacherManagement() {
               type="button"
               onClick={handlePrintFormTeachers}
               disabled={loading || formTeachers.length === 0}
-              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-3 font-bold text-secondary shadow-lg transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
+              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-3 font-bold text-secondary shadow-lg transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
             >
               <FaPrint />
               Print Form Teachers
             </button>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[960px] text-left">
               <thead className="bg-primary/10 text-primary">
                 <tr>
@@ -766,3 +766,4 @@ function TeacherManagement() {
 }
 
 export default TeacherManagement;
+

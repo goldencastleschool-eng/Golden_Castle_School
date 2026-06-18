@@ -58,7 +58,7 @@ function StudentLayout() {
   };
 
   const linkClass = ({ isActive }) =>
-    `flex shrink-0 items-center gap-3 rounded-2xl px-5 py-4 font-semibold transition-all duration-300 lg:w-full ${
+    `flex shrink-0 items-center gap-3 rounded-lg px-5 py-4 font-semibold transition-all duration-300 lg:w-full ${
       sidebarCollapsed ? "lg:justify-center lg:px-0" : ""
     } ${
       isActive
@@ -70,7 +70,7 @@ function StudentLayout() {
     <main className="min-h-screen bg-background">
       <div className="sticky top-0 z-30 flex items-center justify-between bg-secondary px-5 py-4 shadow-lg lg:hidden">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-button text-secondary">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-button text-secondary">
             <FaBookOpen />
           </div>
           <div>
@@ -84,7 +84,7 @@ function StudentLayout() {
           type="button"
           aria-label="Open student menu"
           onClick={() => setMobileMenuOpen(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-button text-secondary shadow-lg"
+          className="flex h-11 w-11 items-center justify-center rounded-lg bg-button text-secondary shadow-lg"
         >
           <FaBars />
         </button>
@@ -107,7 +107,7 @@ function StudentLayout() {
         }`}
       >
         <aside
-          className={`fixed inset-y-0 left-0 z-50 flex w-[min(320px,85vw)] transform flex-col bg-secondary px-5 py-6 shadow-2xl transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-auto lg:translate-x-0 lg:overflow-hidden lg:shadow-none ${
+          className={`fixed inset-y-0 left-0 z-50 flex w-[min(320px,85vw)] transform flex-col bg-secondary px-5 py-6 shadow-lg transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-auto lg:translate-x-0 lg:overflow-hidden lg:shadow-none ${
             mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -123,7 +123,7 @@ function StudentLayout() {
                 sidebarCollapsed ? "lg:flex-col" : ""
               }`}
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-2xl text-secondary shadow-xl">
+              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-button text-2xl text-secondary shadow-md">
                 <FaBookOpen />
               </div>
 
@@ -149,7 +149,7 @@ function StudentLayout() {
                 onClick={() =>
                   setSidebarCollapsed((currentState) => !currentState)
                 }
-                className="hidden h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all duration-300 hover:bg-button hover:text-secondary lg:flex"
+                className="hidden h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all duration-300 hover:bg-button hover:text-secondary lg:flex"
               >
                 {sidebarCollapsed ? <FaAnglesRight /> : <FaAnglesLeft />}
               </button>
@@ -157,7 +157,7 @@ function StudentLayout() {
                 type="button"
                 aria-label="Close student menu"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary lg:hidden"
+                className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary lg:hidden"
               >
                 <FaXmark />
               </button>
@@ -165,7 +165,7 @@ function StudentLayout() {
           </div>
 
           <div
-            className={`mt-8 rounded-2xl border border-primary/10 bg-primary/5 p-5 ${
+            className={`mt-8 rounded-lg border border-primary/10 bg-primary/5 p-5 ${
               sidebarCollapsed ? "lg:hidden" : ""
             }`}
           >
@@ -204,7 +204,7 @@ function StudentLayout() {
             type="button"
             onClick={handleLogout}
             title={sidebarCollapsed ? "Logout" : undefined}
-            className="mt-6 flex w-full shrink-0 cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] lg:mt-auto"
+            className="mt-6 flex w-full shrink-0 cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] lg:mt-auto"
           >
             <FaRightFromBracket />
             <span className={sidebarCollapsed ? "lg:hidden" : ""}>Logout</span>
@@ -220,3 +220,4 @@ function StudentLayout() {
 }
 
 export default StudentLayout;
+

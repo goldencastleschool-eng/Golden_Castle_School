@@ -103,20 +103,20 @@ const studentBelongsToTermClass = (student, classRecord, session, term) => {
 };
 
 const inputClass =
-  "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
+  "w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
 const buttonClass =
-  "inline-flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70";
+  "inline-flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70";
 
 function StatCard({ title, value, icon }) {
   return (
-    <div className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+    <div className="rounded-lg bg-secondary p-6 shadow-lg">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold uppercase text-primary/60">{title}</p>
           <p className="mt-3 text-3xl font-extrabold text-primary">{value}</p>
         </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           {icon}
         </div>
       </div>
@@ -418,17 +418,17 @@ function BoardingManagement() {
   };
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}
       />
 
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaBed />
         </div>
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           Boarding Management
         </h2>
         <p className="mt-3 max-w-3xl text-secondary/75">
@@ -444,7 +444,7 @@ function BoardingManagement() {
         <StatCard title="Outstanding" value={loading ? "..." : formatCurrency(summary.balance)} icon={<FaMoneyBillWave />} />
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <select name="session" value={filters.session} onChange={handleFilterChange} className={inputClass}>
             {[DEFAULT_SESSION, ...new Set(classes.map((item) => item.session).filter(Boolean))].map((session) => (
@@ -467,7 +467,7 @@ function BoardingManagement() {
       </section>
 
       <section className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-2">
-        <form onSubmit={handleHouseSubmit} className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <form onSubmit={handleHouseSubmit} className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">Boarding House</h3>
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
             <input className={inputClass} placeholder="House name" value={houseForm.name} onChange={(event) => setHouseForm((form) => ({ ...form, name: event.target.value }))} />
@@ -489,7 +489,7 @@ function BoardingManagement() {
           </button>
         </form>
 
-        <form onSubmit={handleStructureSubmit} className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <form onSubmit={handleStructureSubmit} className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">Boarding Payment Structure</h3>
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
             <select className={inputClass} value={structureForm.house} onChange={(event) => setStructureForm((form) => ({ ...form, house: event.target.value }))}>
@@ -511,7 +511,7 @@ function BoardingManagement() {
       </section>
 
       <section className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-2">
-        <form onSubmit={handleEnrollmentSubmit} className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <form onSubmit={handleEnrollmentSubmit} className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">Register Boarding Students</h3>
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
             <input className={inputClass} value={enrollmentForm.session} onChange={(event) => setEnrollmentForm((form) => ({ ...form, session: event.target.value, term: normalizeTermForSession(form.term, event.target.value), class_record: "", student_ids: [] }))} />
@@ -537,7 +537,7 @@ function BoardingManagement() {
           </button>
         </form>
 
-        <form onSubmit={handlePaymentSubmit} className="rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <form onSubmit={handlePaymentSubmit} className="rounded-lg bg-secondary p-6 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">Record Boarding Payment</h3>
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
             <select className={`${inputClass} md:col-span-2`} value={paymentForm.enrollment} onChange={(event) => setPaymentForm((form) => ({ ...form, enrollment: event.target.value }))}>
@@ -560,9 +560,9 @@ function BoardingManagement() {
         </form>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <h3 className="text-2xl font-extrabold text-primary">Boarding Houses</h3>
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="mt-5 overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[760px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -593,11 +593,11 @@ function BoardingManagement() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <h3 className="text-2xl font-extrabold text-primary">
           Boarding Payment Structures
         </h3>
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="mt-5 overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[820px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -661,9 +661,9 @@ function BoardingManagement() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <h3 className="text-2xl font-extrabold text-primary">Boarding Registrations</h3>
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="mt-5 overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[900px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -693,9 +693,9 @@ function BoardingManagement() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
         <h3 className="text-2xl font-extrabold text-primary">Boarding Payment Records</h3>
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-primary/10">
+        <div className="mt-5 overflow-x-auto rounded-lg border border-primary/10">
           <table className="w-full min-w-[900px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
@@ -729,3 +729,4 @@ function BoardingManagement() {
 }
 
 export default BoardingManagement;
+

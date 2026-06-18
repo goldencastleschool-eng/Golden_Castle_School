@@ -2,25 +2,20 @@ import { motion } from "framer-motion";
 import { FaPlayCircle } from "react-icons/fa";
 
 export default function GraduationVideo() {
-return ( <section className="relative w-full bg-background py-20 px-6 lg:px-16 overflow-hidden">
-
-  {/* Background Glow */}
-  <div className="absolute top-0 left-0 w-72 h-72 bg-button/10 rounded-full blur-3xl"></div>
-
-  <div className="absolute bottom-0 right-0 w-72 h-72 bg-secondary/10 rounded-full blur-3xl"></div>
+return ( <section className="relative w-full overflow-hidden bg-background px-6 py-12 lg:px-10">
 
   <div className="relative z-10 max-w-7xl mx-auto">
 
     {/* Heading */}
-    <div className="text-center mb-16">
+    <div className="mb-10 text-center">
 
-      <h1 className="text-4xl md:text-5xl font-extrabold text-secondary">
+      <h2 className="text-3xl font-extrabold text-secondary md:text-4xl">
         2nd Graduation Ceremony
-      </h1>
+      </h2>
 
-      <div className="w-24 h-1.5 bg-button mx-auto mt-4 rounded-full"></div>
+      <div className="mx-auto mt-4 h-1.5 w-20 rounded-full bg-button"></div>
 
-      <p className="max-w-3xl mx-auto mt-6 text-secondary/70 text-lg leading-relaxed">
+      <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-secondary/70 md:text-lg">
         Relive the memorable moments from the 2nd Graduation Ceremony
         of Golden Castle International School as we celebrate excellence,
         achievement, and the successful completion of another important
@@ -43,7 +38,7 @@ return ( <section className="relative w-full bg-background py-20 px-6 lg:px-16 o
         duration: 0.7,
       }}
       viewport={{ once: true }}
-      className="overflow-hidden rounded-[2rem] shadow-2xl border border-secondary/10"
+      className="overflow-hidden rounded-lg border border-secondary/10 shadow-lg"
     >
 
       {/* Video */}
@@ -68,7 +63,7 @@ return ( <section className="relative w-full bg-background py-20 px-6 lg:px-16 o
       </div>
 
       {/* Bottom Content */}
-      <div className="hidden md:block bg-secondary p-8">
+      <div className="hidden bg-secondary p-6 md:block">
 
         <div className="flex items-center gap-3 mb-4">
 

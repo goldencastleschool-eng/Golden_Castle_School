@@ -136,13 +136,13 @@ function PortalVisibility() {
   );
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <div className="mb-8 flex flex-col justify-between gap-5 xl:flex-row xl:items-start">
         <div>
-          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
             <FaEye />
           </div>
-          <h2 className="text-4xl font-extrabold text-secondary">
+          <h2 className="text-3xl font-extrabold text-secondary">
             Portal Status
           </h2>
           <p className="mt-3 max-w-3xl text-secondary/75">
@@ -154,7 +154,7 @@ function PortalVisibility() {
           type="button"
           onClick={() => fetchVisibility({ silent: true })}
           disabled={loading || refreshing}
-          className="inline-flex items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
         >
           <FaArrowsRotate className={refreshing ? "animate-spin" : ""} />
           {refreshing ? "Checking..." : "Refresh Status"}
@@ -162,12 +162,12 @@ function PortalVisibility() {
       </div>
 
       {error && (
-        <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
+        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
           {error}
         </div>
       )}
 
-      <section className="mb-8 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+      <section className="mb-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-5">
           <p className="text-sm font-bold uppercase text-button">
             Visibility Filters
@@ -179,14 +179,14 @@ function PortalVisibility() {
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <input
-            className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+            className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
             name="session"
             value={filters.session}
             onChange={handleFilterChange}
             placeholder="Use live session"
           />
           <select
-            className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+            className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
             name="term"
             value={filters.term}
             onChange={handleFilterChange}
@@ -202,7 +202,7 @@ function PortalVisibility() {
       </section>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <div className="rounded-2xl bg-secondary p-6 shadow-xl">
+        <div className="rounded-lg bg-secondary p-6 shadow-md">
           <p className="text-sm font-bold uppercase text-primary/60">
             Live Checks
           </p>
@@ -210,7 +210,7 @@ function PortalVisibility() {
             {loading ? "..." : visibility?.summary?.live_checks || 0}
           </p>
         </div>
-        <div className="rounded-2xl bg-secondary p-6 shadow-xl">
+        <div className="rounded-lg bg-secondary p-6 shadow-md">
           <p className="text-sm font-bold uppercase text-primary/60">
             Needs Attention
           </p>
@@ -218,7 +218,7 @@ function PortalVisibility() {
             {loading ? "..." : visibility?.summary?.attention_checks || 0}
           </p>
         </div>
-        <div className="rounded-2xl bg-secondary p-6 shadow-xl">
+        <div className="rounded-lg bg-secondary p-6 shadow-md">
           <p className="text-sm font-bold uppercase text-primary/60">
             Not Configured
           </p>
@@ -226,7 +226,7 @@ function PortalVisibility() {
             {loading ? "..." : visibility?.summary?.not_configured_checks || 0}
           </p>
         </div>
-        <div className="rounded-2xl bg-secondary p-6 shadow-xl">
+        <div className="rounded-lg bg-secondary p-6 shadow-md">
           <p className="text-sm font-bold uppercase text-primary/60">
             Last Checked
           </p>
@@ -239,7 +239,7 @@ function PortalVisibility() {
       <div className="mt-8 grid grid-cols-1 gap-8 2xl:grid-cols-[1fr_420px]">
         <div className="space-y-8">
           {loading ? (
-            <div className="rounded-[2rem] bg-secondary p-7 text-primary/70 shadow-2xl">
+            <div className="rounded-lg bg-secondary p-7 text-primary/70 shadow-lg">
               Checking portal visibility...
             </div>
           ) : (
@@ -253,11 +253,11 @@ function PortalVisibility() {
                   {group.checks.map((check) => (
                     <article
                       key={check.key}
-                      className="rounded-[2rem] bg-secondary p-6 shadow-2xl"
+                      className="rounded-lg bg-secondary p-6 shadow-lg"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg text-primary">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-lg text-primary">
                             {checkIcons[check.key] || <FaEye />}
                           </div>
                           <div>
@@ -280,7 +280,7 @@ function PortalVisibility() {
                         </span>
                       </div>
 
-                      <div className="mt-5 rounded-2xl border border-primary/10">
+                      <div className="mt-5 rounded-lg border border-primary/10">
                         <div className="flex items-center justify-between gap-4 border-b border-primary/10 px-4 py-3">
                           <span className="text-sm font-bold text-primary/60">
                             Active Window
@@ -310,7 +310,7 @@ function PortalVisibility() {
                           <p className="text-sm font-bold uppercase text-primary/60">
                             Class Summary
                           </p>
-                          <div className="portal-sidebar-scroll mt-3 max-h-80 overflow-y-auto rounded-2xl border border-primary/10">
+                          <div className="portal-sidebar-scroll mt-3 max-h-80 overflow-y-auto rounded-lg border border-primary/10">
                             {(check.class_summary || []).map((classRow) => (
                               <div
                                 key={classRow.id}
@@ -414,7 +414,7 @@ function PortalVisibility() {
           )}
         </div>
 
-        <aside className="rounded-[2rem] bg-secondary p-7 shadow-2xl">
+        <aside className="rounded-lg bg-secondary p-5 shadow-lg">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="text-2xl font-extrabold text-primary">
@@ -428,7 +428,7 @@ function PortalVisibility() {
                     } found`}
               </p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
               {issues.length === 0 && !loading ? (
                 <FaCircleCheck />
               ) : (
@@ -441,14 +441,14 @@ function PortalVisibility() {
             {loading ? (
               <CardSkeleton count={3} />
             ) : issues.length === 0 ? (
-              <div className="rounded-2xl bg-green-500/10 p-5 text-green-700">
+              <div className="rounded-lg bg-green-500/10 p-5 text-green-700">
                 All monitored portal visibility checks are clear.
               </div>
             ) : (
               issues.map((issue) => (
                 <div
                   key={issue.id}
-                  className="rounded-2xl border border-primary/10 p-5"
+                  className="rounded-lg border border-primary/10 p-5"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-extrabold text-primary">
@@ -482,3 +482,4 @@ function PortalVisibility() {
 }
 
 export default PortalVisibility;
+

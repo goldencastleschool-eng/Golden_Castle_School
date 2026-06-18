@@ -231,13 +231,13 @@ function StudentFees() {
   };
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaReceipt />
         </div>
 
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           My Fees
         </h2>
 
@@ -247,13 +247,13 @@ function StudentFees() {
       </div>
 
       {error && (
-        <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
+        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-2xl bg-secondary p-6 shadow-xl">
+        <div className="rounded-lg bg-secondary p-6 shadow-md">
           <p className="text-sm font-bold uppercase text-primary/60">
             Expected Total
           </p>
@@ -261,7 +261,7 @@ function StudentFees() {
             {loading ? "..." : formatCurrency(totalExpected)}
           </p>
         </div>
-        <div className="rounded-2xl bg-secondary p-6 shadow-xl">
+        <div className="rounded-lg bg-secondary p-6 shadow-md">
           <p className="text-sm font-bold uppercase text-primary/60">
             Paid Total
           </p>
@@ -269,7 +269,7 @@ function StudentFees() {
             {loading ? "..." : formatCurrency(totalPaid)}
           </p>
         </div>
-        <div className="rounded-2xl bg-secondary p-6 shadow-xl">
+        <div className="rounded-lg bg-secondary p-6 shadow-md">
           <p className="text-sm font-bold uppercase text-primary/60">
             Balance
           </p>
@@ -280,7 +280,7 @@ function StudentFees() {
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-8">
-        <aside className="rounded-[2rem] bg-secondary p-7 shadow-2xl">
+        <aside className="rounded-lg bg-secondary p-5 shadow-lg">
           <h3 className="text-2xl font-extrabold text-primary">
             Fee Records
           </h3>
@@ -290,11 +290,11 @@ function StudentFees() {
 
           <div className="mt-6 space-y-3">
             {loading ? (
-              <div className="rounded-2xl bg-primary/5 p-5 text-primary/70">
+              <div className="rounded-lg bg-primary/5 p-5 text-primary/70">
                 Loading fee records...
               </div>
             ) : summaries.length === 0 ? (
-              <div className="rounded-2xl bg-primary/5 p-5 text-primary/70">
+              <div className="rounded-lg bg-primary/5 p-5 text-primary/70">
                 No fee record is available yet.
               </div>
             ) : (
@@ -307,7 +307,7 @@ function StudentFees() {
                     key={summaryKey}
                     type="button"
                     onClick={() => handleSelectSummary(summary)}
-                    className={`w-full rounded-2xl border p-5 text-left transition-all duration-300 ${
+                    className={`w-full rounded-lg border p-5 text-left transition-all duration-300 ${
                       isSelected
                         ? "border-button bg-button text-secondary"
                         : "border-primary/10 bg-primary/5 text-primary hover:border-button"
@@ -337,9 +337,9 @@ function StudentFees() {
           </div>
         </aside>
 
-        <section className="rounded-[2rem] bg-secondary p-7 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-5 shadow-lg">
           {!selectedSummary ? (
-            <div className="rounded-2xl bg-primary/5 p-6 text-primary/70">
+            <div className="rounded-lg bg-primary/5 p-6 text-primary/70">
               Select a fee record to view details.
             </div>
           ) : (
@@ -362,7 +362,7 @@ function StudentFees() {
               </div>
 
               <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="rounded-2xl bg-primary/5 p-5">
+                <div className="rounded-lg bg-primary/5 p-5">
                   <p className="text-sm font-bold uppercase text-primary/60">
                     Expected
                   </p>
@@ -370,7 +370,7 @@ function StudentFees() {
                     {formatCurrency(selectedSummary.expected_amount)}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-primary/5 p-5">
+                <div className="rounded-lg bg-primary/5 p-5">
                   <p className="text-sm font-bold uppercase text-primary/60">
                     Paid
                   </p>
@@ -378,7 +378,7 @@ function StudentFees() {
                     {formatCurrency(selectedSummary.total_paid)}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-primary/5 p-5">
+                <div className="rounded-lg bg-primary/5 p-5">
                   <p className="text-sm font-bold uppercase text-primary/60">
                     Balance
                   </p>
@@ -388,7 +388,7 @@ function StudentFees() {
                 </div>
               </div>
 
-              <div className="mt-7 rounded-2xl border border-primary/10 bg-primary/5 p-5">
+              <div className="mt-7 rounded-lg border border-primary/10 bg-primary/5 p-5">
                 <p className="text-sm font-bold uppercase text-primary/60">
                   Fee Items
                 </p>
@@ -433,7 +433,7 @@ function StudentFees() {
                       name="session"
                       value={paymentHistoryFilter.session}
                       onChange={handlePaymentHistoryFilterChange}
-                      className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                      className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                     >
                       {paymentSessionOptions.map((session) => (
                         <option key={session} value={session}>
@@ -451,7 +451,7 @@ function StudentFees() {
                       name="term"
                       value={paymentHistoryFilter.term}
                       onChange={handlePaymentHistoryFilterChange}
-                      className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                      className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                     >
                       {paymentTermOptions.map((term) => (
                         <option key={term} value={term}>
@@ -461,7 +461,7 @@ function StudentFees() {
                     </select>
                   </div>
 
-                  <div className="rounded-2xl bg-primary/5 px-5 py-4 text-primary">
+                  <div className="rounded-lg bg-primary/5 px-5 py-4 text-primary">
                     <p className="text-xs font-bold uppercase text-primary/50">
                       Payments
                     </p>
@@ -472,7 +472,7 @@ function StudentFees() {
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <div className="rounded-2xl bg-primary/5 p-5">
+                  <div className="rounded-lg bg-primary/5 p-5">
                     <p className="text-sm font-bold uppercase text-primary/60">
                       Expected
                     </p>
@@ -480,7 +480,7 @@ function StudentFees() {
                       {formatCurrency(paymentHistoryExpected)}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-primary/5 p-5">
+                  <div className="rounded-lg bg-primary/5 p-5">
                     <p className="text-sm font-bold uppercase text-primary/60">
                       Paid
                     </p>
@@ -488,7 +488,7 @@ function StudentFees() {
                       {formatCurrency(paymentHistoryPaid)}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-primary/5 p-5">
+                  <div className="rounded-lg bg-primary/5 p-5">
                     <p className="text-sm font-bold uppercase text-primary/60">
                       Balance
                     </p>
@@ -498,7 +498,7 @@ function StudentFees() {
                   </div>
                 </div>
 
-                <div className="mt-5 overflow-x-auto rounded-2xl border border-primary/10">
+                <div className="mt-5 overflow-x-auto rounded-lg border border-primary/10">
                   <table className="w-full min-w-[860px] text-left">
                     <thead className="bg-primary/10 text-primary">
                       <tr>
@@ -562,3 +562,4 @@ function StudentFees() {
 }
 
 export default StudentFees;
+

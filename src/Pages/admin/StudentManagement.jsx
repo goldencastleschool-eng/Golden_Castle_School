@@ -282,7 +282,7 @@ function StudentManagement() {
   };
 
   const inputClass =
-    "w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
+    "w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
 
   useEffect(() => {
     setStudentPage(1);
@@ -417,7 +417,7 @@ function StudentManagement() {
   );
 
   return (
-    <div className="px-6 py-10 lg:px-12">
+    <div className="px-6 py-8 lg:px-10">
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}
@@ -438,10 +438,10 @@ function StudentManagement() {
       />
 
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-xl text-secondary">
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
           <FaUserGraduate />
         </div>
-        <h2 className="text-4xl font-extrabold text-secondary">
+        <h2 className="text-3xl font-extrabold text-secondary">
           Student Management
         </h2>
         <p className="mt-3 max-w-2xl text-secondary/75">
@@ -453,7 +453,7 @@ function StudentManagement() {
       <div className="grid grid-cols-1 gap-8 ">
         <form
           onSubmit={handleSubmit}
-          className="rounded-[2rem] bg-secondary p-8 shadow-2xl"
+          className="rounded-lg bg-secondary p-6 shadow-lg"
         >
           <h3 className="text-3xl font-extrabold text-primary">
             {editingStudentId ? "Edit Student" : "Register Student"}
@@ -560,7 +560,7 @@ function StudentManagement() {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+            className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {submitting
               ? editingStudentId
@@ -576,15 +576,15 @@ function StudentManagement() {
             <button
               type="button"
               onClick={handleCancelEdit}
-              className="mt-4 w-full rounded-2xl bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+              className="mt-4 w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
             >
               Cancel Edit
             </button>
           )}
         </form>
 
-        <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
-          <div className="mb-6 flex flex-col gap-4 rounded-[2rem] bg-secondary p-6 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
+          <div className="mb-6 flex flex-col gap-4 rounded-lg bg-secondary p-6 shadow-lg">
             <div>
               <p className="text-sm font-bold uppercase text-button">
                 Student Filters
@@ -600,7 +600,7 @@ function StudentManagement() {
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
               <select
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 value={studentViewSessionFilter}
                 onChange={handleStudentViewSessionChange}
               >
@@ -612,7 +612,7 @@ function StudentManagement() {
               </select>
 
               <select
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 value={studentViewTermFilter}
               onChange={(event) => setStudentViewTermFilter(event.target.value)}
             >
@@ -625,7 +625,7 @@ function StudentManagement() {
               </select>
 
               <select
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 value={studentViewClassId}
                 onChange={(event) => setStudentViewClassId(event.target.value)}
               >
@@ -638,7 +638,7 @@ function StudentManagement() {
               </select>
 
               <select
-                className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
                 value={studentNameSort}
                 onChange={(event) => setStudentNameSort(event.target.value)}
               >
@@ -649,21 +649,21 @@ function StudentManagement() {
           </div>
 
           {studentViewSessionFilter && studentViewClasses.length === 0 && (
-            <div className="mb-6 rounded-2xl border border-primary/10 bg-primary/5 p-6 text-primary/70">
+            <div className="mb-6 rounded-lg border border-primary/10 bg-primary/5 p-6 text-primary/70">
               No class has been created for {studentViewSessionFilter} yet.
             </div>
           )}
 
-          <div className="mb-6 rounded-2xl bg-primary/5 p-5">
+          <div className="mb-6 rounded-lg bg-primary/5 p-5">
             <p className="text-sm font-semibold text-primary/50">
               Active Students in Selected Class
             </p>
-            <p className="mt-3 text-4xl font-extrabold text-primary">
+            <p className="mt-3 text-3xl font-extrabold text-primary">
               {selectedViewClass ? sortedViewedClassStudents.length : "0"}
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[960px] text-left">
               <thead className="bg-primary/10 text-primary">
                 <tr>
@@ -751,7 +751,7 @@ function StudentManagement() {
           </div>
         </section>
 
-        <section className="rounded-[2rem] bg-secondary p-8 shadow-2xl">
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
           <div className="mb-5">
               <h3 className="text-3xl font-extrabold text-primary">
                 Student Records
@@ -767,19 +767,19 @@ function StudentManagement() {
               value={studentSearch}
               onChange={(event) => setStudentSearch(event.target.value)}
               placeholder="Search students"
-              className="w-full rounded-2xl border border-primary/10 bg-primary/5 px-5 py-3 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-3 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
             />
 
             <button
               onClick={fetchStudents}
-              className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button px-5 py-3 font-semibold text-secondary shadow-lg transition-all duration-300 hover:scale-105"
+              className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-3 font-semibold text-secondary shadow-lg transition-all duration-300 hover:scale-105"
             >
               Refresh
               <FaArrowRight />
             </button>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-primary/10">
+          <div className="overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[860px] text-left">
               <thead className="bg-primary/10 text-primary">
                 <tr>
@@ -894,3 +894,4 @@ function StudentManagement() {
 }
 
 export default StudentManagement;
+

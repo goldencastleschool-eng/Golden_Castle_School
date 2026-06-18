@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import {
-  FaChevronDown,
-  FaQuestionCircle,
-} from "react-icons/fa";
+import { FaChevronDown } from "react-icons/fa";
 
 /* =========================
    FAQ DATA
@@ -66,30 +63,25 @@ export default function FAQ() {
   };
 
   return (
-    <section className="py-10 px-6 lg:px-16 bg-background">
+    <section className="bg-background px-6 py-12 lg:px-10">
 
       <div className="max-w-6xl mx-auto">
 
         {/* =========================
             SECTION HEADER
         ========================= */}
-        <div className="text-center mb-5">
+        <div className="mb-10 text-center">
 
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-secondary mt-4">
-            FAQ
-          </h1>
+          <p className="font-bold uppercase tracking-wide text-button">FAQ</p>
 
-          <div className="w-24 h-1.5 bg-button mx-auto mt-5 rounded-full"></div>
-        </div>
-        
-        <div className="text-center mb-10">
-
-          <h2 className="text-4xl md:text-5xl font-extrabold text-secondary mt-6">
+          <h2 className="mt-4 text-3xl font-extrabold text-secondary md:text-4xl">
 
             Everything You Need To Know
           </h2>
 
-          <p className="max-w-3xl mx-auto mt-5 text-secondary/70 text-lg leading-relaxed">
+          <div className="mx-auto mt-5 h-1.5 w-20 rounded-full bg-button"></div>
+
+          <p className="mx-auto mt-5 max-w-3xl text-base leading-relaxed text-secondary/70 md:text-lg">
 
             Find answers to common questions about admissions,
             academics, transportation, safety, and student life at
@@ -119,13 +111,13 @@ export default function FAQ() {
                 duration: 0.4,
                 delay: index * 0.08,
               }}
-              className="bg-secondary rounded-[2rem] shadow-xl overflow-hidden"
+              className="overflow-hidden rounded-lg bg-secondary shadow-md"
             >
 
               {/* Question */}
               <button
                 onClick={() => toggleFAQ(index)}
-                className="w-full flex items-center justify-between p-7 text-left cursor-pointer"
+                className="flex w-full cursor-pointer items-center justify-between p-6 text-left"
               >
 
                 <h3 className="text-lg md:text-xl font-bold text-primary pr-4">
