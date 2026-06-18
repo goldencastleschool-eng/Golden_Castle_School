@@ -33,7 +33,10 @@ function StudentLogin() {
     setError("");
 
     try {
-      const response = await API.post("/auth/student/login", formData);
+      const response = await API.post("/auth/student/login", {
+        ...formData,
+        admission_no: formData.admission_no.trim(),
+      });
       const { student, token } = response.data;
       const studentUser = {
         ...student,

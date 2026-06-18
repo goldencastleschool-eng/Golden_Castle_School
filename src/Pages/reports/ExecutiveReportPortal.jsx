@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Bar,
@@ -13,6 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useQuery } from "@tanstack/react-query";
 import {
   FaArrowRightFromBracket,
   FaBus,
@@ -78,6 +79,14 @@ const inputClass =
 
 const tableHeadClass = "bg-primary/10 text-primary";
 const tableCellClass = "px-5 py-4";
+
+const fetchExecutiveReport = async (filters) => {
+  const response = await API.get("/reports/overview", {
+    params: filters,
+  });
+
+  return response.data;
+};
 
 function PaginationControls({
   currentPage,
@@ -333,49 +342,75 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
     "";
   const selectedClassRecord =
     report?.selected_class_record || filters.class_record;
-
-  const fetchReport = useCallback(async (nextFilters) => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await API.get("/reports/overview", {
-        params: nextFilters,
-      });
-
-      setReport(response.data);
-      const selectedSession =
-        response.data.selected_session || nextFilters.session;
-      setFilters({
-        session: selectedSession,
-        term:
-          normalizeTermForSession(
-            response.data.selected_term || nextFilters.term,
-            selectedSession
-          ) ||
-          getVisibleTermsForSession(selectedSession)[0] ||
-          "",
-        class_record:
-          response.data.selected_class_record || nextFilters.class_record,
-      });
-    } catch (requestError) {
-      setError(
-        requestError.response?.data?.message ||
-          requestError.response?.data?.error ||
-          "Unable to load report data."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const {
+    data: reportData,
+    error: reportError,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      "executive-report-overview",
+      filters.session,
+      filters.term,
+      filters.class_record,
+    ],
+    queryFn: () => fetchExecutiveReport(filters),
+    staleTime: 1000 * 60 * 3,
+  });
 
   useEffect(() => {
-    fetchReport({
-      session: FIRST_IMPLEMENTED_SESSION,
-      term: DEFAULT_TERM,
-      class_record: "",
-    });
-  }, [fetchReport]);
+    setLoading(isLoading && !reportData);
+  }, [isLoading, reportData]);
+
+  useEffect(() => {
+    if (!isFetching) {
+      return;
+    }
+
+    setError("");
+  }, [isFetching]);
+
+  useEffect(() => {
+    if (!reportError) {
+      return;
+    }
+
+    setError(
+      reportError.response?.data?.message ||
+        reportError.response?.data?.error ||
+        reportError.message ||
+        "Unable to load report data."
+    );
+  }, [reportError]);
+
+  useEffect(() => {
+    if (!reportData) {
+      return;
+    }
+
+    setReport(reportData);
+    const normalizedSession = reportData.selected_session || filters.session;
+    const normalizedFilters = {
+      session: normalizedSession,
+      term:
+        normalizeTermForSession(
+          reportData.selected_term || filters.term,
+          normalizedSession
+        ) ||
+        getVisibleTermsForSession(normalizedSession)[0] ||
+        "",
+      class_record: reportData.selected_class_record || filters.class_record,
+    };
+
+    setFilters((currentFilters) =>
+      currentFilters.session === normalizedFilters.session &&
+      currentFilters.term === normalizedFilters.term &&
+      currentFilters.class_record === normalizedFilters.class_record
+        ? currentFilters
+        : normalizedFilters
+    );
+  }, [filters, reportData]);
 
   useEffect(() => {
     if (!embedded && user?.role === "admin") {
@@ -399,11 +434,10 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
     }
 
     setFilters(nextFilters);
-    fetchReport(nextFilters);
   };
 
   const handleRefresh = () => {
-    fetchReport(filters);
+    refetch();
   };
 
   const handleLogout = async () => {

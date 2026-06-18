@@ -13,6 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useQuery } from "@tanstack/react-query";
 import {
   FaArrowRight,
   FaBookOpen,
@@ -185,6 +186,55 @@ function DashboardChartCard({ title, subtitle, children }) {
   );
 }
 
+const dashboardRequests = [
+  ["students", () => API.get("/students")],
+  ["results", () => API.get("/results")],
+  ["classes", () => API.get("/classes")],
+  ["teachers", () => API.get("/teachers")],
+  ["classBroadsheets", () => API.get("/class-broadsheets")],
+  ["classResults", () => API.get("/class-results")],
+  ["fees", () => API.get("/fees")],
+  ["feeStructures", () => API.get("/fee-structures")],
+  ["buses", () => API.get("/bus-management/buses")],
+  ["busRoutes", () => API.get("/bus-management/routes")],
+  ["busStructures", () => API.get("/bus-management/fee-structures")],
+  ["busEnrollments", () => API.get("/bus-management/enrollments")],
+  ["busPayments", () => API.get("/bus-management/payments")],
+  ["boardingHouses", () => API.get("/boarding-management/houses")],
+  ["boardingStructures", () => API.get("/boarding-management/fee-structures")],
+  ["boardingEnrollments", () => API.get("/boarding-management/enrollments")],
+  ["boardingPayments", () => API.get("/boarding-management/payments")],
+  ["payrollStaff", () => API.get("/payroll/staff")],
+  ["payrollAssignments", () => API.get("/payroll/assignments")],
+  ["payrollPayments", () => API.get("/payroll/payments")],
+];
+
+const fetchAdminDashboardData = async () => {
+  const responses = await Promise.allSettled(
+    dashboardRequests.map(([, request]) => request())
+  );
+  const data = {};
+
+  responses.forEach((response, index) => {
+    const [key] = dashboardRequests[index];
+
+    if (
+      ["students", "results", "classes"].includes(key) &&
+      response.status === "rejected"
+    ) {
+      throw new Error(
+        response.reason?.response?.data?.message ||
+          response.reason?.response?.data?.error ||
+          "Unable to load dashboard records."
+      );
+    }
+
+    data[key] = response.status === "fulfilled" ? response.value.data || [] : [];
+  });
+
+  return data;
+};
+
 function AdminDashboard() {
   const { user } = useAuth();
   const [students, setStudents] = useState([]);
@@ -221,177 +271,66 @@ function AdminDashboard() {
     DEFAULT_TERM_FILTER
   );
   const [status, setStatus] = useState({ type: "", message: "" });
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      setStatus({ type: "", message: "" });
-
-      const [
-        studentsResponse,
-        resultsResponse,
-        classesResponse,
-        teachersResponse,
-        broadsheetsResponse,
-        classResultsResponse,
-        feesResponse,
-        feeStructuresResponse,
-        busesResponse,
-        busRoutesResponse,
-        busStructuresResponse,
-        busEnrollmentsResponse,
-        busPaymentsResponse,
-        boardingHousesResponse,
-        boardingStructuresResponse,
-        boardingEnrollmentsResponse,
-        boardingPaymentsResponse,
-        payrollStaffResponse,
-        payrollAssignmentsResponse,
-        payrollPaymentsResponse,
-      ] = await Promise.allSettled([
-        API.get("/students"),
-        API.get("/results"),
-        API.get("/classes"),
-        API.get("/teachers"),
-        API.get("/class-broadsheets"),
-        API.get("/class-results"),
-        API.get("/fees"),
-        API.get("/fee-structures"),
-        API.get("/bus-management/buses"),
-        API.get("/bus-management/routes"),
-        API.get("/bus-management/fee-structures"),
-        API.get("/bus-management/enrollments"),
-        API.get("/bus-management/payments"),
-        API.get("/boarding-management/houses"),
-        API.get("/boarding-management/fee-structures"),
-        API.get("/boarding-management/enrollments"),
-        API.get("/boarding-management/payments"),
-        API.get("/payroll/staff"),
-        API.get("/payroll/assignments"),
-        API.get("/payroll/payments"),
-      ]);
-
-      if (studentsResponse.status === "rejected") {
-        throw new Error(
-          studentsResponse.reason?.response?.data?.message ||
-            studentsResponse.reason?.response?.data?.error ||
-            "Unable to load student records."
-        );
-      }
-
-      if (resultsResponse.status === "rejected") {
-        throw new Error(
-          resultsResponse.reason?.response?.data?.message ||
-            resultsResponse.reason?.response?.data?.error ||
-            "Unable to load result records."
-        );
-      }
-
-      if (classesResponse.status === "rejected") {
-        throw new Error(
-          classesResponse.reason?.response?.data?.message ||
-            classesResponse.reason?.response?.data?.error ||
-            "Unable to load class records."
-        );
-      }
-
-      setStudents(studentsResponse.value.data || []);
-      setResults(resultsResponse.value.data || []);
-      setClasses(classesResponse.value.data || []);
-      setTeachers(
-        teachersResponse.status === "fulfilled"
-          ? teachersResponse.value.data || []
-          : []
-      );
-      setClassBroadsheets(
-        broadsheetsResponse.status === "fulfilled"
-          ? broadsheetsResponse.value.data || []
-          : []
-      );
-      setClassResults(
-        classResultsResponse.status === "fulfilled"
-          ? classResultsResponse.value.data || []
-          : []
-      );
-      setFees(feesResponse.status === "fulfilled" ? feesResponse.value.data || [] : []);
-      setFeeStructures(
-        feeStructuresResponse.status === "fulfilled"
-          ? feeStructuresResponse.value.data || []
-          : []
-      );
-      setBuses(
-        busesResponse.status === "fulfilled" ? busesResponse.value.data || [] : []
-      );
-      setBusRoutes(
-        busRoutesResponse.status === "fulfilled"
-          ? busRoutesResponse.value.data || []
-          : []
-      );
-      setBusStructures(
-        busStructuresResponse.status === "fulfilled"
-          ? busStructuresResponse.value.data || []
-          : []
-      );
-      setBusEnrollments(
-        busEnrollmentsResponse.status === "fulfilled"
-          ? busEnrollmentsResponse.value.data || []
-          : []
-      );
-      setBusPayments(
-        busPaymentsResponse.status === "fulfilled"
-          ? busPaymentsResponse.value.data || []
-          : []
-      );
-      setBoardingHouses(
-        boardingHousesResponse.status === "fulfilled"
-          ? boardingHousesResponse.value.data || []
-          : []
-      );
-      setBoardingStructures(
-        boardingStructuresResponse.status === "fulfilled"
-          ? boardingStructuresResponse.value.data || []
-          : []
-      );
-      setBoardingEnrollments(
-        boardingEnrollmentsResponse.status === "fulfilled"
-          ? boardingEnrollmentsResponse.value.data || []
-          : []
-      );
-      setBoardingPayments(
-        boardingPaymentsResponse.status === "fulfilled"
-          ? boardingPaymentsResponse.value.data || []
-          : []
-      );
-      setPayrollStaff(
-        payrollStaffResponse.status === "fulfilled"
-          ? payrollStaffResponse.value.data || []
-          : []
-      );
-      setPayrollAssignments(
-        payrollAssignmentsResponse.status === "fulfilled"
-          ? payrollAssignmentsResponse.value.data || []
-          : []
-      );
-      setPayrollPayments(
-        payrollPaymentsResponse.status === "fulfilled"
-          ? payrollPaymentsResponse.value.data || []
-          : []
-      );
-    } catch (requestError) {
-      setStatus({
-        type: "error",
-        message:
-          requestError.response?.data?.message ||
-          "Unable to load dashboard records.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data: dashboardData,
+    error: dashboardError,
+    isLoading,
+    isFetching,
+  } = useQuery({
+    queryKey: ["admin-dashboard-overview"],
+    queryFn: fetchAdminDashboardData,
+    staleTime: 1000 * 60 * 3,
+  });
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    setLoading(isLoading && !dashboardData);
+  }, [dashboardData, isLoading]);
+
+  useEffect(() => {
+    if (!isFetching) {
+      return;
+    }
+
+    setStatus({ type: "", message: "" });
+  }, [isFetching]);
+
+  useEffect(() => {
+    if (!dashboardError) {
+      return;
+    }
+
+    setStatus({
+      type: "error",
+      message: dashboardError.message || "Unable to load dashboard records.",
+    });
+  }, [dashboardError]);
+
+  useEffect(() => {
+    if (!dashboardData) {
+      return;
+    }
+
+    setStudents(dashboardData.students || []);
+    setResults(dashboardData.results || []);
+    setClasses(dashboardData.classes || []);
+    setTeachers(dashboardData.teachers || []);
+    setClassBroadsheets(dashboardData.classBroadsheets || []);
+    setClassResults(dashboardData.classResults || []);
+    setFees(dashboardData.fees || []);
+    setFeeStructures(dashboardData.feeStructures || []);
+    setBuses(dashboardData.buses || []);
+    setBusRoutes(dashboardData.busRoutes || []);
+    setBusStructures(dashboardData.busStructures || []);
+    setBusEnrollments(dashboardData.busEnrollments || []);
+    setBusPayments(dashboardData.busPayments || []);
+    setBoardingHouses(dashboardData.boardingHouses || []);
+    setBoardingStructures(dashboardData.boardingStructures || []);
+    setBoardingEnrollments(dashboardData.boardingEnrollments || []);
+    setBoardingPayments(dashboardData.boardingPayments || []);
+    setPayrollStaff(dashboardData.payrollStaff || []);
+    setPayrollAssignments(dashboardData.payrollAssignments || []);
+    setPayrollPayments(dashboardData.payrollPayments || []);
+  }, [dashboardData]);
 
   const handlePopulationSessionChange = (session) => {
     const normalizedTerm = normalizeTermForSession(populationTermFilter, session);
