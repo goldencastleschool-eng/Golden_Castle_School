@@ -4,6 +4,23 @@ import { FaFilePdf } from "react-icons/fa6";
 import API from "../../api/axios.jsx";
 import PdfViewer from "../../components/common/PdfViewer.jsx";
 
+const getRequestErrorMessage = async (requestError, fallbackMessage) => {
+  const errorData = requestError.response?.data;
+
+  if (errorData instanceof Blob) {
+    try {
+      const errorText = await errorData.text();
+      const parsedError = JSON.parse(errorText);
+
+      return parsedError.message || parsedError.error || fallbackMessage;
+    } catch {
+      return fallbackMessage;
+    }
+  }
+
+  return errorData?.message || errorData?.error || fallbackMessage;
+};
+
 function TeacherClassResults() {
   const [classResults, setClassResults] = useState([]);
   const [selectedClassResultId, setSelectedClassResultId] = useState("");
@@ -83,8 +100,10 @@ function TeacherClassResults() {
       }, 100);
     } catch (requestError) {
       setError(
-        requestError.response?.data?.message ||
+        await getRequestErrorMessage(
+          requestError,
           "Unable to load this class result PDF."
+        )
       );
     } finally {
       setLoadingViewer(false);
@@ -133,8 +152,10 @@ function TeacherClassResults() {
       URL.revokeObjectURL(objectUrl);
     } catch (requestError) {
       setError(
-        requestError.response?.data?.message ||
+        await getRequestErrorMessage(
+          requestError,
           "Unable to download this class result."
+        )
       );
     }
   };
