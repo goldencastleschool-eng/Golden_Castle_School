@@ -15,6 +15,7 @@ import {
 
 import { useAuth } from "../../context/AuthContext.jsx";
 import API from "../../api/axios.jsx";
+import PortalNoticeGate from "../../components/common/PortalNoticeGate.jsx";
 
 const studentLinks = [
   {
@@ -207,7 +208,9 @@ function StudentLayout() {
         </aside>
 
         <section className="min-w-0">
-          <Outlet />
+          <PortalNoticeGate>
+            <Outlet />
+          </PortalNoticeGate>
         </section>
       </div>
     </main>

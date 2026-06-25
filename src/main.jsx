@@ -91,6 +91,9 @@ const PayrollManagement = lazy(() =>
 const PortalVisibility = lazy(() =>
   import("./Pages/admin/PortalVisibility.jsx")
 );
+const PortalNotices = lazy(() =>
+  import("./Pages/admin/PortalNotices.jsx")
+);
 const ExecutiveReportPortal = lazy(() =>
   import("./Pages/reports/ExecutiveReportPortal.jsx")
 );
@@ -318,6 +321,10 @@ const router = createBrowserRouter([
           {
             path: "portal-status",
             element: <PortalVisibility />,
+          },
+          {
+            path: "portal-notices",
+            element: <PortalNotices />,
           },
         ],
       },

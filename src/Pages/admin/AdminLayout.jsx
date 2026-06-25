@@ -11,6 +11,7 @@ import {
   FaAnglesRight,
   FaBars,
   FaBed,
+  FaBullhorn,
   FaBus,
   FaChartLine,
   FaChartPie,
@@ -99,6 +100,11 @@ const adminLinks = [
     label: "Portal Status",
     path: "/admin/portal-status",
     icon: <FaEye />,
+  },
+  {
+    label: "Portal Notices",
+    path: "/admin/portal-notices",
+    icon: <FaBullhorn />,
   },
 ];
 

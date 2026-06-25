@@ -14,6 +14,7 @@ import {
 
 import { useAuth } from "../../context/AuthContext.jsx";
 import API from "../../api/axios.jsx";
+import PortalNoticeGate from "../../components/common/PortalNoticeGate.jsx";
 import { isFormTeacher } from "../../utils/teacherAssignments.js";
 
 const teacherLinks = [
@@ -214,7 +215,9 @@ function TeacherLayout() {
         </aside>
 
         <section className="min-w-0">
-          <Outlet />
+          <PortalNoticeGate>
+            <Outlet />
+          </PortalNoticeGate>
         </section>
       </div>
     </main>
