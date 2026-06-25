@@ -19,7 +19,7 @@ import HeroSkeleton from "./Skeleton";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-[40px] overflow-hidden bg-background sm:min-h-[calc(100vh-73px)]">
+    <section className="relative min-h-[640px] overflow-hidden bg-background sm:min-h-[calc(100vh-73px)]">
 
       {/* =========================
           BACKGROUND SLIDER
