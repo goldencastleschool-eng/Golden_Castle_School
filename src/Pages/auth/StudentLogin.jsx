@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FaArrowRight, FaBookOpen, FaIdCard, FaLock } from "react-icons/fa6";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import API from "../../api/axios.jsx";
 import { PageLoader } from "../../components/common/Loading.jsx";
@@ -60,53 +60,56 @@ function StudentLogin() {
   };
 
   if (loading) {
-    return <PageLoader message="Signing in to Student portal..." />;
+    return <PageLoader message="Opening Student portal..." />;
   }
 
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10 sm:px-6 lg:px-10">
-      <div className="absolute left-0 top-0 h-72 w-72 rounded-full bg-button/10 blur-3xl"></div>
-      <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-secondary/10 blur-3xl"></div>
-
-      <div className="relative z-10 grid w-full max-w-7xl grid-cols-1 overflow-hidden rounded-[2rem] bg-secondary shadow-2xl lg:grid-cols-2">
-        <div className="relative hidden overflow-hidden lg:block">
+    <section className="flex h-screen items-center justify-center overflow-hidden bg-background px-4 py-4 sm:px-6 lg:px-10">
+      <div className="grid h-full max-h-[calc(100vh-2rem)] w-full max-w-6xl grid-cols-1 overflow-hidden rounded-lg bg-secondary shadow-lg lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="relative hidden h-full overflow-hidden lg:block">
           <img
             src={image}
             alt="Golden Castle International School gate"
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20"></div>
-          <div className="absolute bottom-10 left-10 z-10 text-primary">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-button text-2xl text-secondary">
+          <div className="absolute bottom-8 left-8 right-8 z-10 text-primary">
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-button text-xl text-secondary">
               <FaBookOpen />
             </div>
-            <h2 className="mb-4 text-4xl font-extrabold">Student Portal</h2>
+            <h2 className="mb-3 text-3xl font-extrabold">Student Portal</h2>
             <p className="max-w-md leading-relaxed text-primary/80">
               Sign in to view and download your academic result PDFs.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-center p-6 sm:p-10 lg:p-16">
+        <div className="flex min-h-0 items-center justify-center p-5 sm:p-6 lg:p-8">
           <div className="w-full max-w-md">
-            <div className="mb-10">
-              <h2 className="text-4xl font-extrabold text-primary sm:text-5xl">
+            <div className="mb-4 flex justify-end lg:hidden">
+              <Link
+                to="/"
+                className="rounded-lg bg-primary/10 px-4 py-2 text-sm font-bold text-primary transition hover:bg-button hover:text-secondary"
+              >
+                Home
+              </Link>
+            </div>
+
+            <div className="mb-5 text-center">
+              <h1 className="text-3xl font-extrabold text-primary sm:text-4xl">
                 Student Login
-              </h2>
-              <p className="mt-4 text-base leading-relaxed text-primary/70 sm:text-lg">
-                Enter your admission number and password to continue.
-              </p>
+              </h1>
             </div>
 
             {error && (
-              <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="mb-3 block font-medium text-primary">
+                <label className="mb-2 block font-medium text-primary">
                   Admission Number
                 </label>
                 <div className="relative">
@@ -120,13 +123,13 @@ function StudentLogin() {
                     onChange={handleChange}
                     placeholder="Enter admission number"
                     required
-                    className="w-full rounded-2xl border border-primary/10 bg-primary/5 py-4 pl-14 pr-5 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+                    className="w-full rounded-lg border border-primary/10 bg-primary/5 py-3.5 pl-14 pr-5 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-3 block font-medium text-primary">
+                <label className="mb-2 block font-medium text-primary">
                   Password
                 </label>
                 <div className="relative">
@@ -140,7 +143,7 @@ function StudentLogin() {
                     onChange={handleChange}
                     placeholder="Enter password"
                     required
-                    className="w-full rounded-2xl border border-primary/10 bg-primary/5 py-4 pl-14 pr-5 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
+                    className="w-full rounded-lg border border-primary/10 bg-primary/5 py-3.5 pl-14 pr-5 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20"
                   />
                 </div>
               </div>
@@ -148,12 +151,22 @@ function StudentLogin() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-button py-4 font-bold text-secondary shadow-xl transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button py-3.5 font-bold text-secondary shadow-md transition-all duration-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
               >
                 {loading ? "Signing in..." : "Login"}
                 {!loading && <FaArrowRight />}
               </button>
             </form>
+
+            <div className="my-5 flex items-center gap-4">
+              <div className="h-[1px] flex-1 bg-primary/10"></div>
+              <span className="text-sm text-primary/40">Student Access</span>
+              <div className="h-[1px] flex-1 bg-primary/10"></div>
+            </div>
+
+            <p className="text-center text-sm leading-relaxed text-primary/60">
+              Reach For Gold
+            </p>
           </div>
         </div>
       </div>

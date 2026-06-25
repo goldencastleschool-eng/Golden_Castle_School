@@ -75,7 +75,7 @@ export default function BoardingSchool() {
             HERO SECTION
         ========================= */}
 
-        <section className="relative w-full h-[65vh]">
+        <section className="relative w-full h-[30vh]">
 
           <img
             src={coverImage}
@@ -278,8 +278,8 @@ export default function BoardingSchool() {
           </div>
 
           {/* Staff Cards */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-
+          <div className="w-full flex flex-col sm:flex-row justify-center gap-5 items-center">
+            
             {hostelStaff.map((staff, index) => (
               <motion.div
                 key={index}
@@ -299,11 +299,11 @@ export default function BoardingSchool() {
                 whileHover={{
                   y: -4,
                 }}
-                className="group bg-secondary rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-500"
+                className=" group bg-secondary rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-500"
               >
 
                 {/* Image */}
-                <div className="overflow-hidden h-80">
+                <div className=" overflow-hidden h-80">
 
                   <img
                     src={staff.image}

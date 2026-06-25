@@ -66,7 +66,7 @@ const teachers = [
 
   {
     name: "Mrs. Lucy",
-    subject: "Pre-Nursery 1 Assistant Teacher",
+    subject: "Pre-Nursery 1 Assisting Teacher",
     image:
       "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779619626/WhatsApp_Image_2026-05-24_at_11.40.17_AM_1_xgcmhl.jpg",
   },
@@ -76,17 +76,35 @@ const teachers = [
     image:
       "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779619627/WhatsApp_Image_2026-05-24_at_11.40.17_AM_rvgk6k.jpg",
   },
+   {
+    name: "Miss. Chiamaka",
+    subject: "Pre-Nursery 2 Assisting Teacher",
+    image:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop",
+  },
   {
     name: "Miss. Unique",
     subject: "Nursery 1 Teacher",
     image:
       "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779619625/WhatsApp_Image_2026-05-24_at_11.40.16_AM_2_g6coay.jpg",
   },
+   {
+    name: "Miss. Mercy",
+    subject: "Nursery 1 Assisting Teacher",
+    image:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop",
+  },
   {
     name: "Mrs. Ada",
     subject: "Nursery 2 Teacher",
     image:
       "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779619621/WhatsApp_Image_2026-05-24_at_11.40.16_AM_1_nykrxy.jpg",
+  },
+  {
+    name: "Mrs. God's time",
+    subject: "Nursery 2 Assisting Teacher",
+    image:
+      "https://res.cloudinary.com/dadane1xo/image/upload/v1782402532/WhatsApp_Image_2026-06-25_at_4.46.20_PM_xowxhg.jpg",
   },
   {
     name: "Mrs. Onyinye",
@@ -109,7 +127,7 @@ export default function NurseryEducation() {
             HERO SECTION
         ========================= */}
 
-        <section className="relative w-full h-[55vh] md:h-[50vh]">
+        <section className="relative w-full h-[30vh]">
 
           <img
             src={coverImage}

@@ -62,7 +62,7 @@ const teachers = [
     name: "Miss Faith",
     subject: "English Language & Commerce",
     image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1200&auto=format&fit=crop",
+      "https://res.cloudinary.com/dadane1xo/image/upload/v1782402532/WhatsApp_Image_2026-06-25_at_4.46.23_PM_1_ohdtfk.jpg",
   },
 
   {
@@ -76,7 +76,7 @@ const teachers = [
     name: "Mr. Benjamin",
     subject: "Physics, Mathematics & Further Mathematics",
     image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1200&auto=format&fit=crop"
   },
 
   {
@@ -97,7 +97,7 @@ const teachers = [
     name: "Miss. Grace",
     subject: "Business Studies, Lit-in-English",
     image:
-      "https://images.unsplash.com/photo-1504593811423-6dd665756598?q=80&w=1200&auto=format&fit=crop",
+      "https://res.cloudinary.com/dadane1xo/image/upload/v1782402531/WhatsApp_Image_2026-06-25_at_4.46.23_PM_w64d6x.jpg",
   },
 
   {
@@ -110,8 +110,8 @@ const teachers = [
   {
     name: "Mrs. Patience C",
     subject: "Chemistry",
-    image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1200&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop",
+
   },
    {
     name: "Mrs. Love",
@@ -126,10 +126,28 @@ const teachers = [
       "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779619632/WhatsApp_Image_2026-05-24_at_11.40.20_AM_amfrt9.jpg",
   },
    {
-    name: "Mrs. Chidiebere",
+    name: "Mrs. Ijeoma",
+    subject: "Cultural & Creative Arts & Religious Studies",
+    image:
+      "https://res.cloudinary.com/dadane1xo/image/upload/v1782402531/WhatsApp_Image_2026-06-25_at_4.46.24_PM_hmqthk.jpg",
+  },
+  {
+    name: "Mrs. Chika",
+    subject: "Head Teacher & English Language",
+    image:
+      "https://res.cloudinary.com/dadane1xo/image/upload/v1779619633/WhatsApp_Image_2026-05-24_at_11.40.20_AM_1_qpmfzn.jpg",
+  },
+   {
+    name: "Mrs. Constance",
+    subject: "assisting Head Teacher & Pre-vocational Studies",
+    image:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop",
+  },
+   {
+    name: "Mrs. Chidiebre",
     subject: "Biology & Agricultural Science",
     image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop",
   },
 ];
 
@@ -146,7 +164,7 @@ export default function SecondaryEducation() {
             HERO SECTION
         ========================= */}
 
-        <section className="relative w-full h-[50vh]">
+        <section className="relative w-full h-[30vh]">
 
           <img
             src={coverImage}

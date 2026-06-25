@@ -31,7 +31,6 @@ function AdminReport() {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [results, setResults] = useState([]);
-  const [cumulativeResults, setCumulativeResults] = useState([]);
   const [buses, setBuses] = useState([]);
   const [busRoutes, setBusRoutes] = useState([]);
   const [busStructures, setBusStructures] = useState([]);
@@ -61,7 +60,6 @@ function AdminReport() {
           studentsRequest,
           classesRequest,
           resultsRequest,
-          cumulativeResultsRequest,
           accessRequest,
           busesRequest,
           busRoutesRequest,
@@ -79,7 +77,6 @@ function AdminReport() {
           API.get("/students"),
           API.get("/classes"),
           API.get("/results"),
-          API.get("/cumulative-results"),
           API.get("/result-access"),
           API.get("/bus-management/buses"),
           API.get("/bus-management/routes"),
@@ -119,11 +116,6 @@ function AdminReport() {
         setStudents(studentsRequest.value.data || []);
         setClasses(classesRequest.value.data || []);
         setResults(resultsRequest.value.data || []);
-        setCumulativeResults(
-          cumulativeResultsRequest.status === "fulfilled"
-            ? cumulativeResultsRequest.value.data || []
-            : []
-        );
         setBuses(
           busesRequest.status === "fulfilled" ? busesRequest.value.data || [] : []
         );
@@ -213,10 +205,9 @@ function AdminReport() {
         ...students.map((student) => student.current_session).filter(Boolean),
         ...students.map((student) => student.left_session).filter(Boolean),
         ...results.map((result) => result.session).filter(Boolean),
-        ...cumulativeResults.map((result) => result.session).filter(Boolean),
       ]),
     ].sort();
-  }, [classes, cumulativeResults, results, students]);
+  }, [classes, results, students]);
 
   const reportClasses = useMemo(
     () =>
@@ -263,14 +254,6 @@ function AdminReport() {
     [reportFilter.session, reportFilter.term, results]
   );
 
-  const reportCumulativeResults = useMemo(
-    () =>
-      cumulativeResults.filter(
-        (result) => result.session === reportFilter.session
-      ),
-    [cumulativeResults, reportFilter.session]
-  );
-
   const classRows = useMemo(() => {
     return reportClasses.map((classRecord) => {
       const classStudents = reportStudents.filter(
@@ -284,51 +267,9 @@ function AdminReport() {
       const uploadedStudentIds = new Set(
         classResults.map((result) => result.student?._id || result.student)
       );
-      const cumulativeStudentIds = new Set(
-        reportCumulativeResults
-          .filter(
-            (result) =>
-              normalizeClassName(result.class) === normalizeClassName(classRecord.name)
-          )
-          .map((result) => result.student?._id || result.student)
-      );
       const missingCount = classStudents.filter(
         (student) => !uploadedStudentIds.has(student._id)
       ).length;
-      const missingCumulativeCount = classStudents.filter(
-        (student) => !cumulativeStudentIds.has(student._id)
-      ).length;
-
-      return {
-        id: classRecord._id,
-        name: classRecord.name,
-        session: classRecord.session,
-        students: classStudents.length,
-        uploaded: uploadedStudentIds.size,
-        missing: missingCount,
-        cumulativeUploaded: cumulativeStudentIds.size,
-        cumulativeMissing: missingCumulativeCount,
-        coverage: classStudents.length
-          ? Math.round((uploadedStudentIds.size / classStudents.length) * 100)
-          : 0,
-        cumulativeCoverage: classStudents.length
-          ? Math.round((cumulativeStudentIds.size / classStudents.length) * 100)
-          : 0,
-      };
-    });
-  }, [reportClasses, reportCumulativeResults, reportResults, reportStudents]);
-
-  const genderSummary = useMemo(() => {
-    return reportStudents.reduce(
-      (summary, student) => {
-        const gender = student.gender || "Not Set";
-        return {
-          ...summary,
-          [gender]: (summary[gender] || 0) + 1,
-        };
-      },
-      {}
-    );
   }, [reportStudents]);
 
   const missingUploadCount = classRows.reduce(
@@ -341,17 +282,6 @@ function AdminReport() {
   );
   const overallCoverage = reportStudents.length
     ? Math.round((uploadedStudentCount / reportStudents.length) * 100)
-    : 0;
-  const cumulativeUploadedStudentCount = classRows.reduce(
-    (total, classRow) => total + classRow.cumulativeUploaded,
-    0
-  );
-  const cumulativeMissingCount = classRows.reduce(
-    (total, classRow) => total + classRow.cumulativeMissing,
-    0
-  );
-  const cumulativeCoverage = reportStudents.length
-    ? Math.round((cumulativeUploadedStudentCount / reportStudents.length) * 100)
     : 0;
 
   const busSummary = useMemo(() => {
@@ -720,11 +650,6 @@ function AdminReport() {
       title: "Awaiting Upload",
       value: loading ? "..." : missingUploadCount,
       icon: <FaTriangleExclamation />,
-    },
-    {
-      title: "Cumulative PDFs",
-      value: loading ? "..." : reportCumulativeResults.length,
-      icon: <FaFileLines />,
     },
     {
       title: "Left School",
@@ -1146,15 +1071,14 @@ function AdminReport() {
                   <th className="px-5 py-4 font-bold">Uploaded</th>
                   <th className="px-5 py-4 font-bold">Missing</th>
                   <th className="px-5 py-4 font-bold">Coverage</th>
-                  <th className="px-5 py-4 font-bold">Cumulative</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-primary/10">
                 {loading ? (
-                  <TableSkeleton columns={6} />
+                  <TableSkeleton columns={5} />
                 ) : classRows.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="6">
+                    <td className="px-5 py-6 text-primary/70" colSpan="5">
                       No class record found for this session.
                     </td>
                   </tr>
@@ -1177,16 +1101,6 @@ function AdminReport() {
                           </div>
                           <span className="font-bold text-primary">
                             {classRow.coverage}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex flex-col gap-1">
-                          <span className="font-bold text-primary">
-                            {classRow.cumulativeUploaded} / {classRow.students}
-                          </span>
-                          <span className="text-sm text-primary/60">
-                            {classRow.cumulativeCoverage}% uploaded
                           </span>
                         </div>
                       </td>
@@ -1222,18 +1136,6 @@ function AdminReport() {
                 </div>
               ))
             )}
-          </div>
-
-          <div className="mt-6 rounded-lg bg-primary/5 p-5 text-primary">
-            <p className="text-sm font-bold uppercase text-primary/60">
-              Cumulative Coverage
-            </p>
-            <p className="mt-3 text-4xl font-extrabold">
-              {cumulativeCoverage}%
-            </p>
-            <p className="mt-2 text-sm text-primary/60">
-              {cumulativeUploadedStudentCount} uploaded, {cumulativeMissingCount} awaiting upload.
-            </p>
           </div>
         </div>
       </section>

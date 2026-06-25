@@ -29,14 +29,6 @@ const initialResultForm = {
   pdf: null,
 };
 
-const initialCumulativeForm = {
-  studentId: "",
-  session: "",
-  class: "",
-  class_record: "",
-  pdf: null,
-};
-
 const initialBroadsheetForm = {
   session: "",
   term: "",
@@ -157,8 +149,6 @@ function UploadResult() {
   const [results, setResults] = useState([]);
   const [resultSummaryRecords, setResultSummaryRecords] = useState([]);
   const [resultTotal, setResultTotal] = useState(0);
-  const [cumulativeResults, setCumulativeResults] = useState([]);
-  const [cumulativeSummaryRecords, setCumulativeSummaryRecords] = useState([]);
   const [classBroadsheets, setClassBroadsheets] = useState([]);
   const [classBroadsheetSummaryRecords, setClassBroadsheetSummaryRecords] =
     useState([]);
@@ -168,15 +158,11 @@ function UploadResult() {
   const [classes, setClasses] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [resultForm, setResultForm] = useState(initialResultForm);
-  const [cumulativeForm, setCumulativeForm] = useState(initialCumulativeForm);
   const [broadsheetForm, setBroadsheetForm] = useState(initialBroadsheetForm);
   const [classResultForm, setClassResultForm] = useState(initialClassResultForm);
   const [studentResultAccessForm, setStudentResultAccessForm] = useState({
     session: "",
     term: "",
-  });
-  const [cumulativeAccessForm, setCumulativeAccessForm] = useState({
-    cumulative_session: "",
   });
   const [broadsheetAccessForm, setBroadsheetAccessForm] = useState({
     broadsheet_session: "",
@@ -187,20 +173,16 @@ function UploadResult() {
     class_result_term: "",
   });
   const [editingResultId, setEditingResultId] = useState("");
-  const [editingCumulativeResultId, setEditingCumulativeResultId] = useState("");
   const [resultSearch, setResultSearch] = useState("");
   const [resultPage, setResultPage] = useState(1);
-  const [cumulativePage, setCumulativePage] = useState(1);
   const [classResultPage, setClassResultPage] = useState(1);
   const [broadsheetPage, setBroadsheetPage] = useState(1);
   const [status, setStatus] = useState({ type: "", message: "" });
   const [uploading, setUploading] = useState(false);
-  const [uploadingCumulative, setUploadingCumulative] = useState(false);
   const [uploadingBroadsheet, setUploadingBroadsheet] = useState(false);
   const [uploadingClassResult, setUploadingClassResult] = useState(false);
   const [savingStudentResultAccess, setSavingStudentResultAccess] =
     useState(false);
-  const [savingCumulativeAccess, setSavingCumulativeAccess] = useState(false);
   const [savingBroadsheetAccess, setSavingBroadsheetAccess] = useState(false);
   const [savingClassResultAccess, setSavingClassResultAccess] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -236,17 +218,6 @@ function UploadResult() {
     }
   };
 
-  const fetchCumulativeResults = async () => {
-    const [response, summaryResponse] = await Promise.all([
-      API.get("/cumulative-results", {
-        params: { limit: PAGE_SIZE },
-      }),
-      API.get("/cumulative-results"),
-    ]);
-    setCumulativeResults(response.data || []);
-    setCumulativeSummaryRecords(summaryResponse.data || []);
-  };
-
   const fetchClassBroadsheets = async () => {
     const [response, summaryResponse] = await Promise.all([
       API.get("/class-broadsheets", {
@@ -278,28 +249,24 @@ function UploadResult() {
           studentsRequest,
           resultsRequest,
           resultCountRequest,
-          cumulativeResultsRequest,
           classesRequest,
           broadsheetsRequest,
           classResultsRequest,
           teachersRequest,
           accessRequest,
           resultSummaryRequest,
-          cumulativeSummaryRequest,
           broadsheetSummaryRequest,
           classResultSummaryRequest,
         ] = await Promise.allSettled([
           API.get("/students"),
           API.get("/results", { params: { limit: PAGE_SIZE } }),
           API.get("/results/count"),
-          API.get("/cumulative-results", { params: { limit: PAGE_SIZE } }),
           API.get("/classes"),
           API.get("/class-broadsheets", { params: { limit: PAGE_SIZE } }),
           API.get("/class-results", { params: { limit: PAGE_SIZE } }),
           API.get("/teachers"),
           API.get("/result-access"),
           API.get("/results"),
-          API.get("/cumulative-results"),
           API.get("/class-broadsheets"),
           API.get("/class-results"),
         ]);
@@ -344,18 +311,6 @@ function UploadResult() {
 
         setResultTotal(totalCount);
         setClasses(classesRequest.value.data || []);
-        setCumulativeResults(
-          cumulativeResultsRequest.status === "fulfilled"
-            ? cumulativeResultsRequest.value.data || []
-            : []
-        );
-        setCumulativeSummaryRecords(
-          cumulativeSummaryRequest.status === "fulfilled"
-            ? cumulativeSummaryRequest.value.data || []
-            : cumulativeResultsRequest.status === "fulfilled"
-              ? cumulativeResultsRequest.value.data || []
-              : []
-        );
         setClassBroadsheets(
           broadsheetsRequest.status === "fulfilled"
             ? broadsheetsRequest.value.data || []
@@ -389,10 +344,6 @@ function UploadResult() {
           setStudentResultAccessForm({
             session: accessRequest.value.data?.session || "",
             term: accessRequest.value.data?.term || "",
-          });
-          setCumulativeAccessForm({
-            cumulative_session:
-              accessRequest.value.data?.cumulative_session || "",
           });
           setBroadsheetAccessForm({
             broadsheet_session:
@@ -457,12 +408,6 @@ function UploadResult() {
     );
   }, [classes, resultForm.session]);
 
-  const cumulativeAvailableClasses = useMemo(() => {
-    return classes.filter(
-      (classRecord) => classRecord.session === cumulativeForm.session
-    );
-  }, [classes, cumulativeForm.session]);
-
   const broadsheetAvailableClasses = useMemo(() => {
     return classes.filter(
       (classRecord) => classRecord.session === broadsheetForm.session
@@ -511,22 +456,6 @@ function UploadResult() {
     });
   }, [classResultForm.class_record, classResultForm.session, teachers]);
 
-  const cumulativeFilteredStudents = useMemo(() => {
-    if (!cumulativeForm.class || !cumulativeForm.session) {
-      return [];
-    }
-
-    return sortStudentsByName(
-      students.filter(
-        (student) =>
-          student.status === "active" &&
-          normalizeClassName(student.class) ===
-            normalizeClassName(cumulativeForm.class) &&
-          student.current_session === cumulativeForm.session
-      )
-    );
-  }, [cumulativeForm.class, cumulativeForm.session, students]);
-
   const filteredResults = useMemo(() => {
     const searchValue = resultSearch.trim().toLowerCase();
     const sourceResults =
@@ -572,21 +501,6 @@ function UploadResult() {
     [filteredResults, visibleResultPage]
   );
 
-  const cumulativeRecordSource =
-    cumulativeSummaryRecords.length > 0
-      ? cumulativeSummaryRecords
-      : cumulativeResults;
-  const visibleCumulativePage = Math.min(
-    cumulativePage,
-    Math.max(1, Math.ceil(cumulativeRecordSource.length / PAGE_SIZE))
-  );
-  const displayedCumulativeResults = useMemo(() => {
-    return cumulativeRecordSource.slice(
-      (visibleCumulativePage - 1) * PAGE_SIZE,
-      visibleCumulativePage * PAGE_SIZE
-    );
-  }, [cumulativeRecordSource, visibleCumulativePage]);
-
   const classResultRecordSource =
     classResultSummaryRecords.length > 0 ? classResultSummaryRecords : classResults;
   const visibleClassResultPage = Math.min(
@@ -616,10 +530,6 @@ function UploadResult() {
   }, [broadsheetRecordSource, visibleBroadsheetPage]);
 
   useEffect(() => {
-    setCumulativePage(1);
-  }, [cumulativeRecordSource.length]);
-
-  useEffect(() => {
     setClassResultPage(1);
   }, [classResultRecordSource.length]);
 
@@ -632,7 +542,6 @@ function UploadResult() {
       ...new Set(
         [
           ...resultSummaryRecords.map((result) => result.session),
-          ...cumulativeSummaryRecords.map((result) => result.session),
           ...classBroadsheetSummaryRecords.map((result) => result.session),
           ...classResultSummaryRecords.map((result) => result.session),
         ].filter(Boolean)
@@ -641,7 +550,6 @@ function UploadResult() {
   }, [
     classBroadsheetSummaryRecords,
     classResultSummaryRecords,
-    cumulativeSummaryRecords,
     resultSummaryRecords,
   ]);
 
@@ -661,13 +569,6 @@ function UploadResult() {
       label: "Term Results",
       value: resultSummaryRecords.filter((result) => matchesSummaryFilter(result)).length,
       icon: <FaClipboardCheck />,
-    },
-    {
-      label: "Cumulative Results",
-      value: cumulativeSummaryRecords.filter((result) =>
-        matchesSummaryFilter(result, { includeTerm: false })
-      ).length,
-      icon: <FaFilePdf />,
     },
     {
       label: "Class Broadsheets",
@@ -721,38 +622,6 @@ function UploadResult() {
     }
 
     setResultForm((currentForm) => ({
-      ...currentForm,
-      [name]: files ? files[0] : value,
-    }));
-  };
-
-  const handleCumulativeChange = (event) => {
-    const { name, value, files } = event.target;
-
-    if (name === "session") {
-      setCumulativeForm((currentForm) => ({
-        ...currentForm,
-        session: value,
-        class: "",
-        class_record: "",
-        studentId: editingCumulativeResultId ? currentForm.studentId : "",
-      }));
-      return;
-    }
-
-    if (name === "class_record") {
-      const selectedClass = classes.find((classRecord) => classRecord._id === value);
-
-      setCumulativeForm((currentForm) => ({
-        ...currentForm,
-        class_record: value,
-        class: selectedClass?.name || "",
-        studentId: editingCumulativeResultId ? currentForm.studentId : "",
-      }));
-      return;
-    }
-
-    setCumulativeForm((currentForm) => ({
       ...currentForm,
       [name]: files ? files[0] : value,
     }));
@@ -817,15 +686,6 @@ function UploadResult() {
       ...(name === "session"
         ? { term: normalizeTermForSession(currentForm.term, value) }
         : {}),
-    }));
-  };
-
-  const handleCumulativeAccessChange = (event) => {
-    const { name, value } = event.target;
-
-    setCumulativeAccessForm((currentForm) => ({
-      ...currentForm,
-      [name]: value,
     }));
   };
 
@@ -927,52 +787,6 @@ function UploadResult() {
     }
   };
 
-  const handleCumulativeSubmit = async (event) => {
-    event.preventDefault();
-    setUploadingCumulative(true);
-    setStatus({ type: "", message: "" });
-
-    try {
-      const formData = new FormData();
-      formData.append("studentId", cumulativeForm.studentId);
-      formData.append("session", cumulativeForm.session);
-      formData.append("class", cumulativeForm.class);
-      formData.append("pdf", cumulativeForm.pdf);
-
-      const endpoint = editingCumulativeResultId
-        ? `/cumulative-results/${editingCumulativeResultId}`
-        : "/cumulative-results/upload";
-      const request = editingCumulativeResultId ? API.put : API.post;
-
-      await request(endpoint, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      setCumulativeForm(initialCumulativeForm);
-      setEditingCumulativeResultId("");
-      event.target.reset();
-      await fetchCumulativeResults();
-      setStatus({
-        type: "success",
-        message: editingCumulativeResultId
-          ? "Cumulative result updated successfully."
-          : "Cumulative result PDF uploaded successfully.",
-      });
-    } catch (error) {
-      setStatus({
-        type: "error",
-        message:
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Unable to upload cumulative result.",
-      });
-    } finally {
-      setUploadingCumulative(false);
-    }
-  };
-
   const handleBroadsheetSubmit = async (event) => {
     event.preventDefault();
     setUploadingBroadsheet(true);
@@ -1040,36 +854,6 @@ function UploadResult() {
       });
     } finally {
       setSavingStudentResultAccess(false);
-    }
-  };
-
-  const handleCumulativeAccessSubmit = async (event) => {
-    event.preventDefault();
-    setSavingCumulativeAccess(true);
-    setStatus({ type: "", message: "" });
-
-    try {
-      const response = await API.put(
-        "/result-access/cumulative",
-        cumulativeAccessForm
-      );
-      setCumulativeAccessForm({
-        cumulative_session: response.data.cumulative_session || "",
-      });
-      setStatus({
-        type: "success",
-        message: "Student cumulative result access updated successfully.",
-      });
-    } catch (error) {
-      setStatus({
-        type: "error",
-        message:
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Unable to update cumulative result access.",
-      });
-    } finally {
-      setSavingCumulativeAccess(false);
     }
   };
 
@@ -1196,27 +980,6 @@ function UploadResult() {
     setResultForm(initialResultForm);
   };
 
-  const handleEditCumulative = (result) => {
-    setEditingCumulativeResultId(result._id);
-    setCumulativeForm({
-      studentId: result.student?._id || result.student || "",
-      session: result.session || "",
-      class: result.class || "",
-      class_record:
-        classes.find(
-          (classRecord) =>
-            classRecord.name === result.class &&
-            classRecord.session === result.session
-        )?._id || "",
-      pdf: null,
-    });
-  };
-
-  const handleCancelCumulativeEdit = () => {
-    setEditingCumulativeResultId("");
-    setCumulativeForm(initialCumulativeForm);
-  };
-
   const handleDeleteRequest = (result, type = "termly") => {
     setDeleteTarget({
       ...result,
@@ -1231,9 +994,7 @@ function UploadResult() {
 
     setDeleting(true);
     try {
-      if (deleteTarget.deleteType === "cumulative") {
-        await API.delete(`/cumulative-results/${deleteTarget._id}`);
-      } else if (deleteTarget.deleteType === "broadsheet") {
+      if (deleteTarget.deleteType === "broadsheet") {
         await API.delete(`/class-broadsheets/${deleteTarget._id}`);
       } else if (deleteTarget.deleteType === "class-result") {
         await API.delete(`/class-results/${deleteTarget._id}`);
@@ -1243,18 +1004,14 @@ function UploadResult() {
       setStatus({
         type: "success",
         message:
-          deleteTarget.deleteType === "cumulative"
-            ? "Cumulative result deleted successfully."
-            : deleteTarget.deleteType === "broadsheet"
+          deleteTarget.deleteType === "broadsheet"
               ? "Class broadsheet deleted successfully."
             : deleteTarget.deleteType === "class-result"
               ? "Class result deleted successfully."
             : "Result deleted successfully.",
       });
       setDeleteTarget(null);
-      if (deleteTarget.deleteType === "cumulative") {
-        await fetchCumulativeResults();
-      } else if (deleteTarget.deleteType === "broadsheet") {
+      if (deleteTarget.deleteType === "broadsheet") {
         await fetchClassBroadsheets();
       } else if (deleteTarget.deleteType === "class-result") {
         await fetchClassResults();
@@ -1286,18 +1043,14 @@ function UploadResult() {
       <AdminDeleteModal
         open={Boolean(deleteTarget)}
         title={
-          deleteTarget?.deleteType === "cumulative"
-            ? "Delete Cumulative Result"
-            : deleteTarget?.deleteType === "broadsheet"
+          deleteTarget?.deleteType === "broadsheet"
               ? "Delete Class Broadsheet"
             : deleteTarget?.deleteType === "class-result"
               ? "Delete Class Result"
             : "Delete Result"
         }
         message={
-          deleteTarget?.deleteType === "cumulative"
-            ? "This action will permanently remove this uploaded cumulative result PDF record from the system."
-            : deleteTarget?.deleteType === "broadsheet"
+          deleteTarget?.deleteType === "broadsheet"
               ? "This action will permanently remove this uploaded class broadsheet PDF record from the system."
             : deleteTarget?.deleteType === "class-result"
               ? "This action will permanently remove this uploaded class result PDF record from the system."
@@ -1309,9 +1062,7 @@ function UploadResult() {
             : ""
         }
         confirmLabel={
-          deleteTarget?.deleteType === "cumulative"
-            ? "Delete Cumulative Result"
-            : deleteTarget?.deleteType === "broadsheet"
+          deleteTarget?.deleteType === "broadsheet"
               ? "Delete Class Broadsheet"
             : deleteTarget?.deleteType === "class-result"
               ? "Delete Class Result"
@@ -1500,145 +1251,6 @@ function UploadResult() {
               {savingStudentResultAccess
                 ? "Saving access..."
                 : "Save Result Access"}
-            </button>
-          </form>
-        </div>
-      </section>
-
-      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg lg:p-8">
-        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_420px]">
-          <div>
-            <h3 className="text-3xl font-extrabold text-primary">
-              {editingCumulativeResultId
-                ? "Edit Cumulative Result"
-                : "Upload Cumulative Result PDF"}
-            </h3>
-            <p className="mt-3 text-primary/70">
-              Upload one cumulative PDF result for a student and academic session.
-            </p>
-
-            <form onSubmit={handleCumulativeSubmit} className="mt-7">
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <input
-              className={inputClass}
-              name="session"
-              value={cumulativeForm.session}
-              onChange={handleCumulativeChange}
-              placeholder="Session e.g. 2025/2026"
-              required
-            />
-
-            <select
-              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
-              name="class_record"
-              value={cumulativeForm.class_record}
-              onChange={handleCumulativeChange}
-              disabled={!cumulativeForm.session}
-              required
-            >
-              <option value="">
-                {cumulativeForm.session ? "Select class" : "Enter session first"}
-              </option>
-              {cumulativeAvailableClasses.map((classRecord) => (
-                <option key={classRecord._id} value={classRecord._id}>
-                  {classRecord.name.toUpperCase()}
-                </option>
-              ))}
-            </select>
-            {cumulativeForm.session && cumulativeAvailableClasses.length === 0 && (
-              <p className="text-sm font-semibold text-primary/60">
-                No class has been created for this session yet.
-              </p>
-            )}
-
-            <select
-              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
-              name="studentId"
-              value={cumulativeForm.studentId}
-              onChange={handleCumulativeChange}
-              disabled={!cumulativeForm.class || loadingStudents}
-              required
-            >
-              <option value="">
-                {loadingStudents
-                  ? "Loading students..."
-                  : cumulativeForm.class
-                    ? "Select student"
-                    : "Select class first"}
-              </option>
-              {cumulativeFilteredStudents.map((student) => (
-                <option key={student._id} value={student._id}>
-                  {student.full_name} - {student.admission_no}
-                </option>
-              ))}
-            </select>
-
-            <input
-              className={inputClass}
-              name="pdf"
-              type="file"
-              accept="application/pdf"
-              onChange={handleCumulativeChange}
-              required={!editingCumulativeResultId}
-            />
-              </div>
-
-              <button
-                type="submit"
-                disabled={uploadingCumulative || cumulativeFilteredStudents.length === 0}
-                className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {uploadingCumulative
-                  ? editingCumulativeResultId
-                    ? "Saving cumulative result..."
-                    : "Uploading cumulative result..."
-                  : editingCumulativeResultId
-                    ? "Save Cumulative Result"
-                    : "Upload Cumulative Result"}
-                {!uploadingCumulative && <FaArrowRight />}
-              </button>
-              {editingCumulativeResultId && (
-                <button
-                  type="button"
-                  onClick={handleCancelCumulativeEdit}
-                  className="mt-4 w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
-                >
-                  Cancel Cumulative Edit
-                </button>
-              )}
-            </form>
-          </div>
-
-          <form
-            onSubmit={handleCumulativeAccessSubmit}
-            className="rounded-lg bg-primary/5 p-6"
-          >
-            <h4 className="text-2xl font-extrabold text-primary">
-              Student Cumulative Result Access
-            </h4>
-            <p className="mt-2 text-primary/70">
-              Control the session students can access for cumulative results.
-            </p>
-
-            <div className="mt-6 space-y-4">
-              <input
-                className={inputClass}
-                name="cumulative_session"
-                value={cumulativeAccessForm.cumulative_session}
-                onChange={handleCumulativeAccessChange}
-                placeholder="Approved session e.g. 2025/2026"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={savingCumulativeAccess}
-              className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {savingCumulativeAccess
-                ? "Saving access..."
-                : "Save Cumulative Access"}
             </button>
           </form>
         </div>
@@ -2050,83 +1662,6 @@ function UploadResult() {
           totalItems={filteredResults.length}
           pageSize={PAGE_SIZE}
           onPageChange={setResultPage}
-        />
-      </section>
-
-      <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
-        <div className="mb-6">
-          <h3 className="text-3xl font-extrabold text-primary">
-            Recent Cumulative Uploads
-          </h3>
-          <p className="mt-2 text-primary/70">
-            Showing 15 cumulative result uploads per page.
-          </p>
-        </div>
-
-        <div className="overflow-x-auto rounded-lg border border-primary/10">
-          <table className="w-full min-w-[860px] text-left">
-            <thead className="bg-primary/10 text-primary">
-              <tr>
-                <th className="px-5 py-4 font-bold">S/N</th>
-                <th className="px-5 py-4 font-bold">Student</th>
-                <th className="px-5 py-4 font-bold">Class</th>
-                <th className="px-5 py-4 font-bold">Session</th>
-                <th className="px-5 py-4 font-bold">Uploaded</th>
-                <th className="px-5 py-4 font-bold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-primary/10">
-              {loadingStudents ? (
-                <TableSkeleton columns={6} />
-              ) : displayedCumulativeResults.length === 0 ? (
-                <tr>
-                  <td className="px-5 py-6 text-primary/70" colSpan="6">
-                    No cumulative result uploads yet.
-                  </td>
-                </tr>
-              ) : (
-                displayedCumulativeResults.map((result, index) => (
-                  <tr key={result._id} className="text-primary/80">
-                    <td className="px-5 py-4 font-bold text-primary">
-                      {(visibleCumulativePage - 1) * PAGE_SIZE + index + 1}
-                    </td>
-                    <td className="px-5 py-4 font-semibold text-primary">
-                      {result.student?.full_name || "Unknown"}
-                    </td>
-                    <td className="px-5 py-4">{result.class}</td>
-                    <td className="px-5 py-4">{result.session}</td>
-                    <td className="px-5 py-4">
-                      {result.createdAt
-                        ? new Date(result.createdAt).toLocaleDateString()
-                        : "Not available"}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditCumulative(result)}
-                          className="rounded-xl bg-button px-4 py-2 text-sm font-bold text-secondary"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteRequest(result, "cumulative")}
-                          className="rounded-xl bg-red-500/20 px-4 py-2 text-sm font-bold text-red-200"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        <PaginationControls
-          currentPage={visibleCumulativePage}
-          totalItems={cumulativeRecordSource.length}
-          pageSize={PAGE_SIZE}
-          onPageChange={setCumulativePage}
         />
       </section>
 

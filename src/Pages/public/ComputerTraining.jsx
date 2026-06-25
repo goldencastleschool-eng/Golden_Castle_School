@@ -49,7 +49,7 @@ const teachers = [
     name: "Mr. Divine Onyekwere",
     subject: "ICT Director",
     image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1200&auto=format&fit=crop",
+      "https://res.cloudinary.com/dadane1xo/image/upload/v1782403941/WhatsApp_Image_2026-06-25_at_5.11.30_PM_mtplil.jpg",
   },
 ];
 
@@ -66,7 +66,7 @@ export default function ComputerTraining() {
             HERO SECTION
         ========================= */}
 
-        <section className="relative w-full h-[50vh]">
+        <section className="relative w-full h-[30vh]">
 
           <img
             src={coverImage}

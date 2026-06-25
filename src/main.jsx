@@ -51,9 +51,6 @@ const StudentDashboard = lazy(() =>
 const StudentLayout = lazy(() => import("./Pages/student/StudentLayout.jsx"));
 const StudentFees = lazy(() => import("./Pages/student/StudentFees.jsx"));
 const StudentResult = lazy(() => import("./Pages/student/StudentResult.jsx"));
-const StudentCumulativeResult = lazy(() =>
-  import("./Pages/student/StudentCumulativeResult.jsx")
-);
 const StudentSettings = lazy(() =>
   import("./Pages/student/StudentSettings.jsx")
 );
@@ -225,10 +222,6 @@ const router = createBrowserRouter([
           {
             path: "results",
             element: <StudentResult />,
-          },
-          {
-            path: "cumulative-results",
-            element: <StudentCumulativeResult />,
           },
           {
             path: "fees",

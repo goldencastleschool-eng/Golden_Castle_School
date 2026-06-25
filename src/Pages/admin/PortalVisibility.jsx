@@ -31,7 +31,6 @@ const severityStyles = {
 
 const checkIcons = {
   student_results: <FaClipboardCheck />,
-  cumulative_results: <FaUserGraduate />,
   fee_receipts: <FaReceipt />,
   teacher_class_list: <FaChalkboardUser />,
   teacher_broadsheets: <FaClipboardCheck />,

@@ -10,6 +10,10 @@ function StudentResult() {
 
   const [results, setResults] = useState([]);
   const [selectedResultId, setSelectedResultId] = useState("");
+  const [activeAccess, setActiveAccess] = useState({
+    session: "",
+    term: "",
+  });
 
   const [viewerUrl, setViewerUrl] = useState("");
 
@@ -57,17 +61,26 @@ function StudentResult() {
         setLoadingResults(true);
         setError("");
 
-        const response = await API.get(
-          `/results/student/${user.id}`
+        const [resultsResponse, accessResponse] = await Promise.all([
+          API.get(`/results/student/${user.id}`),
+          API.get("/result-access"),
+        ]);
+
+        const resultList = resultsResponse.data || [];
+        const access = accessResponse.data || {};
+        const activeResult = resultList.find(
+          (result) =>
+            result.session === access.session &&
+            result.term === access.term
         );
 
-        const resultList = response.data || [];
-
         setResults(resultList);
+        setActiveAccess({
+          session: access.session || "",
+          term: access.term || "",
+        });
 
-        if (resultList.length > 0) {
-          setSelectedResultId(resultList[0]._id);
-        }
+        setSelectedResultId(activeResult?._id || "");
       } catch (err) {
         setError(
           err.response?.data?.message ||
@@ -89,7 +102,16 @@ function StudentResult() {
      WHEN RESULT CHANGES
   ========================================== */
   const loadPdf = useCallback(async () => {
-    if (!selectedResultId) return;
+    if (!selectedResultId) {
+      setViewerUrl((oldUrl) => {
+        if (oldUrl) {
+          URL.revokeObjectURL(oldUrl);
+        }
+
+        return "";
+      });
+      return;
+    }
 
     try {
       setLoadingViewer(true);
@@ -146,8 +168,8 @@ function StudentResult() {
   /* ==========================================
      SELECT RESULT
   ========================================== */
-  const handleResultSelect = (resultId) => {
-    setSelectedResultId(resultId);
+  const handleResultSelect = (event) => {
+    setSelectedResultId(event.target.value);
   };
 
   /* ==========================================
@@ -230,10 +252,11 @@ function StudentResult() {
           </h3>
 
           <p className="mt-3 text-primary/70">
-            Select a result to view.
+            The active admin result access is selected by default when it is
+            available.
           </p>
 
-          <div className="mt-7 space-y-4">
+          <div className="mt-7">
             {loadingResults ? (
               <div className="rounded-lg bg-primary/5 p-5 text-primary/70">
                 Loading results...
@@ -243,31 +266,42 @@ function StudentResult() {
                 No result has been uploaded yet.
               </div>
             ) : (
-              results.map((result) => (
-                <button
-                  key={result._id}
-                  onClick={() =>
-                    handleResultSelect(
-                      result._id
-                    )
-                  }
-                  className={`w-full rounded-lg border p-5 text-left transition-all duration-300 ${
-                    selectedResultId ===
-                    result._id
-                      ? "border-button bg-button text-secondary"
-                      : "border-primary/10 bg-primary/5 text-primary hover:border-button"
-                  }`}
+              <>
+                <label
+                  htmlFor="student-result-select"
+                  className="mb-3 block text-sm font-bold text-primary/70"
                 >
-                  <p className="font-extrabold">
-                    {result.term}
-                  </p>
+                  Select result record
+                </label>
+                <select
+                  id="student-result-select"
+                  value={selectedResultId}
+                  onChange={handleResultSelect}
+                  className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 font-semibold text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+                >
+                  <option value="">
+                    {activeAccess.session && activeAccess.term
+                      ? "Active result is not available yet"
+                      : "No active result access has been set"}
+                  </option>
+                  {results.map((result) => (
+                    <option key={result._id} value={result._id}>
+                      {result.session} - {result.term} - {result.class}
+                      {result.session === activeAccess.session &&
+                      result.term === activeAccess.term
+                        ? " (Active)"
+                        : ""}
+                    </option>
+                  ))}
+                </select>
 
-                  <p className="mt-2 text-sm opacity-80">
-                    {result.session} •{" "}
-                    {result.class}
+                {activeAccess.session && activeAccess.term && (
+                  <p className="mt-4 rounded-lg bg-primary/5 px-4 py-3 text-sm font-semibold text-primary/70">
+                    Active result access: {activeAccess.session} -{" "}
+                    {activeAccess.term}
                   </p>
-                </button>
-              ))
+                )}
+              </>
             )}
           </div>
         </aside>

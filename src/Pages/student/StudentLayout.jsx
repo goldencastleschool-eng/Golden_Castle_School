@@ -29,11 +29,6 @@ const studentLinks = [
     icon: <FaFilePdf />,
   },
   {
-    label: "Cumulative",
-    path: "/student/cumulative-results",
-    icon: <FaFilePdf />,
-  },
-  {
     label: "My Fees",
     path: "/student/fees",
     icon: <FaReceipt />,

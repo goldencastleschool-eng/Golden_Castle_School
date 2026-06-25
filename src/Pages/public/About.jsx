@@ -355,8 +355,6 @@ export default function About() {
                   <br />
                   of knowledge and Godly wisdom
                   <br />
-                  Everyday
-                  <br />
                   Oh with great passion in all fields of
                   <br />
                   knowledge we thrive our dreams in all we do
