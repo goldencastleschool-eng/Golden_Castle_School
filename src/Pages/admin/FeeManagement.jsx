@@ -2216,7 +2216,7 @@ function FeeManagement() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[180px_180px_220px_180px_auto_auto]">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
               <select
                 className={inputClass}
                 name="session"
@@ -2273,20 +2273,12 @@ function FeeManagement() {
 
               <button
                 type="button"
-                onClick={fetchFeeData}
-                className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-semibold text-secondary shadow-lg transition-all duration-300 hover:scale-105"
-              >
-                Refresh
-                <FaArrowRight />
-              </button>
-
-              <button
-                type="button"
                 onClick={handlePrintQueriedClassPayments}
                 disabled={!selectedFilterClass || !filters.term}
-                className="flex cursor-pointer items-center justify-center rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex min-w-0 cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-4 py-4 font-bold text-secondary shadow-lg transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Print
+                <span className="truncate">Print Records</span>
+                <FaPrint />
               </button>
             </div>
           </div>
