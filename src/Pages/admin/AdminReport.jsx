@@ -18,6 +18,7 @@ import {
   getVisibleTermsForSession,
   normalizeTermForSession,
 } from "../../utils/academicTerms.js";
+import { formatBusPaymentCategory } from "../../utils/busPaymentCategories.js";
 import { SCHOOL_NAME, schoolLogo } from "../../utils/printBranding.js";
 
 const DEFAULT_REPORT_SESSION = "2025/2026";
@@ -303,7 +304,10 @@ function AdminReport() {
     );
     const structureByRoute = new Map(
       selectedStructures.map((structure) => [
-        getRecordId(structure.route),
+        [
+          getRecordId(structure.route),
+          structure.payment_category || "both",
+        ].join("|"),
         Number(structure.amount || 0),
       ])
     );
@@ -319,7 +323,13 @@ function AdminReport() {
 
     return selectedEnrollments.reduce(
       (summary, enrollment) => {
-        const expected = structureByRoute.get(getRecordId(enrollment.route)) || 0;
+        const expected =
+          structureByRoute.get(
+            [
+              getRecordId(enrollment.route),
+              enrollment.payment_category || "both",
+            ].join("|")
+          ) || 0;
         const paid = paidByEnrollment.get(getRecordId(enrollment._id)) || 0;
         const balance = Math.max(expected - paid, 0);
 
@@ -450,14 +460,18 @@ function AdminReport() {
     selectedEnrollments.forEach((enrollment) => {
       const routeId = getRecordId(enrollment.route);
       const route = routeById.get(routeId);
-      const expected = structureByRoute.get(routeId) || 0;
+      const paymentCategory = enrollment.payment_category || "both";
+      const rowKey = [routeId || "no-route", paymentCategory].join("|");
+      const expected = structureByRoute.get(rowKey) || 0;
       const paid = paidByEnrollment.get(getRecordId(enrollment)) || 0;
       const balance = Math.max(expected - paid, 0);
 
-      if (!rowMap.has(routeId || "no-route")) {
-        rowMap.set(routeId || "no-route", {
+      if (!rowMap.has(rowKey)) {
+        rowMap.set(rowKey, {
           route_id: routeId,
           route: route?.name || enrollment.route?.name || "Route not set",
+          payment_category: paymentCategory,
+          payment_category_label: formatBusPaymentCategory(paymentCategory),
           active_enrollments: 0,
           expected: 0,
           paid: 0,
@@ -466,7 +480,7 @@ function AdminReport() {
         });
       }
 
-      const row = rowMap.get(routeId || "no-route");
+      const row = rowMap.get(rowKey);
       row.active_enrollments += 1;
       row.expected += expected;
       row.paid += paid;
@@ -474,8 +488,12 @@ function AdminReport() {
       row.outstanding_students += balance > 0 ? 1 : 0;
     });
 
-    return Array.from(rowMap.values()).sort((firstRow, secondRow) =>
-      firstRow.route.localeCompare(secondRow.route)
+    return Array.from(rowMap.values()).sort(
+      (firstRow, secondRow) =>
+        firstRow.route.localeCompare(secondRow.route) ||
+        firstRow.payment_category_label.localeCompare(
+          secondRow.payment_category_label
+        )
     );
   }, [
     busEnrollments,
@@ -904,10 +922,11 @@ function AdminReport() {
         </div>
 
         <div className="overflow-x-auto rounded-lg border border-primary/10">
-          <table className="w-full min-w-[920px] text-left">
+          <table className="w-full min-w-[1020px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
                 <th className="px-5 py-4 font-bold">Route</th>
+                <th className="px-5 py-4 font-bold">Category</th>
                 <th className="px-5 py-4 font-bold">Students</th>
                 <th className="px-5 py-4 font-bold">Expected</th>
                 <th className="px-5 py-4 font-bold">Paid</th>
@@ -917,19 +936,23 @@ function AdminReport() {
             </thead>
             <tbody className="divide-y divide-primary/10">
               {loading ? (
-                <TableSkeleton columns={6} />
+                <TableSkeleton columns={7} />
               ) : busReportRows.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-6 text-primary/70" colSpan="6">
+                  <td className="px-5 py-6 text-primary/70" colSpan="7">
                     No bus record found for this filter.
                   </td>
                 </tr>
               ) : (
                 busReportRows.map((row) => (
-                  <tr key={row.route_id || row.route} className="text-primary/80">
+                  <tr
+                    key={`${row.route_id || row.route}-${row.payment_category}`}
+                    className="text-primary/80"
+                  >
                     <td className="px-5 py-4 font-bold text-primary">
                       {row.route}
                     </td>
+                    <td className="px-5 py-4">{row.payment_category_label}</td>
                     <td className="px-5 py-4">{row.active_enrollments}</td>
                     <td className="px-5 py-4">{formatCurrency(row.expected)}</td>
                     <td className="px-5 py-4 font-bold text-primary">

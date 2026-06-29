@@ -26,6 +26,12 @@ import {
   getVisibleTermsForSession,
   normalizeTermForSession,
 } from "../../utils/academicTerms.js";
+import {
+  feeCategories,
+  formatFeeCategory,
+  getDefaultFeeItems,
+  getFeeItemsKey,
+} from "../../utils/feeCategories.js";
 
 const DEFAULT_SESSION = "2025/2026";
 const PAGE_SIZE = 15;
@@ -42,27 +48,17 @@ const initialFeeForm = {
   note: "",
 };
 
-const newStudentFeeItems = [
-  { name: "Admission Form", amount: "10000" },
-  { name: "Registration Fee", amount: "59000" },
-  { name: "School Uniforms", amount: "16000" },
-  { name: "P.E Wear", amount: "6000" },
-  { name: "Cardigan", amount: "5000" },
-  { name: "Stockings & Tie", amount: "4000" },
-  { name: "Books", amount: "35000" },
-];
-
-const returningStudentFeeItems = [
-  { name: "School Fee", amount: "43000" },
-];
-
 const initialStructureForm = {
   session: DEFAULT_SESSION,
   class_record: "",
   term: "",
   fee_category: "returning",
-  new_items: newStudentFeeItems,
-  returning_items: returningStudentFeeItems,
+  ...Object.fromEntries(
+    feeCategories.map((category) => [
+      getFeeItemsKey(category.value),
+      getDefaultFeeItems(category.value),
+    ])
+  ),
 };
 
 const formatCurrency = (amount) =>
@@ -159,14 +155,10 @@ const studentBelongsToTermClass = (student, classRecord, session, term) => {
 const getStudentFeeCategory = (student, session, term) =>
   getStudentFeeEnrollment(student, session, term)?.fee_category || "returning";
 
-const formatFeeCategory = (feeCategory = "") =>
-  feeCategory === "new" ? "Newly Admitted" : "Returning/Old";
+const isFeeExemptCategory = (feeCategory = "") => feeCategory === "vip";
 
 const getStructureTotal = (items = []) =>
   items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-
-const getStructureItemsKey = (feeCategory = "returning") =>
-  feeCategory === "new" ? "new_items" : "returning_items";
 
 const findFeeStructure = (
   feeStructures,
@@ -241,6 +233,7 @@ function FeeManagement() {
     payment_status: "",
     search: "",
   });
+  const [structureCategoryFilter, setStructureCategoryFilter] = useState("");
   const [structurePage, setStructurePage] = useState(1);
   const [paymentPage, setPaymentPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -360,6 +353,7 @@ function FeeManagement() {
     selectedFormStudent && feeForm.session && feeForm.term
       ? selectedFormEnrollment?.fee_category || "returning"
       : "";
+  const selectedFormIsFeeExempt = isFeeExemptCategory(selectedFormFeeCategory);
 
   const selectedFormStructure = findFeeStructure(
     feeStructures,
@@ -382,24 +376,40 @@ function FeeManagement() {
           feeStudentId === feeForm.student &&
           fee.session === feeForm.session &&
           fee.term === feeForm.term &&
+          (fee.fee_category || "returning") === selectedFormFeeCategory &&
           fee._id !== editingFeeId
         );
       })
       .reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
-  }, [editingFeeId, feeForm.session, feeForm.student, feeForm.term, fees]);
+  }, [
+    editingFeeId,
+    feeForm.session,
+    feeForm.student,
+    feeForm.term,
+    fees,
+    selectedFormFeeCategory,
+  ]);
 
-  const selectedFormExpectedAmount = Number(selectedFormStructure?.amount || 0);
-  const selectedStudentRemainingBeforePayment = selectedFormStructure
+  const selectedFormExpectedAmount = selectedFormIsFeeExempt
+    ? 0
+    : Number(selectedFormStructure?.amount || 0);
+  const selectedStudentRemainingBeforePayment = selectedFormIsFeeExempt
+    ? 0
+    : selectedFormStructure
     ? Math.max(selectedFormExpectedAmount - selectedStudentPaidForTerm, 0)
     : 0;
   const selectedPaymentAmount = Number(feeForm.amount || 0);
   const selectedStudentProjectedPaid =
     selectedStudentPaidForTerm + selectedPaymentAmount;
-  const selectedStudentOverpayment = selectedFormStructure
+  const selectedStudentOverpayment = selectedFormIsFeeExempt
+    ? Math.max(selectedPaymentAmount, 0)
+    : selectedFormStructure
     ? Math.max(selectedStudentProjectedPaid - selectedFormExpectedAmount, 0)
     : 0;
 
-  const selectedStudentProjectedBalance = selectedFormStructure
+  const selectedStudentProjectedBalance = selectedFormIsFeeExempt
+      ? 0
+      : selectedFormStructure
       ? Math.max(
           selectedFormExpectedAmount - selectedStudentProjectedPaid,
           0
@@ -411,7 +421,7 @@ function FeeManagement() {
   const selectedStructureCategory = editingStructureId
     ? structureForm.editing_fee_category || structureForm.fee_category || "returning"
     : structureForm.fee_category || "returning";
-  const selectedStructureItemsKey = getStructureItemsKey(selectedStructureCategory);
+  const selectedStructureItemsKey = getFeeItemsKey(selectedStructureCategory);
   const selectedStructureItems = structureForm[selectedStructureItemsKey] || [];
   const selectedStructureTotal = getStructureTotal(selectedStructureItems);
   const selectedExistingStructure = findFeeStructure(
@@ -421,14 +431,14 @@ function FeeManagement() {
     structureForm.term,
     selectedStructureCategory
   );
-  const structureCategoryStatus = ["new", "returning"].map((feeCategory) => ({
-    feeCategory,
+  const structureCategoryStatus = feeCategories.map((category) => ({
+    feeCategory: category.value,
     structure: findFeeStructure(
       feeStructures,
       structureForm.class_record,
       structureForm.session,
       structureForm.term,
-      feeCategory
+      category.value
     ),
   }));
 
@@ -496,9 +506,9 @@ function FeeManagement() {
 
   const handleAddStructureItem = (categoryKey) => {
     setStructureForm((currentForm) => ({
-      ...currentForm,
-      [categoryKey]: [
-        ...currentForm[categoryKey],
+        ...currentForm,
+        [categoryKey]: [
+        ...(currentForm[categoryKey] || []),
         {
           name: "",
           amount: "",
@@ -511,7 +521,7 @@ function FeeManagement() {
     setStructureForm((currentForm) => ({
       ...currentForm,
       [categoryKey]:
-        currentForm[categoryKey].length > 1
+        (currentForm[categoryKey] || []).length > 1
           ? currentForm[categoryKey].filter((_, itemIndex) => itemIndex !== index)
           : currentForm[categoryKey],
     }));
@@ -524,7 +534,7 @@ function FeeManagement() {
     const feeCategory = editingStructureId
       ? structureForm.editing_fee_category
       : structureForm.fee_category;
-    const itemsKey = getStructureItemsKey(feeCategory);
+    const itemsKey = getFeeItemsKey(feeCategory);
     const items = (structureForm[itemsKey] || []).map((item) => ({
       name: item.name,
       amount: Number(item.amount),
@@ -618,20 +628,22 @@ function FeeManagement() {
             },
           ];
 
+    const editedFeeCategory = feeStructure.fee_category || "returning";
+
     setStructureForm({
       session: feeStructure.session || DEFAULT_SESSION,
       class_record: getRecordId(feeStructure.class_record),
       term: feeStructure.term || "",
-      fee_category: feeStructure.fee_category || "returning",
-      editing_fee_category: feeStructure.fee_category || "returning",
-      new_items:
-        feeStructure.fee_category === "new"
-          ? editedItems
-          : newStudentFeeItems,
-      returning_items:
-        feeStructure.fee_category === "returning"
-          ? editedItems
-          : returningStudentFeeItems,
+      fee_category: editedFeeCategory,
+      editing_fee_category: editedFeeCategory,
+      ...Object.fromEntries(
+        feeCategories.map((category) => [
+          getFeeItemsKey(category.value),
+          category.value === editedFeeCategory
+            ? editedItems
+            : getDefaultFeeItems(category.value),
+        ])
+      ),
     });
     setStatus({ type: "", message: "" });
   };
@@ -650,6 +662,15 @@ function FeeManagement() {
       setStatus({
         type: "error",
         message: "Select a class before choosing a student payment record.",
+      });
+      setSubmitting(false);
+      return;
+    }
+
+    if (selectedFormIsFeeExempt) {
+      setStatus({
+        type: "error",
+        message: "VIP students are fee-exempt and do not require payment records.",
       });
       setSubmitting(false);
       return;
@@ -903,17 +924,22 @@ function FeeManagement() {
 
   useEffect(() => {
     setStructurePage(1);
-  }, [feeStructures.length]);
+  }, [feeStructures.length, structureCategoryFilter]);
 
   useEffect(() => {
     setPaymentPage(1);
   }, [filteredFees.length, filters]);
 
+  const filteredFeeStructures = feeStructures.filter(
+    (feeStructure) =>
+      !structureCategoryFilter ||
+      (feeStructure.fee_category || "returning") === structureCategoryFilter
+  );
   const visibleStructurePage = Math.min(
     structurePage,
-    Math.max(1, Math.ceil(feeStructures.length / PAGE_SIZE))
+    Math.max(1, Math.ceil(filteredFeeStructures.length / PAGE_SIZE))
   );
-  const paginatedFeeStructures = feeStructures.slice(
+  const paginatedFeeStructures = filteredFeeStructures.slice(
     (visibleStructurePage - 1) * PAGE_SIZE,
     visibleStructurePage * PAGE_SIZE
   );
@@ -1061,13 +1087,15 @@ function FeeManagement() {
           feeCategory
         );
         const expected = Number(expectedStructure?.amount || 0);
+        const isFeeExempt = isFeeExemptCategory(feeCategory);
 
         return {
           student,
           feeCategory,
-          expected,
-          paid,
-          balance: Math.max(expected - paid, 0),
+          expected: isFeeExempt ? 0 : expected,
+          paid: isFeeExempt ? 0 : paid,
+          balance: isFeeExempt ? 0 : Math.max(expected - paid, 0),
+          isFeeExempt,
         };
       });
   }, [
@@ -1086,25 +1114,33 @@ function FeeManagement() {
 
     return allBalanceRows.filter((row) => {
       if (filters.payment_status === "paid") {
-        return row.expected > 0 && row.paid >= row.expected;
+        return row.isFeeExempt || (row.expected > 0 && row.paid >= row.expected);
       }
 
       if (filters.payment_status === "unpaid") {
-        return row.expected > 0 && row.paid < row.expected;
+        return !row.isFeeExempt && row.expected > 0 && row.paid < row.expected;
+      }
+
+      if (filters.payment_status === "exempt") {
+        return row.isFeeExempt;
       }
 
       return true;
     });
   }, [allBalanceRows, filters.payment_status]);
-  const totalExpected = balanceRows.reduce(
+  const displayedBalanceRows =
+    selectedFilterStructures.length > 0
+      ? balanceRows
+      : balanceRows.filter((row) => row.isFeeExempt);
+  const totalExpected = displayedBalanceRows.reduce(
     (sum, row) => sum + Number(row.expected || 0),
     0
   );
-  const totalTrackedPaid = balanceRows.reduce(
+  const totalTrackedPaid = displayedBalanceRows.reduce(
     (sum, row) => sum + Number(row.paid || 0),
     0
   );
-  const totalBalance = balanceRows.reduce(
+  const totalBalance = displayedBalanceRows.reduce(
     (sum, row) => sum + Number(row.balance || 0),
     0
   );
@@ -1118,7 +1154,7 @@ function FeeManagement() {
       return;
     }
 
-    if (balanceRows.length === 0) {
+    if (displayedBalanceRows.length === 0) {
       setStatus({
         type: "error",
         message: "No student payment records are available for this class query.",
@@ -1136,7 +1172,7 @@ function FeeManagement() {
       return;
     }
 
-    const balanceTableRows = balanceRows
+    const balanceTableRows = displayedBalanceRows
       .map(
         (row, index) => `
           <tr>
@@ -1693,15 +1729,18 @@ function FeeManagement() {
                 disabled={Boolean(editingStructureId)}
                 required
               >
-                <option value="new">Newly Admitted Student</option>
-                <option value="returning">Returning/Old Student</option>
+                {feeCategories.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
               </select>
               {selectedStructureClass && structureForm.term && (
                 <div className="rounded-lg border border-primary/10 bg-primary/5 p-4">
                   <p className="text-sm font-bold uppercase text-primary/60">
                     {selectedStructureClass.name.toUpperCase()} Category Structures
                   </p>
-                  <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {structureCategoryStatus.map(({ feeCategory, structure }) => (
                       <div
                         key={feeCategory}
@@ -1838,6 +1877,24 @@ function FeeManagement() {
             </p>
           </div>
 
+          <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-[minmax(240px,360px)_auto] md:items-center">
+            <select
+              className={inputClass}
+              value={structureCategoryFilter}
+              onChange={(event) => setStructureCategoryFilter(event.target.value)}
+            >
+              <option value="">All student categories</option>
+              {feeCategories.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm font-semibold text-primary/60">
+              Showing {filteredFeeStructures.length} of {feeStructures.length} structures
+            </p>
+          </div>
+
           <div className="overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[840px] text-left">
               <thead className="bg-primary/10 text-primary">
@@ -1858,6 +1915,12 @@ function FeeManagement() {
                   <tr>
                     <td className="px-5 py-6 text-primary/70" colSpan="7">
                       No payment structure has been created yet.
+                    </td>
+                  </tr>
+                ) : filteredFeeStructures.length === 0 ? (
+                  <tr>
+                    <td className="px-5 py-6 text-primary/70" colSpan="7">
+                      No payment structure matches this category filter.
                     </td>
                   </tr>
                 ) : (
@@ -1921,7 +1984,7 @@ function FeeManagement() {
           </div>
           <PaginationControls
             currentPage={visibleStructurePage}
-            totalItems={feeStructures.length}
+            totalItems={filteredFeeStructures.length}
             pageSize={PAGE_SIZE}
             onPageChange={setStructurePage}
           />
@@ -2035,13 +2098,16 @@ function FeeManagement() {
               type="number"
               min="0"
               max={
-                selectedFormStructure
+                selectedFormIsFeeExempt
+                  ? 0
+                  : selectedFormStructure
                   ? selectedStudentRemainingBeforePayment
                   : undefined
               }
               value={feeForm.amount}
               onChange={handleChange}
               placeholder="Amount paid"
+              disabled={selectedFormIsFeeExempt}
               required
             />
 
@@ -2104,7 +2170,43 @@ function FeeManagement() {
                 the system is treating the student as Returning/Old.
               </p>
             )}
-            {selectedFormStructure ? (
+            {selectedFormIsFeeExempt ? (
+              <div className="mt-4 rounded-lg border border-green-500/20 bg-green-500/10 p-5">
+                <p className="text-sm font-bold uppercase text-green-700">
+                  Fee Exempt
+                </p>
+                <p className="mt-2 text-primary/75">
+                  This student is marked as VIP and does not pay school fees.
+                  No payment record or fee structure is required.
+                </p>
+                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div>
+                    <p className="text-sm font-semibold text-primary/60">
+                      Expected
+                    </p>
+                    <p className="mt-1 text-2xl font-extrabold text-primary">
+                      {formatCurrency(0)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-primary/60">
+                      Paid
+                    </p>
+                    <p className="mt-1 text-2xl font-extrabold text-primary">
+                      {formatCurrency(0)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-primary/60">
+                      Balance
+                    </p>
+                    <p className="mt-1 text-2xl font-extrabold text-primary">
+                      {formatCurrency(0)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : selectedFormStructure ? (
               <>
                 {selectedFormStructure.items?.length > 0 && (
                   <div className="mt-4 rounded-lg border border-primary/10 bg-secondary p-4">
@@ -2180,10 +2282,12 @@ function FeeManagement() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || selectedFormIsFeeExempt}
             className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {submitting
+            {selectedFormIsFeeExempt
+              ? "VIP Student - No Payment Required"
+              : submitting
               ? "Saving payment..."
               : editingFeeId
                 ? "Save Payment"
@@ -2269,6 +2373,7 @@ function FeeManagement() {
                 <option value="">All payments</option>
                 <option value="paid">Paid</option>
                 <option value="unpaid">Unpaid</option>
+                <option value="exempt">Exempt</option>
               </select>
 
               <button
@@ -2332,7 +2437,8 @@ function FeeManagement() {
                 Select a class and term to view student balances for the
                 selected session.
               </p>
-            ) : selectedFilterStructures.length === 0 ? (
+            ) : selectedFilterStructures.length === 0 &&
+              displayedBalanceRows.length === 0 ? (
               <p className="text-primary/70">
                 No payment structure found for{" "}
                 {selectedFilterClass.name.toUpperCase()},{" "}
@@ -2353,7 +2459,7 @@ function FeeManagement() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-primary/10">
-                    {balanceRows.length === 0 ? (
+                    {displayedBalanceRows.length === 0 ? (
                       <tr>
                         <td className="px-5 py-6 text-primary/70" colSpan="7">
                           {filters.payment_status
@@ -2362,7 +2468,7 @@ function FeeManagement() {
                         </td>
                       </tr>
                     ) : (
-                      balanceRows.map((row, index) => (
+                      displayedBalanceRows.map((row, index) => (
                         <tr key={row.student._id} className="text-primary/80">
                           <td className="px-5 py-4 font-bold text-primary">
                             {index + 1}
@@ -2385,12 +2491,16 @@ function FeeManagement() {
                           <td className="px-5 py-4">
                             <span
                               className={`rounded-full px-4 py-2 text-sm font-bold ${
-                                row.balance > 0
+                                row.isFeeExempt
+                                  ? "bg-green-500/10 text-green-700"
+                                  : row.balance > 0
                                   ? "bg-red-500/10 text-red-700"
                                   : "bg-green-500/10 text-green-700"
                               }`}
                             >
-                              {formatCurrency(row.balance)}
+                              {row.isFeeExempt
+                                ? "Exempt"
+                                : formatCurrency(row.balance)}
                             </span>
                           </td>
                         </tr>

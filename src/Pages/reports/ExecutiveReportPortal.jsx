@@ -33,6 +33,7 @@ import {
   getVisibleTermsForSession,
   normalizeTermForSession,
 } from "../../utils/academicTerms.js";
+import { formatFeeCategory } from "../../utils/feeCategories.js";
 
 const DEFAULT_TERM = "Second Term";
 const emptyList = [];
@@ -44,9 +45,6 @@ const formatCurrency = (amount) =>
     currency: "NGN",
     maximumFractionDigits: 0,
   }).format(Number(amount || 0));
-
-const formatFeeCategory = (feeCategory = "") =>
-  feeCategory === "new" ? "Newly Admitted" : "Returning";
 
 const formatDate = (dateValue) =>
   dateValue ? new Date(dateValue).toLocaleDateString() : "Not available";
@@ -563,7 +561,10 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
   const busChartData = useMemo(
     () =>
       busReportRows.map((row) => ({
-        name: row.route || "Route",
+        name: [
+          row.route || "Route",
+          row.payment_category_label || "Pickup & Dropping",
+        ].join(" - "),
         paid: row.paid || 0,
         balance: row.balance || 0,
         students: row.active_enrollments || 0,
@@ -1212,10 +1213,11 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
           </div>
 
           <div className="overflow-x-auto rounded-lg border border-primary/10">
-            <table className="w-full min-w-[920px] text-left text-sm">
+            <table className="w-full min-w-[1020px] text-left text-sm">
               <thead className={tableHeadClass}>
                 <tr>
                   <th className={tableCellClass}>Route</th>
+                  <th className={tableCellClass}>Category</th>
                   <th className={tableCellClass}>Students</th>
                   <th className={tableCellClass}>Expected</th>
                   <th className={tableCellClass}>Paid</th>
@@ -1225,18 +1227,23 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
               </thead>
               <tbody className="divide-y divide-primary/10 text-primary/80">
                 {loading ? (
-                  <TableSkeleton columns={6} />
+                  <TableSkeleton columns={7} />
                 ) : busReportRows.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="6">
+                    <td className="px-5 py-6 text-primary/70" colSpan="7">
                       No bus record found for this filter.
                     </td>
                   </tr>
                 ) : (
                   busReportRows.map((row) => (
-                    <tr key={row.route_id || row.route}>
+                    <tr
+                      key={`${row.route_id || row.route}-${row.payment_category || "both"}`}
+                    >
                       <td className={`${tableCellClass} font-bold text-primary`}>
                         {row.route}
+                      </td>
+                      <td className={tableCellClass}>
+                        {row.payment_category_label || "Pickup & Dropping"}
                       </td>
                       <td className={tableCellClass}>{row.active_enrollments}</td>
                       <td className={tableCellClass}>

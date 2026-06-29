@@ -3,6 +3,10 @@ import { FaFilePdf } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
 import PdfViewer from "../../components/common/PdfViewer.jsx";
+import {
+  downloadPdfBlob,
+  openPdfNativelyOnIOS,
+} from "../../utils/pdfDownload.js";
 
 function TeacherBroadsheets() {
   const [broadsheets, setBroadsheets] = useState([]);
@@ -111,26 +115,18 @@ function TeacherBroadsheets() {
     try {
       setError("");
 
-      const response = await API.get(
-        `/class-broadsheets/${selectedBroadsheet._id}/download`,
-        {
-          responseType: "blob",
-        }
-      );
+      const downloadPath = `/class-broadsheets/${selectedBroadsheet._id}/download`;
 
-      const objectUrl = URL.createObjectURL(response.data);
-      const link = document.createElement("a");
+      if (openPdfNativelyOnIOS(downloadPath)) {
+        return;
+      }
 
-      link.href = objectUrl;
-      link.download =
-        selectedBroadsheet.file_name ||
-        `${selectedBroadsheet.class}-${selectedBroadsheet.term}-${selectedBroadsheet.session}-broadsheet.pdf`;
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      URL.revokeObjectURL(objectUrl);
+      await downloadPdfBlob({
+        path: downloadPath,
+        fileName:
+          selectedBroadsheet.file_name ||
+          `${selectedBroadsheet.class}-${selectedBroadsheet.term}-${selectedBroadsheet.session}-broadsheet.pdf`,
+      });
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||

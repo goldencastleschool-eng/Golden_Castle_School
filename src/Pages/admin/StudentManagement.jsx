@@ -16,6 +16,7 @@ import {
   getVisibleTermsForSession,
   normalizeTermForSession,
 } from "../../utils/academicTerms.js";
+import { feeCategories, formatFeeCategory } from "../../utils/feeCategories.js";
 
 const initialStudentForm = {
   full_name: "",
@@ -49,9 +50,6 @@ const getStudentFeeEnrollment = (student, session, term = "") => {
       (!term || enrollment.term === term)
   );
 };
-
-const formatFeeCategory = (feeCategory = "") =>
-  feeCategory === "new" ? "Newly Admitted" : "Returning/Old";
 
 function StudentManagement() {
   const [students, setStudents] = useState([]);
@@ -543,8 +541,11 @@ function StudentManagement() {
               required
             >
               <option value="">Select student fee category</option>
-              <option value="new">Newly Admitted Student</option>
-              <option value="returning">Returning/Old Student</option>
+              {feeCategories.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
             </select>
             <input
               className={inputClass}

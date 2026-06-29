@@ -3,6 +3,10 @@ import { FaFilePdf } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
 import PdfViewer from "../../components/common/PdfViewer.jsx";
+import {
+  downloadPdfBlob,
+  openPdfNativelyOnIOS,
+} from "../../utils/pdfDownload.js";
 
 const getRequestErrorMessage = async (requestError, fallbackMessage) => {
   const errorData = requestError.response?.data;
@@ -130,26 +134,18 @@ function TeacherClassResults() {
     try {
       setError("");
 
-      const response = await API.get(
-        `/class-results/${selectedClassResult._id}/download`,
-        {
-          responseType: "blob",
-        }
-      );
+      const downloadPath = `/class-results/${selectedClassResult._id}/download`;
 
-      const objectUrl = URL.createObjectURL(response.data);
-      const link = document.createElement("a");
+      if (openPdfNativelyOnIOS(downloadPath)) {
+        return;
+      }
 
-      link.href = objectUrl;
-      link.download =
-        selectedClassResult.file_name ||
-        `${selectedClassResult.class}-${selectedClassResult.term}-${selectedClassResult.session}-class-result.pdf`;
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      URL.revokeObjectURL(objectUrl);
+      await downloadPdfBlob({
+        path: downloadPath,
+        fileName:
+          selectedClassResult.file_name ||
+          `${selectedClassResult.class}-${selectedClassResult.term}-${selectedClassResult.session}-class-result.pdf`,
+      });
     } catch (requestError) {
       setError(
         await getRequestErrorMessage(

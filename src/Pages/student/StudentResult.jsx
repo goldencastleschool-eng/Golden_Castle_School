@@ -4,6 +4,10 @@ import { FaFilePdf } from "react-icons/fa6";
 import API from "../../api/axios.jsx";
 import PdfViewer from "../../components/common/PdfViewer.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
+import {
+  downloadPdfBlob,
+  openPdfNativelyOnIOS,
+} from "../../utils/pdfDownload.js";
 
 function StudentResult() {
   const { user } = useAuth();
@@ -181,29 +185,16 @@ function StudentResult() {
     try {
       setError("");
 
-      const response = await API.get(
-        `/results/${selectedResult._id}/download`,
-        {
-          responseType: "blob",
-        }
-      );
+      const downloadPath = `/results/${selectedResult._id}/download`;
 
-      const objectUrl = URL.createObjectURL(
-        response.data
-      );
+      if (openPdfNativelyOnIOS(downloadPath)) {
+        return;
+      }
 
-      const link =
-        document.createElement("a");
-
-      link.href = objectUrl;
-      link.download =
-        buildResultFileName(selectedResult);
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      URL.revokeObjectURL(objectUrl);
+      await downloadPdfBlob({
+        path: downloadPath,
+        fileName: buildResultFileName(selectedResult),
+      });
     } catch (err) {
       setError(
         err.response?.data?.message ||

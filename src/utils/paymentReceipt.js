@@ -1,4 +1,7 @@
 import schoolLogo from "../assets/1723987411228.jpg";
+import { formatFeeCategory } from "./feeCategories.js";
+
+export { formatFeeCategory };
 
 export const formatCurrency = (amount) =>
   new Intl.NumberFormat("en-NG", {
@@ -9,9 +12,6 @@ export const formatCurrency = (amount) =>
 
 export const formatReceiptDate = (dateValue) =>
   dateValue ? new Date(dateValue).toLocaleDateString() : "Not set";
-
-export const formatFeeCategory = (feeCategory = "") =>
-  feeCategory === "new" ? "Newly Admitted" : "Returning/Old";
 
 export const escapeHtml = (value = "") =>
   value

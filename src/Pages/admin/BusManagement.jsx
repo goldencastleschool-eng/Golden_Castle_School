@@ -4,6 +4,7 @@ import {
   FaBus,
   FaMoneyBillWave,
   FaPenToSquare,
+  FaPrint,
   FaRoute,
   FaTrashCan,
   FaUsers,
@@ -17,6 +18,14 @@ import {
   getVisibleTermsForSession,
   normalizeTermForSession,
 } from "../../utils/academicTerms.js";
+import {
+  busPaymentCategories,
+  formatBusPaymentCategory,
+} from "../../utils/busPaymentCategories.js";
+import {
+  getPrintBrandHeader,
+  getPrintBrandStyles,
+} from "../../utils/printBranding.js";
 
 const DEFAULT_SESSION = "2025/2026";
 const PAGE_SIZE = 15;
@@ -41,6 +50,7 @@ const initialStructureForm = {
   route: "",
   session: DEFAULT_SESSION,
   term: "",
+  payment_category: "both",
   items: [
     {
       name: "Bus Fee",
@@ -55,6 +65,7 @@ const initialEnrollmentForm = {
   class_record: "",
   route: "",
   pickup_point: "",
+  payment_category: "both",
   student_ids: [],
 };
 
@@ -78,6 +89,15 @@ const formatDate = (dateValue) =>
 
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
+
+const escapeHtml = (value = "") =>
+  value
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
 const getRecordId = (record) => record?._id || record || "";
 
@@ -229,6 +249,7 @@ function BusManagement() {
     session: DEFAULT_SESSION,
     term: "",
     route: "",
+    payment_category: "",
   });
 
   const fetchBusData = async () => {
@@ -300,7 +321,13 @@ function BusManagement() {
 
   useEffect(() => {
     setStructurePage(1);
-  }, [structures.length]);
+  }, [
+    filters.payment_category,
+    filters.route,
+    filters.session,
+    filters.term,
+    structures.length,
+  ]);
 
   const sessionOptions = useMemo(() => {
     return [
@@ -390,6 +417,7 @@ function BusManagement() {
           getRecordId(structure.route),
           structure.session,
           structure.term,
+          structure.payment_category || "both",
         ].join("|"),
         structure
       );
@@ -421,13 +449,21 @@ function BusManagement() {
         const matchesTerm = !filters.term || enrollment.term === filters.term;
         const matchesRoute =
           !filters.route || getRecordId(enrollment.route) === filters.route;
+        const matchesCategory =
+          !filters.payment_category ||
+          (enrollment.payment_category || "both") === filters.payment_category;
 
-        return matchesSession && matchesTerm && matchesRoute;
+        return matchesSession && matchesTerm && matchesRoute && matchesCategory;
       })
       .map((enrollment) => {
         const routeId = getRecordId(enrollment.route);
         const structure = structureByKey.get(
-          [routeId, enrollment.session, enrollment.term].join("|")
+          [
+            routeId,
+            enrollment.session,
+            enrollment.term,
+            enrollment.payment_category || "both",
+          ].join("|")
         );
         const expected = Number(structure?.amount || 0);
         const paid = paidByEnrollment.get(enrollment._id) || 0;
@@ -447,6 +483,7 @@ function BusManagement() {
   }, [
     enrollments,
     filters.route,
+    filters.payment_category,
     filters.session,
     filters.term,
     paidByEnrollment,
@@ -474,25 +511,48 @@ function BusManagement() {
         const matchesTerm = !filters.term || payment.term === filters.term;
         const matchesRoute =
           !filters.route || getRecordId(payment.route) === filters.route;
+        const matchesCategory =
+          !filters.payment_category ||
+          (payment.payment_category ||
+            payment.enrollment?.payment_category ||
+            "both") === filters.payment_category;
 
-        return matchesSession && matchesTerm && matchesRoute;
+        return matchesSession && matchesTerm && matchesRoute && matchesCategory;
       })
       .sort(
         (firstPayment, secondPayment) =>
           new Date(secondPayment.payment_date || 0) -
           new Date(firstPayment.payment_date || 0)
       );
-  }, [filters.route, filters.session, filters.term, payments]);
+  }, [
+    filters.payment_category,
+    filters.route,
+    filters.session,
+    filters.term,
+    payments,
+  ]);
 
   const visibleEnrollmentPage = enrollmentPage;
   const visiblePaymentPage = paymentPage;
   const paginatedEnrollments = enrollmentRows;
   const paginatedPayments = paymentRows;
+  const filteredStructures = structures.filter((structure) => {
+    const matchesRoute =
+      !filters.route || getRecordId(structure.route) === filters.route;
+    const matchesSession =
+      !filters.session || structure.session === filters.session;
+    const matchesTerm = !filters.term || structure.term === filters.term;
+    const matchesCategory =
+      !filters.payment_category ||
+      (structure.payment_category || "both") === filters.payment_category;
+
+    return matchesRoute && matchesSession && matchesTerm && matchesCategory;
+  });
   const visibleStructurePage = Math.min(
     structurePage,
-    Math.max(1, Math.ceil(structures.length / PAGE_SIZE))
+    Math.max(1, Math.ceil(filteredStructures.length / PAGE_SIZE))
   );
-  const paginatedStructures = structures.slice(
+  const paginatedStructures = filteredStructures.slice(
     (visibleStructurePage - 1) * PAGE_SIZE,
     visibleStructurePage * PAGE_SIZE
   );
@@ -521,6 +581,9 @@ function BusManagement() {
   const busSummaryWindow = [
     filters.session || "All sessions",
     filters.term || "All terms",
+    filters.payment_category
+      ? formatBusPaymentCategory(filters.payment_category)
+      : "All categories",
   ].join(" | ");
 
   const handleFilterChange = (field, value) => {
@@ -823,6 +886,7 @@ function BusManagement() {
         class_record: enrollmentForm.class_record,
         route: enrollmentForm.route,
         pickup_point: enrollmentForm.pickup_point,
+        payment_category: enrollmentForm.payment_category,
       });
       setStatus({
         type: "success",
@@ -900,6 +964,7 @@ function BusManagement() {
       route: getRecordId(structure.route),
       session: structure.session || DEFAULT_SESSION,
       term: structure.term || "",
+      payment_category: structure.payment_category || "both",
       items:
         structure.items?.length > 0
           ? structure.items.map((item) => ({
@@ -918,6 +983,7 @@ function BusManagement() {
       const response = await API.put(`/bus-management/enrollments/${enrollment._id}`, {
         route: getRecordId(enrollment.route),
         pickup_point: enrollment.pickup_point,
+        payment_category: enrollment.payment_category || "both",
         status: nextStatus,
         stop_reason: nextStatus === "active" ? "" : "Updated by admin",
       });
@@ -1004,6 +1070,159 @@ function BusManagement() {
     }
   };
 
+  const handlePrintPaymentRecords = () => {
+    if (paymentRows.length === 0) {
+      setStatus({
+        type: "error",
+        message: "No bus payment record is available to print.",
+      });
+      return;
+    }
+
+    const printWindow = window.open("", "_blank", "width=1100,height=800");
+
+    if (!printWindow) {
+      setStatus({
+        type: "error",
+        message: "Unable to open print window. Allow popups and try again.",
+      });
+      return;
+    }
+
+    const rows = paymentRows
+      .map((payment, index) => {
+        const category = formatBusPaymentCategory(
+          payment.payment_category ||
+            payment.enrollment?.payment_category ||
+            "both"
+        );
+
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>
+              <strong>${escapeHtml(payment.student?.full_name || "Deleted student")}</strong>
+              <span>${escapeHtml(payment.student?.admission_no || "Not available")}</span>
+            </td>
+            <td>${escapeHtml(payment.route?.name || "Deleted route")}</td>
+            <td>${escapeHtml(category)}</td>
+            <td>${escapeHtml(payment.session)}</td>
+            <td>${escapeHtml(payment.term)}</td>
+            <td>${escapeHtml(formatCurrency(payment.amount))}</td>
+            <td>${escapeHtml(formatDate(payment.payment_date))}</td>
+            <td>${escapeHtml(payment.receipt_no || "Not set")}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    const totalAmount = paymentRows.reduce(
+      (sum, payment) => sum + Number(payment.amount || 0),
+      0
+    );
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>Bus Payment Records</title>
+          <style>
+            ${getPrintBrandStyles()}
+            body {
+              color: #111;
+              font-family: Arial, sans-serif;
+              margin: 28px;
+            }
+            .summary {
+              display: grid;
+              gap: 10px;
+              grid-template-columns: repeat(4, 1fr);
+              margin-bottom: 18px;
+            }
+            .summary div {
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              padding: 10px;
+            }
+            .summary span {
+              color: #555;
+              display: block;
+              font-size: 11px;
+              font-weight: 700;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+            }
+            table {
+              border-collapse: collapse;
+              font-size: 12px;
+              width: 100%;
+            }
+            th,
+            td {
+              border: 1px solid #ddd;
+              padding: 9px;
+              text-align: left;
+              vertical-align: top;
+            }
+            th {
+              background: #f3f4f6;
+            }
+            td span {
+              color: #555;
+              display: block;
+              font-size: 11px;
+              margin-top: 3px;
+            }
+            @media print {
+              body {
+                margin: 18px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${getPrintBrandHeader({
+            title: "Bus Payment Records",
+            subtitle: busSummaryWindow
+          })}
+          <section class="summary">
+            <div><span>Records</span>${paymentRows.length}</div>
+            <div><span>Total Amount</span>${escapeHtml(formatCurrency(totalAmount))}</div>
+            <div><span>Route Filter</span>${escapeHtml(
+              filters.route
+                ? routes.find((route) => route._id === filters.route)?.name || "Selected route"
+                : "All routes"
+            )}</div>
+            <div><span>Category Filter</span>${escapeHtml(
+              filters.payment_category
+                ? formatBusPaymentCategory(filters.payment_category)
+                : "All categories"
+            )}</div>
+          </section>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Student</th>
+                <th>Route</th>
+                <th>Category</th>
+                <th>Session</th>
+                <th>Term</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Receipt</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   return (
     <div className="px-6 py-8 lg:px-10">
       <AdminNotification
@@ -1035,7 +1254,7 @@ function BusManagement() {
             </p>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2  xl:items-end">
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5 xl:items-end">
           <select
             className={inputClass}
             name="session"
@@ -1078,6 +1297,21 @@ function BusManagement() {
             {routes.map((route) => (
               <option key={route._id} value={route._id}>
                 {route.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className={inputClass}
+            name="payment_category"
+            value={filters.payment_category}
+            onChange={(event) =>
+              handleFilterChange("payment_category", event.target.value)
+            }
+          >
+            <option value="">All categories</option>
+            {busPaymentCategories.map((category) => (
+              <option key={category.value} value={category.value}>
+                {category.label}
               </option>
             ))}
           </select>
@@ -1447,6 +1681,19 @@ function BusManagement() {
                   </option>
                 ))}
               </select>
+              <select
+                className={inputClass}
+                name="payment_category"
+                value={structureForm.payment_category}
+                onChange={handleStructureChange}
+                required
+              >
+                {busPaymentCategories.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="mt-5 space-y-3">
@@ -1522,12 +1769,13 @@ function BusManagement() {
           </form>
 
           <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
-            <table className="w-full min-w-[860px] text-left text-sm">
+            <table className="w-full min-w-[960px] text-left text-sm">
               <thead className="bg-primary/10 text-primary">
                 <tr>
                   <th className="px-5 py-4">Route</th>
                   <th className="px-5 py-4">Session</th>
                   <th className="px-5 py-4">Term</th>
+                  <th className="px-5 py-4">Category</th>
                   <th className="px-5 py-4">Amount</th>
                   <th className="px-5 py-4">Items</th>
                   <th className="px-5 py-4">Actions</th>
@@ -1535,11 +1783,17 @@ function BusManagement() {
               </thead>
               <tbody className="divide-y divide-primary/10 text-primary/80">
                 {loading ? (
-                  <TableSkeleton columns={6} />
+                  <TableSkeleton columns={7} />
                 ) : structures.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="6">
+                    <td className="px-5 py-6 text-primary/70" colSpan="7">
                       No bus payment structure has been created yet.
+                    </td>
+                  </tr>
+                ) : filteredStructures.length === 0 ? (
+                  <tr>
+                    <td className="px-5 py-6 text-primary/70" colSpan="7">
+                      No bus payment structure matches this filter.
                     </td>
                   </tr>
                 ) : (
@@ -1550,6 +1804,11 @@ function BusManagement() {
                       </td>
                       <td className="px-5 py-4">{structure.session}</td>
                       <td className="px-5 py-4">{structure.term}</td>
+                      <td className="px-5 py-4">
+                        {formatBusPaymentCategory(
+                          structure.payment_category || "both"
+                        )}
+                      </td>
                       <td className="px-5 py-4 font-bold text-primary">
                         {formatCurrency(structure.amount)}
                       </td>
@@ -1590,7 +1849,7 @@ function BusManagement() {
           </div>
           <PaginationControls
             page={visibleStructurePage}
-            totalItems={structures.length}
+            totalItems={filteredStructures.length}
             onPageChange={setStructurePage}
           />
         </section>
@@ -1666,6 +1925,19 @@ function BusManagement() {
                   </option>
                 ))}
               </select>
+              <select
+                className={inputClass}
+                name="payment_category"
+                value={enrollmentForm.payment_category}
+                onChange={handleEnrollmentChange}
+                required
+              >
+                {busPaymentCategories.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
               <div className="flex gap-3">
                 <button
                   type="button"
@@ -1738,7 +2010,7 @@ function BusManagement() {
             Bus Enrollments
           </h3>
           <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
-            <table className="w-full min-w-[1060px] text-left text-sm">
+            <table className="w-full min-w-[1160px] text-left text-sm">
               <thead className="bg-primary/10 text-primary">
                 <tr>
                   <th className="px-5 py-4">Student</th>
@@ -1746,6 +2018,7 @@ function BusManagement() {
                   <th className="px-5 py-4">Route</th>
                   <th className="px-5 py-4">Session</th>
                   <th className="px-5 py-4">Term</th>
+                  <th className="px-5 py-4">Category</th>
                   <th className="px-5 py-4">Expected</th>
                   <th className="px-5 py-4">Paid</th>
                   <th className="px-5 py-4">Balance</th>
@@ -1755,10 +2028,10 @@ function BusManagement() {
               </thead>
               <tbody className="divide-y divide-primary/10 text-primary/80">
                 {loading ? (
-                  <TableSkeleton columns={10} />
+                  <TableSkeleton columns={11} />
                 ) : paginatedEnrollments.length === 0 ? (
                   <tr>
-                    <td className="px-5 py-6 text-primary/70" colSpan="10">
+                    <td className="px-5 py-6 text-primary/70" colSpan="11">
                       No bus enrollment matches this filter.
                     </td>
                   </tr>
@@ -1779,6 +2052,11 @@ function BusManagement() {
                       </td>
                       <td className="px-5 py-4">{enrollment.session}</td>
                       <td className="px-5 py-4">{enrollment.term}</td>
+                      <td className="px-5 py-4">
+                        {formatBusPaymentCategory(
+                          enrollment.payment_category || "both"
+                        )}
+                      </td>
                       <td className="px-5 py-4">
                         {formatCurrency(enrollment.expected)}
                       </td>
@@ -1861,6 +2139,10 @@ function BusManagement() {
                 {activeEnrollmentRows.map((enrollment) => (
                   <option key={enrollment._id} value={enrollment._id}>
                     {enrollment.student?.full_name} - {enrollment.route?.name} -{" "}
+                    {formatBusPaymentCategory(
+                      enrollment.payment_category || "both"
+                    )}{" "}
+                    -{" "}
                     {formatCurrency(enrollment.balance)}
                   </option>
                 ))}
@@ -1918,17 +2200,29 @@ function BusManagement() {
           </form>
 
           <section className="rounded-lg bg-secondary p-6 shadow-lg">
-            <h3 className="text-2xl font-extrabold text-primary">
-              Bus Payment Records
-            </h3>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-2xl font-extrabold text-primary">
+                Bus Payment Records
+              </h3>
+              <button
+                type="button"
+                onClick={handlePrintPaymentRecords}
+                disabled={paymentRows.length === 0}
+                className={`${smallButtonClass} bg-button text-secondary`}
+              >
+                <FaPrint />
+                Print Records
+              </button>
+            </div>
             <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
-              <table className="w-full min-w-[960px] text-left text-sm">
+              <table className="w-full min-w-[1060px] text-left text-sm">
                 <thead className="bg-primary/10 text-primary">
                   <tr>
                     <th className="px-5 py-4">Student</th>
                     <th className="px-5 py-4">Route</th>
                     <th className="px-5 py-4">Session</th>
                     <th className="px-5 py-4">Term</th>
+                    <th className="px-5 py-4">Category</th>
                     <th className="px-5 py-4">Amount</th>
                     <th className="px-5 py-4">Date</th>
                     <th className="px-5 py-4">Receipt</th>
@@ -1937,10 +2231,10 @@ function BusManagement() {
                 </thead>
                 <tbody className="divide-y divide-primary/10 text-primary/80">
                   {loading ? (
-                    <TableSkeleton columns={8} />
+                    <TableSkeleton columns={9} />
                   ) : paginatedPayments.length === 0 ? (
                     <tr>
-                      <td className="px-5 py-6 text-primary/70" colSpan="8">
+                      <td className="px-5 py-6 text-primary/70" colSpan="9">
                         No bus payment matches this filter.
                       </td>
                     </tr>
@@ -1958,6 +2252,13 @@ function BusManagement() {
                         </td>
                         <td className="px-5 py-4">{payment.session}</td>
                         <td className="px-5 py-4">{payment.term}</td>
+                        <td className="px-5 py-4">
+                          {formatBusPaymentCategory(
+                            payment.payment_category ||
+                              payment.enrollment?.payment_category ||
+                              "both"
+                          )}
+                        </td>
                         <td className="px-5 py-4 font-bold text-primary">
                           {formatCurrency(payment.amount)}
                         </td>

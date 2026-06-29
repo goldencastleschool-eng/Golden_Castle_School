@@ -630,7 +630,12 @@ function AdminDashboard() {
 
     busStructures.forEach((structure) => {
       structureByKey.set(
-        [getRecordId(structure.route), structure.session, structure.term].join("|"),
+        [
+          getRecordId(structure.route),
+          structure.session,
+          structure.term,
+          structure.payment_category || "both",
+        ].join("|"),
         structure
       );
     });
@@ -657,6 +662,7 @@ function AdminDashboard() {
             getRecordId(enrollment.route),
             enrollment.session,
             enrollment.term,
+            enrollment.payment_category || "both",
           ].join("|")
         );
         const expected = Number(structure?.amount || 0);
