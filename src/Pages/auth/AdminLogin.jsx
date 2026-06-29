@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import API from "../../api/axios.jsx";
 import { PageLoader } from "../../components/common/Loading.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { getPortalLoginErrorMessage } from "../../utils/loginErrors.js";
 
 const image =
   "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1777222544/shoolfrontgate_x1klhb.png";
@@ -43,36 +44,6 @@ const executiveRoleOption = {
 };
 
 const reportRoles = ["principal", "chairman"];
-
-const getLoginErrorMessage = (requestError, loginRole) => {
-  const responseData = requestError.response?.data;
-
-  if (typeof responseData === "string") {
-    if (requestError.response?.status === 404) {
-      if (loginRole === "executive") {
-        return "Executive reports login is not available on the backend yet. Please deploy the latest backend.";
-      }
-
-      if (loginRole === "teacher") {
-        return "Teacher login is not available on the backend yet. Please deploy the latest backend.";
-      }
-
-      if (loginRole === "admin") {
-        return "Admin login is not available on the backend yet. Please deploy the latest backend.";
-      }
-
-      return "This login is not available on the backend yet. Please deploy the latest backend.";
-    }
-
-    return "Login failed. Please try again.";
-  }
-
-  return (
-    responseData?.message ||
-    responseData?.error ||
-    "Login failed. Please check your credentials."
-  );
-};
 
 function Login({ adminOnly = false, executiveOnly = false }) {
   const navigate = useNavigate();
@@ -196,11 +167,7 @@ function Login({ adminOnly = false, executiveOnly = false }) {
               : "/admin"
       );
     } catch (requestError) {
-      if (!requestError.response) {
-        setError("Network error. Please make sure the backend is running.");
-      } else {
-        setError(getLoginErrorMessage(requestError, role));
-      }
+      setError(getPortalLoginErrorMessage(requestError, role));
     } finally {
       setLoading(false);
     }

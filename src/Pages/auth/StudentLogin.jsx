@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import API from "../../api/axios.jsx";
 import { PageLoader } from "../../components/common/Loading.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { getPortalLoginErrorMessage } from "../../utils/loginErrors.js";
 
 const image =
   "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1777222544/shoolfrontgate_x1klhb.png";
@@ -50,10 +51,7 @@ function StudentLogin() {
       setUser(studentUser);
       navigate("/student");
     } catch (requestError) {
-      setError(
-        requestError.response?.data?.message ||
-          "Login failed. Please check your admission number and password."
-      );
+      setError(getPortalLoginErrorMessage(requestError, "student"));
     } finally {
       setLoading(false);
     }
