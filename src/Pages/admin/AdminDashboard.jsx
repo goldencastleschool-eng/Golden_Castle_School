@@ -92,18 +92,6 @@ const getStudentEffectiveTermEnrollment = (student, session, term) => {
     )[0];
 };
 
-const getStudentTermEnrollment = (student, session, term) => {
-  const enrollments = Array.isArray(student?.fee_enrollments)
-    ? student.fee_enrollments
-    : [];
-
-  return enrollments.find(
-    (enrollment) =>
-      enrollment.session === session &&
-      enrollment.term === term
-  );
-};
-
 const studentBelongsToEffectiveTermClass = (
   student,
   classRecord,
@@ -424,13 +412,13 @@ function AdminDashboard() {
 
   const newlyAdmittedStudents = useMemo(() => {
     return activeSessionStudents.filter((student) => {
-      const termEnrollment = getStudentTermEnrollment(
+      const effectiveEnrollment = getStudentEffectiveTermEnrollment(
         student,
         populationSessionFilter,
         populationTermFilter
       );
 
-      return termEnrollment?.fee_category === "new";
+      return effectiveEnrollment?.fee_category === "new";
     });
   }, [activeSessionStudents, populationSessionFilter, populationTermFilter]);
 
@@ -497,15 +485,10 @@ function AdminDashboard() {
         populationSessionFilter,
         populationTermFilter
       );
-      const termEnrollment = getStudentTermEnrollment(
-        student,
-        populationSessionFilter,
-        populationTermFilter
-      );
       const classRecordId =
         getRecordId(effectiveEnrollment?.class_record) ||
         getRecordId(student.class_record);
-      const feeCategory = termEnrollment?.fee_category || "returning";
+      const feeCategory = effectiveEnrollment?.fee_category || "returning";
       const expected =
         structureByClassAndCategory.get(
           `${classRecordId || "no-class"}|${feeCategory}`
