@@ -13,6 +13,7 @@ import AdminNotification from "../../components/common/AdminNotification.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
 import PaginationControls from "../../components/common/PaginationControls.jsx";
 import {
+  ACADEMIC_TERMS,
   getVisibleTermsForSession,
   normalizeTermForSession,
 } from "../../utils/academicTerms.js";
@@ -50,6 +51,34 @@ const getStudentFeeEnrollment = (student, session, term = "") => {
       (!term || enrollment.term === term)
   );
 };
+
+const getTermIndex = (term = "") => {
+  const termIndex = ACADEMIC_TERMS.indexOf(term);
+
+  return termIndex === -1 ? -1 : termIndex;
+};
+
+const getLatestStudentFeeEnrollment = (student, session) => {
+  const enrollments = Array.isArray(student.fee_enrollments)
+    ? student.fee_enrollments
+    : [];
+
+  return enrollments
+    .filter((enrollment) => enrollment.session === session)
+    .sort(
+      (firstEnrollment, secondEnrollment) =>
+        getTermIndex(secondEnrollment.term) - getTermIndex(firstEnrollment.term)
+    )[0];
+};
+
+const getPreferredStudentFeeEnrollment = (
+  student,
+  session,
+  preferredTerm = ""
+) =>
+  (preferredTerm && getStudentFeeEnrollment(student, session, preferredTerm)) ||
+  getLatestStudentFeeEnrollment(student, session) ||
+  {};
 
 function StudentManagement() {
   const [students, setStudents] = useState([]);
@@ -124,6 +153,24 @@ function StudentManagement() {
       return;
     }
 
+    if (name === "admission_term" && editingStudentId) {
+      const editedStudent = students.find(
+        (student) => student._id === editingStudentId
+      );
+      const termEnrollment = getStudentFeeEnrollment(
+        editedStudent,
+        studentForm.current_session,
+        value
+      );
+
+      setStudentForm((currentForm) => ({
+        ...currentForm,
+        admission_term: value,
+        fee_category: termEnrollment?.fee_category || "",
+      }));
+      return;
+    }
+
     setStudentForm((currentForm) => ({
       ...currentForm,
       [name]: value,
@@ -194,8 +241,11 @@ function StudentManagement() {
         classRecord.name === student.class &&
         classRecord.session === student.current_session
     );
-    const currentEnrollment =
-      getStudentFeeEnrollment(student, student.current_session) || {};
+    const currentEnrollment = getPreferredStudentFeeEnrollment(
+      student,
+      student.current_session,
+      studentViewTermFilter
+    );
 
     setEditingStudentId(student._id);
     setStudentForm({
@@ -299,8 +349,9 @@ function StudentManagement() {
         student.admission_no,
         student.class,
         student.current_session,
-        getStudentFeeEnrollment(student, student.current_session)?.term,
-        getStudentFeeEnrollment(student, student.current_session)?.fee_category,
+        getLatestStudentFeeEnrollment(student, student.current_session)?.term,
+        getLatestStudentFeeEnrollment(student, student.current_session)
+          ?.fee_category,
         student.gender,
       ]
         .filter(Boolean)
@@ -350,13 +401,30 @@ function StudentManagement() {
     }
 
     return students.filter(
-      (student) =>
-        isActiveStudent(student) &&
-        normalizeClassName(student.class) ===
-          normalizeClassName(selectedViewClass.name) &&
-        student.current_session === selectedViewClass.session
+      (student) => {
+        if (
+          !isActiveStudent(student) ||
+          normalizeClassName(student.class) !==
+            normalizeClassName(selectedViewClass.name) ||
+          student.current_session !== selectedViewClass.session
+        ) {
+          return false;
+        }
+
+        if (!studentViewTermFilter) {
+          return true;
+        }
+
+        return Boolean(
+          getStudentFeeEnrollment(
+            student,
+            selectedViewClass.session,
+            studentViewTermFilter
+          )
+        );
+      }
     );
-  }, [selectedViewClass, students]);
+  }, [selectedViewClass, studentViewTermFilter, students]);
 
   const sortedViewedClassStudents = useMemo(() => {
     return [...viewedClassStudents].sort((firstStudent, secondStudent) => {
@@ -680,9 +748,10 @@ function StudentManagement() {
                       </td>
                       <td className="px-5 py-4">
                         {(() => {
-                          const enrollment = getStudentFeeEnrollment(
+                          const enrollment = getPreferredStudentFeeEnrollment(
                             student,
-                            student.current_session
+                            student.current_session,
+                            studentViewTermFilter
                           );
 
                           return enrollment
@@ -794,7 +863,7 @@ function StudentManagement() {
                       </td>
                       <td className="px-5 py-4">
                         {(() => {
-                          const enrollment = getStudentFeeEnrollment(
+                          const enrollment = getLatestStudentFeeEnrollment(
                             student,
                             student.current_session
                           );
