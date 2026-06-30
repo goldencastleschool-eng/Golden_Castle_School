@@ -1,38 +1,35 @@
 import { useEffect, useState } from "react";
+import API from "../api/axios.jsx";
 import AuthContext from "./AuthContext.js";
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    try {
-      const savedUser = localStorage.getItem("user");
-      return savedUser ? JSON.parse(savedUser) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(null);
 
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(
-        "user",
-        JSON.stringify(user)
-      );
-    } else {
-      localStorage.removeItem("user");
-    }
-  }, [user]);
+    const restoreSession = async () => {
+      try {
+        const response = await API.get("/auth/me", {
+          skipAuthRedirect: true,
+        });
+
+        setUser(response.data?.user || null);
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    restoreSession();
+  }, []);
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
     setUser(null);
   };
 
-  const isAuthenticated =
-    !!user && !!localStorage.getItem("token");
+  const isAuthenticated = !!user;
 
   return (
     <AuthContext.Provider

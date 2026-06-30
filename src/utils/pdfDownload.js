@@ -14,13 +14,8 @@ export const isIOSDevice = () => {
 };
 
 export const buildAuthenticatedPdfUrl = (path) => {
-  const token = localStorage.getItem("token");
   const baseUrl = API.defaults.baseURL || "";
   const url = new URL(path.replace(/^\//, ""), `${baseUrl.replace(/\/$/, "")}/`);
-
-  if (token) {
-    url.searchParams.set("token", token);
-  }
 
   return url.href;
 };

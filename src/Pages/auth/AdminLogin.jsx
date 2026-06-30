@@ -135,11 +135,7 @@ function Login({ adminOnly = false, executiveOnly = false }) {
           };
 
       const response = await API.post(endpoint, payload);
-      const { student, admin, teacher, executive, token } = response.data;
-
-      if (token) {
-        localStorage.setItem("token", token);
-      }
+      const { student, admin, teacher, executive } = response.data;
       const account = isStudent
         ? {
             ...student,
@@ -153,8 +149,6 @@ function Login({ adminOnly = false, executiveOnly = false }) {
           : isExecutive
             ? executive
             : admin;
-
-      localStorage.setItem( "user",JSON.stringify(account));
 
       setUser(account);
       navigate(

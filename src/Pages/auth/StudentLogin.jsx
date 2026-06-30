@@ -38,15 +38,11 @@ function StudentLogin() {
         ...formData,
         admission_no: formData.admission_no.trim(),
       });
-      const { student, token } = response.data;
+      const { student } = response.data;
       const studentUser = {
         ...student,
         role: "student",
       };
-
-      if (token) {
-        localStorage.setItem("token", token);
-      }
 
       setUser(studentUser);
       navigate("/student");
