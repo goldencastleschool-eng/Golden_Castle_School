@@ -323,23 +323,12 @@ function StudentTable({ title, students, loading }) {
 function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [report, setReport] = useState(null);
   const [filters, setFilters] = useState({
     session: FIRST_IMPLEMENTED_SESSION,
     term: DEFAULT_TERM,
     class_record: "",
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [classPage, setClassPage] = useState(1);
-
-  const selectedSession = report?.selected_session || filters.session;
-  const selectedTerm =
-    normalizeTermForSession(report?.selected_term || filters.term, selectedSession) ||
-    getVisibleTermsForSession(selectedSession)[0] ||
-    "";
-  const selectedClassRecord =
-    report?.selected_class_record || filters.class_record;
   const {
     data: reportData,
     error: reportError,
@@ -357,58 +346,23 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
     staleTime: 1000 * 60 * 3,
   });
 
-  useEffect(() => {
-    setLoading(isLoading && !reportData);
-  }, [isLoading, reportData]);
-
-  useEffect(() => {
-    if (!isFetching) {
-      return;
-    }
-
-    setError("");
-  }, [isFetching]);
-
-  useEffect(() => {
-    if (!reportError) {
-      return;
-    }
-
-    setError(
-      reportError.response?.data?.message ||
+  const report = reportData || null;
+  const loading = isLoading && !reportData;
+  const error = isFetching
+    ? ""
+    : reportError
+      ? reportError.response?.data?.message ||
         reportError.response?.data?.error ||
         reportError.message ||
         "Unable to load report data."
-    );
-  }, [reportError]);
-
-  useEffect(() => {
-    if (!reportData) {
-      return;
-    }
-
-    setReport(reportData);
-    const normalizedSession = reportData.selected_session || filters.session;
-    const normalizedFilters = {
-      session: normalizedSession,
-      term:
-        normalizeTermForSession(
-          reportData.selected_term || filters.term,
-          normalizedSession
-        ) ||
-        getVisibleTermsForSession(normalizedSession)[0] ||
-        "",
-      class_record: reportData.selected_class_record || filters.class_record,
-    };
-
-    setFilters((currentFilters) =>
-      currentFilters.session === normalizedFilters.session &&
-      currentFilters.term === normalizedFilters.term &&
-      currentFilters.class_record === normalizedFilters.class_record
-        ? currentFilters
-        : normalizedFilters
-    );
-  }, [filters, reportData]);
+      : "";
+  const selectedSession = report?.selected_session || filters.session;
+  const selectedTerm =
+    normalizeTermForSession(report?.selected_term || filters.term, selectedSession) ||
+    getVisibleTermsForSession(selectedSession)[0] ||
+    "";
+  const selectedClassRecord =
+    report?.selected_class_record || filters.class_record;
 
   useEffect(() => {
     if (!embedded && user?.role === "admin") {

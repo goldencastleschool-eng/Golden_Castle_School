@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Bar,
@@ -38,6 +38,7 @@ import { isFormTeacher } from "../../utils/teacherAssignments.js";
 
 const DEFAULT_COVERAGE_SESSION_FILTER = "2025/2026";
 const DEFAULT_TERM_FILTER = "Third Term";
+const EMPTY_LIST = [];
 const PAGE_SIZE = 25;
 const CHART_COLORS = {
   primary: "#1f2937",
@@ -237,40 +238,13 @@ const fetchAdminDashboardData = async () => {
 
 function AdminDashboard() {
   const { user } = useAuth();
-  const [students, setStudents] = useState([]);
-  const [results, setResults] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [teachers, setTeachers] = useState([]);
-  const [classBroadsheets, setClassBroadsheets] = useState([]);
-  const [classResults, setClassResults] = useState([]);
-  const [fees, setFees] = useState([]);
-  const [feeStructures, setFeeStructures] = useState([]);
-  const [buses, setBuses] = useState([]);
-  const [busRoutes, setBusRoutes] = useState([]);
-  const [busStructures, setBusStructures] = useState([]);
-  const [busEnrollments, setBusEnrollments] = useState([]);
-  const [busPayments, setBusPayments] = useState([]);
-  const [boardingHouses, setBoardingHouses] = useState([]);
-  const [boardingStructures, setBoardingStructures] = useState([]);
-  const [boardingEnrollments, setBoardingEnrollments] = useState([]);
-  const [boardingPayments, setBoardingPayments] = useState([]);
-  const [payrollStaff, setPayrollStaff] = useState([]);
-  const [payrollAssignments, setPayrollAssignments] = useState([]);
-  const [payrollPayments, setPayrollPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [coverageSessionFilter, setCoverageSessionFilter] = useState(
-    DEFAULT_COVERAGE_SESSION_FILTER
-  );
-  const [coverageTermFilter, setCoverageTermFilter] = useState(
-    DEFAULT_TERM_FILTER
-  );
   const [populationSessionFilter, setPopulationSessionFilter] = useState(
     DEFAULT_COVERAGE_SESSION_FILTER
   );
   const [populationTermFilter, setPopulationTermFilter] = useState(
     DEFAULT_TERM_FILTER
   );
-  const [status, setStatus] = useState({ type: "", message: "" });
+  const [dismissedErrorMessage, setDismissedErrorMessage] = useState("");
   const {
     data: dashboardData,
     error: dashboardError,
@@ -282,55 +256,39 @@ function AdminDashboard() {
     staleTime: 1000 * 60 * 3,
   });
 
-  useEffect(() => {
-    setLoading(isLoading && !dashboardData);
-  }, [dashboardData, isLoading]);
-
-  useEffect(() => {
-    if (!isFetching) {
-      return;
-    }
-
-    setStatus({ type: "", message: "" });
-  }, [isFetching]);
-
-  useEffect(() => {
-    if (!dashboardError) {
-      return;
-    }
-
-    setStatus({
-      type: "error",
-      message: dashboardError.message || "Unable to load dashboard records.",
-    });
-  }, [dashboardError]);
-
-  useEffect(() => {
-    if (!dashboardData) {
-      return;
-    }
-
-    setStudents(dashboardData.students || []);
-    setResults(dashboardData.results || []);
-    setClasses(dashboardData.classes || []);
-    setTeachers(dashboardData.teachers || []);
-    setClassBroadsheets(dashboardData.classBroadsheets || []);
-    setClassResults(dashboardData.classResults || []);
-    setFees(dashboardData.fees || []);
-    setFeeStructures(dashboardData.feeStructures || []);
-    setBuses(dashboardData.buses || []);
-    setBusRoutes(dashboardData.busRoutes || []);
-    setBusStructures(dashboardData.busStructures || []);
-    setBusEnrollments(dashboardData.busEnrollments || []);
-    setBusPayments(dashboardData.busPayments || []);
-    setBoardingHouses(dashboardData.boardingHouses || []);
-    setBoardingStructures(dashboardData.boardingStructures || []);
-    setBoardingEnrollments(dashboardData.boardingEnrollments || []);
-    setBoardingPayments(dashboardData.boardingPayments || []);
-    setPayrollStaff(dashboardData.payrollStaff || []);
-    setPayrollAssignments(dashboardData.payrollAssignments || []);
-    setPayrollPayments(dashboardData.payrollPayments || []);
-  }, [dashboardData]);
+  const loading = isLoading && !dashboardData;
+  const dashboardErrorMessage =
+    dashboardError?.message || "Unable to load dashboard records.";
+  const status =
+    dashboardError && !isFetching && dismissedErrorMessage !== dashboardErrorMessage
+      ? {
+          type: "error",
+          message: dashboardErrorMessage,
+        }
+      : {
+          type: "",
+          message: "",
+        };
+  const students = dashboardData?.students || EMPTY_LIST;
+  const results = dashboardData?.results || EMPTY_LIST;
+  const classes = dashboardData?.classes || EMPTY_LIST;
+  const teachers = dashboardData?.teachers || EMPTY_LIST;
+  const classBroadsheets = dashboardData?.classBroadsheets || EMPTY_LIST;
+  const classResults = dashboardData?.classResults || EMPTY_LIST;
+  const fees = dashboardData?.fees || EMPTY_LIST;
+  const feeStructures = dashboardData?.feeStructures || EMPTY_LIST;
+  const buses = dashboardData?.buses || EMPTY_LIST;
+  const busRoutes = dashboardData?.busRoutes || EMPTY_LIST;
+  const busStructures = dashboardData?.busStructures || EMPTY_LIST;
+  const busEnrollments = dashboardData?.busEnrollments || EMPTY_LIST;
+  const busPayments = dashboardData?.busPayments || EMPTY_LIST;
+  const boardingHouses = dashboardData?.boardingHouses || EMPTY_LIST;
+  const boardingStructures = dashboardData?.boardingStructures || EMPTY_LIST;
+  const boardingEnrollments = dashboardData?.boardingEnrollments || EMPTY_LIST;
+  const boardingPayments = dashboardData?.boardingPayments || EMPTY_LIST;
+  const payrollStaff = dashboardData?.payrollStaff || EMPTY_LIST;
+  const payrollAssignments = dashboardData?.payrollAssignments || EMPTY_LIST;
+  const payrollPayments = dashboardData?.payrollPayments || EMPTY_LIST;
 
   const handlePopulationSessionChange = (session) => {
     const normalizedTerm = normalizeTermForSession(populationTermFilter, session);
@@ -341,40 +299,17 @@ function AdminDashboard() {
     );
   };
 
-  const handleCoverageSessionChange = (session) => {
-    const normalizedTerm = normalizeTermForSession(coverageTermFilter, session);
-
-    setCoverageSessionFilter(session);
-    setCoverageTermFilter(
-      normalizedTerm || getVisibleTermsForSession(session)[0] || ""
-    );
-  };
-
   const coverageResults = useMemo(() => {
-    if (!coverageSessionFilter || !coverageTermFilter) {
+    if (!populationSessionFilter || !populationTermFilter) {
       return [];
     }
 
     return results.filter(
       (result) =>
-        result.session === coverageSessionFilter &&
-        result.term === coverageTermFilter
+        result.session === populationSessionFilter &&
+        result.term === populationTermFilter
     );
-  }, [coverageSessionFilter, coverageTermFilter, results]);
-
-  const coverageSessionOptions = useMemo(() => {
-    return [
-      ...new Set([
-        DEFAULT_COVERAGE_SESSION_FILTER,
-        ...classes.map((classRecord) => classRecord.session).filter(Boolean),
-      ]),
-    ].sort();
-  }, [classes]);
-
-  const coverageTermOptions = useMemo(
-    () => getVisibleTermsForSession(coverageSessionFilter),
-    [coverageSessionFilter]
-  );
+  }, [populationSessionFilter, populationTermFilter, results]);
 
   const populationSessionOptions = useMemo(() => {
     return [
@@ -398,9 +333,9 @@ function AdminDashboard() {
 
   const coverageClasses = useMemo(() => {
     return classes.filter(
-      (classRecord) => classRecord.session === coverageSessionFilter
+      (classRecord) => classRecord.session === populationSessionFilter
     );
-  }, [classes, coverageSessionFilter]);
+  }, [classes, populationSessionFilter]);
 
   const activeSessionStudents = useMemo(() => {
     return students.filter(
@@ -419,21 +354,6 @@ function AdminDashboard() {
       (classRecord) => classRecord.session === populationSessionFilter
     );
   }, [classes, populationSessionFilter]);
-
-  const activeSessionTeachers = useMemo(() => {
-    return teachers.filter(
-      (teacher) => teacher.session === populationSessionFilter
-        && teacher.status !== "inactive"
-    );
-  }, [populationSessionFilter, teachers]);
-
-  const inactiveSessionTeachers = useMemo(() => {
-    return teachers.filter(
-      (teacher) =>
-        teacher.session === populationSessionFilter &&
-        teacher.status === "inactive"
-    );
-  }, [populationSessionFilter, teachers]);
 
   const activeSessionFormTeachers = useMemo(() => {
     return teachers.filter(
@@ -820,7 +740,7 @@ function AdminDashboard() {
               student,
               classRecord,
               classRecord.session,
-              coverageTermFilter
+              populationTermFilter
             )
       );
       const uploadedStudentIds = new Set(
@@ -841,7 +761,7 @@ function AdminDashboard() {
         uploaded: uploadedStudentIds.size,
       };
     });
-  }, [coverageClasses, coverageResults, coverageTermFilter, students]);
+  }, [coverageClasses, coverageResults, populationTermFilter, students]);
 
   const populationChartData = useMemo(
     () => [
@@ -1113,7 +1033,7 @@ function AdminDashboard() {
     <div className="min-h-screen overflow-hidden bg-background">
       <AdminNotification
         status={status}
-        onDismiss={() => setStatus({ type: "", message: "" })}
+        onDismiss={() => setDismissedErrorMessage(status.message)}
       />
 
       <section className="px-6 pt-8 lg:px-12">
@@ -1336,14 +1256,18 @@ function AdminDashboard() {
 
           <DashboardChartCard
             title="Result Upload Coverage"
-            subtitle={`${coverageSessionFilter} - ${coverageTermFilter}`}
+            subtitle={`${populationSessionFilter} - ${populationTermFilter}`}
           >
             {loading ? (
               <CardSkeleton count={1} />
             ) : coverageChartData.length === 0 ? (
               <ChartEmptyState />
             ) : (
-              <div className="h-80">
+              <a
+                href="#result-upload-coverage"
+                aria-label="Jump to Result Upload Coverage"
+                className="block h-80 rounded-lg outline-none transition duration-300 focus:ring-2 focus:ring-button/30"
+              >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={coverageChartData} layout="vertical" margin={{ left: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1f29371a" />
@@ -1360,12 +1284,15 @@ function AdminDashboard() {
                     <Bar dataKey="missing" name="Missing" stackId="coverage" fill={CHART_COLORS.outstanding} radius={[0, 8, 8, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
+              </a>
             )}
           </DashboardChartCard>
         </section>
 
-        <section className="mt-8 rounded-lg border border-secondary/10 bg-secondary p-6 shadow-lg">
+        <section
+          id="result-upload-coverage"
+          className="mt-8 rounded-lg border border-secondary/10 bg-secondary p-6 shadow-lg scroll-mt-6"
+        >
           <div className="mb-8">
             <div className="mb-5">
               <h3 className="text-2xl font-extrabold text-primary">
@@ -1373,47 +1300,9 @@ function AdminDashboard() {
               </h3>
               <p className="mt-2 text-primary/70">
                 Uploaded results out of registered students for{" "}
-                {coverageSessionFilter}
-                {coverageTermFilter ? ` - ${coverageTermFilter}` : ""}.
+                {populationSessionFilter}
+                {populationTermFilter ? ` - ${populationTermFilter}` : ""}.
               </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[260px_260px]">
-              <div>
-              <label className="mb-2 block text-sm font-semibold text-primary/60">
-                Session
-              </label>
-              <select
-                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
-                value={coverageSessionFilter}
-                onChange={(event) =>
-                  handleCoverageSessionChange(event.target.value)
-                }
-              >
-                {coverageSessionOptions.map((session) => (
-                  <option key={session} value={session}>
-                    {session}
-                  </option>
-                ))}
-              </select>
-              </div>
-
-              <div>
-              <label className="mb-2 block text-sm font-semibold text-primary/60">
-                Term
-              </label>
-              <select
-                className="w-full rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
-                value={coverageTermFilter}
-                onChange={(event) => setCoverageTermFilter(event.target.value)}
-              >
-                {coverageTermOptions.map((term) => (
-                  <option key={term} value={term}>
-                    {term}
-                  </option>
-                ))}
-              </select>
-              </div>
             </div>
           </div>
 
@@ -1424,7 +1313,7 @@ function AdminDashboard() {
             </div>
           ) : classCoverage.length === 0 ? (
             <div className="rounded-lg border border-primary/10 bg-primary/5 p-6 text-primary/70">
-              No class has been created for {coverageSessionFilter} yet.
+              No class has been created for {populationSessionFilter} yet.
             </div>
           ) : (
             <div className="overflow-hidden rounded-lg border border-primary/10">

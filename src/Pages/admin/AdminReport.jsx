@@ -28,6 +28,13 @@ const normalizeClassName = (className = "") =>
 
 const getRecordId = (record) => record?._id || record || "";
 
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(Number(amount || 0));
+
 function AdminReport() {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -271,7 +278,19 @@ function AdminReport() {
       const missingCount = classStudents.filter(
         (student) => !uploadedStudentIds.has(student._id)
       ).length;
-  }, [reportStudents]);
+
+      return {
+        id: classRecord._id || classRecord.name,
+        name: classRecord.name,
+        students: classStudents.length,
+        uploaded: uploadedStudentIds.size,
+        missing: missingCount,
+        coverage: classStudents.length
+          ? Math.round((uploadedStudentIds.size / classStudents.length) * 100)
+          : 0,
+      };
+    });
+  }, [reportClasses, reportResults, reportStudents]);
 
   const missingUploadCount = classRows.reduce(
     (total, classRow) => total + classRow.missing,
@@ -647,6 +666,17 @@ function AdminReport() {
       return new Date(secondStudent.createdAt || 0) - new Date(firstStudent.createdAt || 0);
     })
     .slice(0, 8);
+
+  const genderSummary = useMemo(() => {
+    return reportStudents.reduce((summary, student) => {
+      const gender = student.gender || "Not set";
+
+      return {
+        ...summary,
+        [gender]: (summary[gender] || 0) + 1,
+      };
+    }, {});
+  }, [reportStudents]);
 
   const statCards = [
     {

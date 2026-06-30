@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FaArrowsRotate,
   FaChalkboardUser,
@@ -65,7 +65,7 @@ function PortalVisibility() {
     term: "",
   });
 
-  const fetchVisibility = async ({ silent = false } = {}) => {
+  const fetchVisibility = useCallback(async ({ silent = false } = {}) => {
     try {
       if (silent) {
         setRefreshing(true);
@@ -92,11 +92,11 @@ function PortalVisibility() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     fetchVisibility();
-  }, [filters.session, filters.term]);
+  }, [fetchVisibility]);
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;

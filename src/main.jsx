@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -60,6 +61,9 @@ const TeacherBroadsheets = lazy(() =>
 );
 const TeacherClassResults = lazy(() =>
   import("./Pages/teacher/TeacherClassResults.jsx")
+);
+const TeacherCumulativeResults = lazy(() =>
+  import("./Pages/teacher/TeacherCumulativeResults.jsx")
 );
 const TeacherClassList = lazy(() =>
   import("./Pages/teacher/TeacherClassList.jsx")
@@ -253,6 +257,10 @@ const router = createBrowserRouter([
           {
             path: "class-results",
             element: <TeacherClassResults />,
+          },
+          {
+            path: "cumulative-results",
+            element: <TeacherCumulativeResults />,
           },
           {
             path: "class-list",

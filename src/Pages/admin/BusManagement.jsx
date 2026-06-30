@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FaArrowRight,
   FaBus,
@@ -110,18 +110,6 @@ const getTermIndex = (term = "") => {
   const termIndex = TERM_ORDER.indexOf(term);
 
   return termIndex === -1 ? TERM_ORDER.length : termIndex;
-};
-
-const getStudentTermEnrollment = (student, session, term) => {
-  const enrollments = Array.isArray(student?.fee_enrollments)
-    ? student.fee_enrollments
-    : [];
-
-  return enrollments.find(
-    (enrollment) =>
-      enrollment.session === session &&
-      enrollment.term === term
-  );
 };
 
 const getStudentEffectiveTermEnrollment = (student, session, term) => {
@@ -252,7 +240,7 @@ function BusManagement() {
     payment_category: "",
   });
 
-  const fetchBusData = async () => {
+  const fetchBusData = useCallback(async () => {
     try {
       setLoading(true);
       setStatus({ type: "", message: "" });
@@ -313,11 +301,11 @@ function BusManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [enrollmentPage, filters, paymentPage]);
 
   useEffect(() => {
     fetchBusData();
-  }, [enrollmentPage, filters, paymentPage]);
+  }, [fetchBusData]);
 
   useEffect(() => {
     setStructurePage(1);

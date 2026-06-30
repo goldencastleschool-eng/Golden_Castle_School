@@ -30,6 +30,11 @@ const teacherLinks = [
     icon: <FaFilePdf />,
   },
   {
+    label: "Cumulative",
+    path: "/teacher/cumulative-results",
+    icon: <FaFilePdf />,
+  },
+  {
     label: "Class List",
     path: "/teacher/class-list",
     icon: <FaUsers />,

@@ -177,7 +177,7 @@ function PayrollManagement() {
   const [paymentPage, setPaymentPage] = useState(1);
   const [assignmentTotal, setAssignmentTotal] = useState(0);
   const [paymentTotal, setPaymentTotal] = useState(0);
-  const [filters, setFilters] = useState({
+  const [filters] = useState({
     session: DEFAULT_SESSION,
     period_type: "monthly",
     period: "January",
@@ -268,17 +268,6 @@ function PayrollManagement() {
     [levels, structureForm.category]
   );
 
-  const sessionOptions = useMemo(() => {
-    return [
-      ...new Set([
-        DEFAULT_SESSION,
-        ...structures.map((structure) => structure.session).filter(Boolean),
-        ...assignments.map((assignment) => assignment.session).filter(Boolean),
-        ...payments.map((payment) => payment.session).filter(Boolean),
-      ]),
-    ].sort();
-  }, [assignments, payments, structures]);
-
   const paidByAssignment = useMemo(() => {
     const paymentMap = new Map();
 
@@ -366,26 +355,6 @@ function PayrollManagement() {
   const paginatedAssignments = assignmentRows;
   const paginatedPayments = paymentRows;
 
-  const totals = useMemo(() => {
-    const activeAssignments = assignmentRows.filter(
-      (assignment) => assignment.status === "active"
-    );
-
-    return {
-      activeStaff: staff.filter((staffRecord) => staffRecord.status === "active")
-        .length,
-      assignedStaff: activeAssignments.length,
-      expected: activeAssignments.reduce(
-        (sum, assignment) => sum + Number(assignment.net_amount || 0),
-        0
-      ),
-      outstanding: activeAssignments.reduce(
-        (sum, assignment) => sum + Number(assignment.balance || 0),
-        0
-      ),
-    };
-  }, [assignmentRows, staff]);
-
   const selectedAssignmentStructure = useMemo(
     () =>
       structures.find((structure) => structure._id === assignmentForm.structure),
@@ -445,35 +414,6 @@ function PayrollManagement() {
       ),
     [payableAssignments, paymentForm.assignment]
   );
-
-  const handleFilterChange = (event) => {
-    const { name, value } = event.target;
-
-    setFilters((currentFilters) => {
-      const nextFilters = {
-        ...currentFilters,
-        [name]: value,
-      };
-
-      if (name === "period_type") {
-        nextFilters.period = getPeriodOptions(value, nextFilters.session)[0];
-      }
-
-      if (name === "session") {
-        const periodOptions = getPeriodOptions(
-          nextFilters.period_type,
-          value
-        );
-        nextFilters.period = periodOptions.includes(nextFilters.period)
-          ? nextFilters.period
-          : periodOptions[0];
-      }
-
-      return nextFilters;
-    });
-    setAssignmentPage(1);
-    setPaymentPage(1);
-  };
 
   const handleLevelChange = (event) => {
     const { name, value } = event.target;

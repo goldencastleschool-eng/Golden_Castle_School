@@ -381,39 +381,6 @@ function StudentManagement() {
   const availableClasses = classes.filter(
     (classRecord) => classRecord.session === studentForm.current_session
   );
-  const activeStudents = students.filter(isActiveStudent);
-  const sessionStudents = activeStudents.filter((student) => {
-    if (!studentViewTermFilter) {
-      return student.current_session === studentViewSessionFilter;
-    }
-
-    return Boolean(
-      getStudentFeeEnrollment(
-        student,
-        studentViewSessionFilter,
-        studentViewTermFilter
-      )
-    );
-  });
-  const newlyAdmittedStudents = sessionStudents.filter(
-    (student) =>
-      getStudentFeeEnrollment(
-        student,
-        studentViewSessionFilter,
-        studentViewTermFilter
-      )?.fee_category ===
-      "new"
-  );
-  const returningStudents = sessionStudents.filter(
-    (student) =>
-      getStudentFeeEnrollment(
-        student,
-        studentViewSessionFilter,
-        studentViewTermFilter
-      )?.fee_category !==
-      "new"
-  );
-
   return (
     <div className="px-6 py-8 lg:px-10">
       <AdminNotification

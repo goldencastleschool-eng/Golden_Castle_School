@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FaArrowRight,
   FaBed,
@@ -146,7 +146,7 @@ function BoardingManagement() {
     house: "",
   });
 
-  const fetchBoardingData = async () => {
+  const fetchBoardingData = useCallback(async () => {
     try {
       setLoading(true);
       setStatus({ type: "", message: "" });
@@ -186,11 +186,11 @@ function BoardingManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     fetchBoardingData();
-  }, [filters.session, filters.term, filters.house]);
+  }, [fetchBoardingData]);
 
   const classOptions = useMemo(
     () => classes.filter((classRecord) => classRecord.session === enrollmentForm.session),

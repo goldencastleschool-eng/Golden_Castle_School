@@ -932,11 +932,6 @@ function ClassManagement() {
         normalizeClassName(student.class) === normalizeClassName(classRecord.name) &&
         student.current_session === classRecord.session
     ).length;
-  const activeSessionStudents = students.filter(
-    (student) =>
-      isActiveStudent(student) && student.current_session === sessionFilter
-  );
-
   const buildClassStudentRows = () =>
     sortedClassStudents.map((student, index) => ({
       sn: index + 1,
