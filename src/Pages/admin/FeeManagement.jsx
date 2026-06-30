@@ -153,7 +153,8 @@ const studentBelongsToTermClass = (student, classRecord, session, term) => {
 };
 
 const getStudentFeeCategory = (student, session, term) =>
-  getStudentFeeEnrollment(student, session, term)?.fee_category || "returning";
+  getStudentEffectiveFeeEnrollment(student, session, term)?.fee_category ||
+  "returning";
 
 const isFeeExemptCategory = (feeCategory = "") => feeCategory === "vip";
 
@@ -349,9 +350,17 @@ function FeeManagement() {
     selectedFormStudent && feeForm.session && feeForm.term
       ? getStudentFeeEnrollment(selectedFormStudent, feeForm.session, feeForm.term)
       : null;
+  const selectedFormEffectiveEnrollment =
+    selectedFormStudent && feeForm.session && feeForm.term
+      ? getStudentEffectiveFeeEnrollment(
+          selectedFormStudent,
+          feeForm.session,
+          feeForm.term
+        )
+      : null;
   const selectedFormFeeCategory =
     selectedFormStudent && feeForm.session && feeForm.term
-      ? selectedFormEnrollment?.fee_category || "returning"
+      ? selectedFormEffectiveEnrollment?.fee_category || "returning"
       : "";
   const selectedFormIsFeeExempt = isFeeExemptCategory(selectedFormFeeCategory);
 
@@ -2082,8 +2091,8 @@ function FeeManagement() {
             </p>
             {selectedFormStudent && feeForm.term && !selectedFormEnrollment && (
               <p className="mt-2 text-sm font-semibold text-primary/60">
-                No category record was found for this student in this term, so
-                the system is treating the student as Returning/Old.
+                No category record was found for this exact term, so the system
+                is using the latest earlier category for this student.
               </p>
             )}
             {selectedFormIsFeeExempt ? (
