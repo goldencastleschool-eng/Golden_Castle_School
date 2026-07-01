@@ -48,6 +48,15 @@ const initialFeeForm = {
   note: "",
 };
 
+const initialBatchForm = {
+  session: DEFAULT_SESSION,
+  class_record: "",
+  term: "",
+  payment_date: new Date().toISOString().slice(0, 10),
+  payment_method: "",
+  note: "",
+};
+
 const initialStructureForm = {
   session: DEFAULT_SESSION,
   class_record: "",
@@ -124,7 +133,7 @@ const getStudentEffectiveFeeEnrollment = (student, session, term = "") => {
 
   const targetTermIndex = getTermIndex(term);
 
-  return enrollments
+  const effectiveEnrollment = enrollments
     .filter(
       (enrollment) =>
         enrollment.session === session &&
@@ -134,6 +143,19 @@ const getStudentEffectiveFeeEnrollment = (student, session, term = "") => {
       (firstEnrollment, secondEnrollment) =>
         getTermIndex(secondEnrollment.term) - getTermIndex(firstEnrollment.term)
     )[0];
+
+  if (
+    effectiveEnrollment &&
+    effectiveEnrollment.term !== term &&
+    effectiveEnrollment.fee_category === "new"
+  ) {
+    return {
+      ...effectiveEnrollment,
+      fee_category: "returning",
+    };
+  }
+
+  return effectiveEnrollment;
 };
 
 const studentBelongsToTermClass = (student, classRecord, session, term) => {
@@ -224,6 +246,9 @@ function FeeManagement() {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [feeForm, setFeeForm] = useState(initialFeeForm);
+  const [batchForm, setBatchForm] = useState(initialBatchForm);
+  const [batchAmounts, setBatchAmounts] = useState({});
+  const [batchSelectedStudents, setBatchSelectedStudents] = useState({});
   const [structureForm, setStructureForm] = useState(initialStructureForm);
   const [editingFeeId, setEditingFeeId] = useState("");
   const [editingStructureId, setEditingStructureId] = useState("");
@@ -243,6 +268,7 @@ function FeeManagement() {
   const [structureDeleteTarget, setStructureDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [deletingStructure, setDeletingStructure] = useState(false);
+  const [batchSubmitting, setBatchSubmitting] = useState(false);
   const [status, setStatus] = useState({ type: "", message: "" });
 
   const inputClass =
@@ -299,6 +325,11 @@ function FeeManagement() {
     [classes, feeForm.session]
   );
 
+  const batchClasses = useMemo(
+    () => classes.filter((classRecord) => classRecord.session === batchForm.session),
+    [batchForm.session, classes]
+  );
+
   const filterClasses = useMemo(
     () => classes.filter((classRecord) => classRecord.session === filters.session),
     [classes, filters.session]
@@ -336,6 +367,86 @@ function FeeManagement() {
       })
     );
   }, [classes, feeForm.class_record, feeForm.session, feeForm.term, students]);
+
+  const selectedBatchClass = useMemo(
+    () =>
+      classes.find((classRecord) => classRecord._id === batchForm.class_record),
+    [batchForm.class_record, classes]
+  );
+
+  const batchPaymentRows = useMemo(() => {
+    if (!selectedBatchClass || !batchForm.session || !batchForm.term) {
+      return [];
+    }
+
+    return sortStudentsByName(
+      students.filter(
+        (student) =>
+          isActiveStudent(student) &&
+          studentBelongsToTermClass(
+            student,
+            selectedBatchClass,
+            batchForm.session,
+            batchForm.term
+          )
+      )
+    ).map((student) => {
+      const feeCategory = getStudentFeeCategory(
+        student,
+        batchForm.session,
+        batchForm.term
+      );
+      const expectedStructure = findFeeStructure(
+        feeStructures,
+        batchForm.class_record,
+        batchForm.session,
+        batchForm.term,
+        feeCategory
+      );
+      const paid = getStudentPaidForFeeWindow({
+        fees,
+        studentId: student._id,
+        session: batchForm.session,
+        term: batchForm.term,
+        feeCategory,
+      });
+      const isFeeExempt = isFeeExemptCategory(feeCategory);
+      const expected = isFeeExempt ? 0 : Number(expectedStructure?.amount || 0);
+      const balance = isFeeExempt ? 0 : Math.max(expected - paid, 0);
+
+      return {
+        student,
+        feeCategory,
+        expected,
+        paid,
+        balance,
+        isFeeExempt,
+        hasStructure: isFeeExempt || Boolean(expectedStructure),
+      };
+    });
+  }, [
+    batchForm.class_record,
+    batchForm.session,
+    batchForm.term,
+    feeStructures,
+    fees,
+    selectedBatchClass,
+    students,
+  ]);
+
+  const selectedBatchRows = batchPaymentRows.filter(
+    (row) => batchSelectedStudents[row.student._id]
+  );
+  const batchSelectedTotal = selectedBatchRows.reduce(
+    (sum, row) => sum + Number(batchAmounts[row.student._id] || 0),
+    0
+  );
+  const batchPayableRows = batchPaymentRows.filter(
+    (row) => !row.isFeeExempt && row.hasStructure && row.balance > 0
+  );
+  const allPayableBatchRowsSelected =
+    batchPayableRows.length > 0 &&
+    batchPayableRows.every((row) => batchSelectedStudents[row.student._id]);
 
   const selectedFormClass = useMemo(
     () =>
@@ -474,10 +585,178 @@ function FeeManagement() {
       return;
     }
 
+    if (name === "term") {
+      setFeeForm((currentForm) => ({
+        ...currentForm,
+        term: value,
+        student: "",
+      }));
+      return;
+    }
+
     setFeeForm((currentForm) => ({
       ...currentForm,
       [name]: value,
     }));
+  };
+
+  const handleBatchChange = (event) => {
+    const { name, value } = event.target;
+
+    if (name === "session") {
+      setBatchForm((currentForm) => ({
+        ...currentForm,
+        session: value,
+        class_record: "",
+        term: normalizeTermForSession(currentForm.term, value),
+      }));
+      setBatchAmounts({});
+      setBatchSelectedStudents({});
+      return;
+    }
+
+    if (name === "class_record" || name === "term") {
+      setBatchForm((currentForm) => ({
+        ...currentForm,
+        [name]: value,
+      }));
+      setBatchAmounts({});
+      setBatchSelectedStudents({});
+      return;
+    }
+
+    setBatchForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
+  };
+
+  const handleBatchAmountChange = (studentId, value) => {
+    setBatchAmounts((currentAmounts) => ({
+      ...currentAmounts,
+      [studentId]: value,
+    }));
+  };
+
+  const handleBatchStudentToggle = (studentId, checked) => {
+    setBatchSelectedStudents((currentSelected) => ({
+      ...currentSelected,
+      [studentId]: checked,
+    }));
+  };
+
+  const handleBatchSelectAll = () => {
+    const nextSelected = {};
+    const nextAmounts = { ...batchAmounts };
+
+    if (!allPayableBatchRowsSelected) {
+      batchPayableRows.forEach((row) => {
+        nextSelected[row.student._id] = true;
+        nextAmounts[row.student._id] =
+          nextAmounts[row.student._id] || row.balance.toString();
+      });
+    }
+
+    setBatchSelectedStudents(nextSelected);
+    setBatchAmounts(nextAmounts);
+  };
+
+  const handleBatchFillOutstanding = () => {
+    setBatchAmounts((currentAmounts) => ({
+      ...currentAmounts,
+      ...Object.fromEntries(
+        batchPayableRows.map((row) => [
+          row.student._id,
+          row.balance.toString(),
+        ])
+      ),
+    }));
+    setBatchSelectedStudents(
+      Object.fromEntries(
+        batchPayableRows.map((row) => [row.student._id, true])
+      )
+    );
+  };
+
+  const handleBatchClear = () => {
+    setBatchAmounts({});
+    setBatchSelectedStudents({});
+  };
+
+  const handleBatchSubmit = async (event) => {
+    event.preventDefault();
+    setStatus({ type: "", message: "" });
+
+    const payments = selectedBatchRows
+      .map((row) => ({
+        student: row.student._id,
+        amount: Number(batchAmounts[row.student._id] || 0),
+      }))
+      .filter((payment) => payment.amount > 0);
+
+    if (!batchForm.class_record || !batchForm.term) {
+      setStatus({
+        type: "error",
+        message: "Select a class and term before recording batch payments.",
+      });
+      return;
+    }
+
+    if (payments.length === 0) {
+      setStatus({
+        type: "error",
+        message: "Select at least one student with an amount greater than 0.",
+      });
+      return;
+    }
+
+    setBatchSubmitting(true);
+
+    try {
+      const response = await API.post("/fees/batch", {
+        session: batchForm.session,
+        term: batchForm.term,
+        payment_date: batchForm.payment_date,
+        payment_method: batchForm.payment_method,
+        note: batchForm.note,
+        payments,
+      });
+      const createdFees = response.data?.created || [];
+      const skippedCount = response.data?.skippedCount || 0;
+
+      if (createdFees.length > 0) {
+        setFees((currentFees) => [...createdFees, ...currentFees]);
+      }
+
+      setStatus({
+        type: skippedCount > 0 ? "error" : "success",
+        message:
+          skippedCount > 0 && response.data?.errors?.[0]?.message
+            ? `${response.data.message} First issue: ${response.data.errors[0].message}`
+            : response.data?.message ||
+              `${createdFees.length} payment(s) recorded.`,
+      });
+      setBatchAmounts({});
+      setBatchSelectedStudents({});
+    } catch (error) {
+      const responseData = error.response?.data;
+      const createdFees = responseData?.created || [];
+
+      if (createdFees.length > 0) {
+        setFees((currentFees) => [...createdFees, ...currentFees]);
+      }
+
+      setStatus({
+        type: createdFees.length > 0 ? "error" : "error",
+        message:
+          responseData?.message ||
+          responseData?.errors?.[0]?.message ||
+          responseData?.error ||
+          "Unable to record batch fee payments.",
+      });
+    } finally {
+      setBatchSubmitting(false);
+    }
   };
 
   const handleStructureChange = (event) => {
@@ -2229,6 +2508,244 @@ function FeeManagement() {
               Cancel Edit
             </button>
           )}
+        </form>
+
+        <form
+          onSubmit={handleBatchSubmit}
+          className="rounded-lg bg-secondary p-6 shadow-lg"
+        >
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h3 className="text-3xl font-extrabold text-primary">
+                Batch Fee Payment
+              </h3>
+              <p className="mt-3 max-w-2xl text-primary/70">
+                Record payments for multiple students in the same class, session,
+                and term.
+              </p>
+            </div>
+            <div className="rounded-lg bg-primary/5 px-5 py-4 text-primary">
+              <p className="text-sm font-bold uppercase text-primary/60">
+                Selected Total
+              </p>
+              <p className="mt-1 text-2xl font-extrabold">
+                {formatCurrency(batchSelectedTotal)}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-7 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <select
+              className={inputClass}
+              name="session"
+              value={batchForm.session}
+              onChange={handleBatchChange}
+              required
+            >
+              <option value="">Select session</option>
+              {sessionOptions.map((session) => (
+                <option key={session} value={session}>
+                  {session}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className={inputClass}
+              name="class_record"
+              value={batchForm.class_record}
+              onChange={handleBatchChange}
+              disabled={!batchForm.session}
+              required
+            >
+              <option value="">
+                {batchForm.session ? "Select class" : "Select session first"}
+              </option>
+              {batchClasses.map((classRecord) => (
+                <option key={classRecord._id} value={classRecord._id}>
+                  {classRecord.name.toUpperCase()}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className={inputClass}
+              name="term"
+              value={batchForm.term}
+              onChange={handleBatchChange}
+              required
+            >
+              <option value="">Select term</option>
+              {getVisibleTermsForSession(batchForm.session).map((term) => (
+                <option key={term} value={term}>
+                  {term}
+                </option>
+              ))}
+            </select>
+
+            <input
+              className={inputClass}
+              name="payment_date"
+              type="date"
+              value={batchForm.payment_date}
+              onChange={handleBatchChange}
+              required
+            />
+
+            <select
+              className={inputClass}
+              name="payment_method"
+              value={batchForm.payment_method}
+              onChange={handleBatchChange}
+            >
+              <option value="">Payment method</option>
+              <option value="Cash">Cash</option>
+              <option value="Transfer">Transfer</option>
+              <option value="POS">POS</option>
+              <option value="Bank Deposit">Bank Deposit</option>
+            </select>
+
+            <input
+              className={inputClass}
+              name="note"
+              value={batchForm.note}
+              onChange={handleBatchChange}
+              placeholder="Optional note for all payments"
+            />
+          </div>
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={handleBatchFillOutstanding}
+              disabled={batchPayableRows.length === 0}
+              className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-primary px-5 py-3 font-bold text-secondary transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Fill Outstanding
+              <FaMoneyBillWave />
+            </button>
+            <button
+              type="button"
+              onClick={handleBatchSelectAll}
+              disabled={batchPayableRows.length === 0}
+              className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-3 font-bold text-secondary transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {allPayableBatchRowsSelected ? "Clear Selection" : "Select Payable"}
+              <FaCircleCheck />
+            </button>
+            <button
+              type="button"
+              onClick={handleBatchClear}
+              className="rounded-lg bg-primary/10 px-5 py-3 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
+            >
+              Clear Batch
+            </button>
+          </div>
+
+          <div className="mt-6 overflow-x-auto rounded-lg border border-primary/10">
+            <table className="w-full min-w-[980px] text-left">
+              <thead className="bg-primary/10 text-primary">
+                <tr>
+                  <th className="px-5 py-4 font-bold">Use</th>
+                  <th className="px-5 py-4 font-bold">Student</th>
+                  <th className="px-5 py-4 font-bold">Admission No.</th>
+                  <th className="px-5 py-4 font-bold">Fee Category</th>
+                  <th className="px-5 py-4 font-bold">Expected</th>
+                  <th className="px-5 py-4 font-bold">Paid</th>
+                  <th className="px-5 py-4 font-bold">Balance</th>
+                  <th className="px-5 py-4 font-bold">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-primary/10">
+                {!batchForm.class_record || !batchForm.term ? (
+                  <tr>
+                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                      Select a class and term to load students for batch payment.
+                    </td>
+                  </tr>
+                ) : batchPaymentRows.length === 0 ? (
+                  <tr>
+                    <td className="px-5 py-6 text-primary/70" colSpan="8">
+                      No active student found for this class and term.
+                    </td>
+                  </tr>
+                ) : (
+                  batchPaymentRows.map((row) => {
+                    const disabled =
+                      row.isFeeExempt || !row.hasStructure || row.balance <= 0;
+                    const studentId = row.student._id;
+
+                    return (
+                      <tr key={studentId} className="text-primary/80">
+                        <td className="px-5 py-4">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(batchSelectedStudents[studentId])}
+                            onChange={(event) =>
+                              handleBatchStudentToggle(
+                                studentId,
+                                event.target.checked
+                              )
+                            }
+                            disabled={disabled}
+                            className="h-5 w-5 accent-button disabled:cursor-not-allowed"
+                          />
+                        </td>
+                        <td className="px-5 py-4 font-semibold text-primary">
+                          {row.student.full_name}
+                        </td>
+                        <td className="px-5 py-4">
+                          {row.student.admission_no}
+                        </td>
+                        <td className="px-5 py-4">
+                          {formatFeeCategory(row.feeCategory)}
+                        </td>
+                        <td className="px-5 py-4">
+                          {formatCurrency(row.expected)}
+                        </td>
+                        <td className="px-5 py-4">
+                          {formatCurrency(row.paid)}
+                        </td>
+                        <td className="px-5 py-4">
+                          {row.isFeeExempt
+                            ? "Exempt"
+                            : row.hasStructure
+                              ? formatCurrency(row.balance)
+                              : "No structure"}
+                        </td>
+                        <td className="px-5 py-4">
+                          <input
+                            className="w-32 rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20 disabled:cursor-not-allowed disabled:opacity-60"
+                            type="number"
+                            min="0"
+                            max={row.balance}
+                            value={batchAmounts[studentId] || ""}
+                            onChange={(event) =>
+                              handleBatchAmountChange(
+                                studentId,
+                                event.target.value
+                              )
+                            }
+                            disabled={disabled}
+                            placeholder="0"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <button
+            type="submit"
+            disabled={batchSubmitting || selectedBatchRows.length === 0}
+            className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {batchSubmitting ? "Recording batch..." : "Record Batch Payments"}
+            {!batchSubmitting && <FaArrowRight />}
+          </button>
         </form>
 
         <section className="rounded-lg bg-secondary p-6 shadow-lg">

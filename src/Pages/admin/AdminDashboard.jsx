@@ -80,7 +80,7 @@ const getStudentEffectiveTermEnrollment = (student, session, term) => {
     : [];
   const targetTermIndex = getTermIndex(term);
 
-  return enrollments
+  const effectiveEnrollment = enrollments
     .filter(
       (enrollment) =>
         enrollment.session === session &&
@@ -90,6 +90,19 @@ const getStudentEffectiveTermEnrollment = (student, session, term) => {
       (firstEnrollment, secondEnrollment) =>
         getTermIndex(secondEnrollment.term) - getTermIndex(firstEnrollment.term)
     )[0];
+
+  if (
+    effectiveEnrollment &&
+    effectiveEnrollment.term !== term &&
+    effectiveEnrollment.fee_category === "new"
+  ) {
+    return {
+      ...effectiveEnrollment,
+      fee_category: "returning",
+    };
+  }
+
+  return effectiveEnrollment;
 };
 
 const studentBelongsToEffectiveTermClass = (

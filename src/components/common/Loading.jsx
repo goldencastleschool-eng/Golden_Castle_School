@@ -1,11 +1,20 @@
+import schoolLogo from "../../assets/1723987411228.jpg";
+
 function PageLoader({ message = "Loading application..." }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6 text-secondary">
       <div className="flex w-full max-w-sm flex-col items-center text-center">
-        <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-secondary shadow-2xl">
-          <div className="absolute inset-0 rounded-2xl border-4 border-button/20"></div>
-          <div className="absolute inset-0 rounded-2xl border-4 border-transparent border-t-button animate-spin"></div>
-          <span className="text-2xl font-extrabold text-primary">GC</span>
+        <div className="relative flex h-28 w-28 items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-[3px] border-button/15"></div>
+          <div className="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent border-t-button border-r-button shadow-[0_0_24px_rgba(212,160,23,0.25)]"></div>
+          <div className="absolute inset-2 rounded-full border border-button/20 bg-secondary shadow-2xl"></div>
+          <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-white ring-4 ring-secondary">
+            <img
+              src={schoolLogo}
+              alt="Golden Castle International School"
+              className="h-full w-full object-cover"
+            />
+          </div>
         </div>
 
         <h1 className="mt-6 text-2xl font-extrabold">
