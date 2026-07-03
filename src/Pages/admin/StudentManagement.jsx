@@ -27,6 +27,8 @@ const initialStudentForm = {
   current_session: "",
   admission_term: "",
   fee_category: "",
+  discount_amount: "",
+  discount_reason: "",
   gender: "",
   password: "",
 };
@@ -167,6 +169,18 @@ function StudentManagement() {
         ...currentForm,
         admission_term: value,
         fee_category: termEnrollment?.fee_category || "",
+        discount_amount: termEnrollment?.discount_amount?.toString() || "",
+        discount_reason: termEnrollment?.discount_reason || "",
+      }));
+      return;
+    }
+
+    if (name === "fee_category" && value !== "discounted") {
+      setStudentForm((currentForm) => ({
+        ...currentForm,
+        fee_category: value,
+        discount_amount: "",
+        discount_reason: "",
       }));
       return;
     }
@@ -260,6 +274,8 @@ function StudentManagement() {
       current_session: student.current_session || "",
       admission_term: currentEnrollment.term || "",
       fee_category: currentEnrollment.fee_category || "",
+      discount_amount: currentEnrollment.discount_amount?.toString() || "",
+      discount_reason: currentEnrollment.discount_reason || "",
       gender: student.gender || "",
       password: "",
     });
@@ -582,6 +598,27 @@ function StudentManagement() {
                 </option>
               ))}
             </select>
+            {studentForm.fee_category === "discounted" && (
+              <>
+                <input
+                  className={inputClass}
+                  name="discount_amount"
+                  type="number"
+                  min="0"
+                  value={studentForm.discount_amount}
+                  onChange={handleChange}
+                  placeholder="Discount amount"
+                  required
+                />
+                <input
+                  className={inputClass}
+                  name="discount_reason"
+                  value={studentForm.discount_reason}
+                  onChange={handleChange}
+                  placeholder="Discount reason"
+                />
+              </>
+            )}
             <input
               className={inputClass}
               name="password"
@@ -755,7 +792,15 @@ function StudentManagement() {
                           );
 
                           return enrollment
-                            ? `${formatFeeCategory(enrollment.fee_category)} - ${enrollment.term}`
+                            ? `${formatFeeCategory(enrollment.fee_category)} - ${enrollment.term}${
+                                Number(enrollment.discount_amount || 0) > 0
+                                  ? ` (${new Intl.NumberFormat("en-NG", {
+                                      style: "currency",
+                                      currency: "NGN",
+                                      maximumFractionDigits: 0,
+                                    }).format(enrollment.discount_amount)} discount)`
+                                  : ""
+                              }`
                             : "Not set";
                         })()}
                       </td>
@@ -869,7 +914,15 @@ function StudentManagement() {
                           );
 
                           return enrollment
-                            ? `${formatFeeCategory(enrollment.fee_category)} - ${enrollment.term}`
+                            ? `${formatFeeCategory(enrollment.fee_category)} - ${enrollment.term}${
+                                Number(enrollment.discount_amount || 0) > 0
+                                  ? ` (${new Intl.NumberFormat("en-NG", {
+                                      style: "currency",
+                                      currency: "NGN",
+                                      maximumFractionDigits: 0,
+                                    }).format(enrollment.discount_amount)} discount)`
+                                  : ""
+                              }`
                             : "Not set";
                         })()}
                       </td>

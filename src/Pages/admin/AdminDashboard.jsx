@@ -66,6 +66,28 @@ const getRecordId = (record) => record?._id || record || "";
 const isActiveStudent = (student) =>
   !student.status || student.status === "active";
 
+const isFeeExemptCategory = (feeCategory = "") =>
+  ["vip", "scholarship"].includes(feeCategory);
+
+const getStructureCategoriesForFeeCategory = (feeCategory = "returning") =>
+  feeCategory === "discounted"
+    ? ["returning", "discounted"]
+    : [feeCategory || "returning"];
+
+const getAdjustedExpectedFee = ({ structureAmount = 0, enrollment = {} }) => {
+  const feeCategory = enrollment?.fee_category || "returning";
+  const baseAmount = Number(structureAmount || 0);
+  const rawDiscountAmount = Number(enrollment?.discount_amount || 0);
+  const discountAmount =
+    feeCategory === "discounted" && Number.isFinite(rawDiscountAmount)
+      ? Math.min(Math.max(rawDiscountAmount, 0), baseAmount)
+      : 0;
+
+  return isFeeExemptCategory(feeCategory)
+    ? 0
+    : Math.max(baseAmount - discountAmount, 0);
+};
+
 const TERM_ORDER = ["First Term", "Second Term", "Third Term"];
 
 const getTermIndex = (term = "") => {
@@ -435,6 +457,22 @@ function AdminDashboard() {
     });
   }, [activeSessionStudents, populationSessionFilter, populationTermFilter]);
 
+  const feeCategoryCounts = useMemo(() => {
+    return activeSessionStudents.reduce((counts, student) => {
+      const effectiveEnrollment = getStudentEffectiveTermEnrollment(
+        student,
+        populationSessionFilter,
+        populationTermFilter
+      );
+      const feeCategory = effectiveEnrollment?.fee_category || "returning";
+
+      return {
+        ...counts,
+        [feeCategory]: (counts[feeCategory] || 0) + 1,
+      };
+    }, {});
+  }, [activeSessionStudents, populationSessionFilter, populationTermFilter]);
+
   const returningOldStudentsCount = Math.max(
     activeSessionStudents.length - newlyAdmittedStudents.length,
     0
@@ -481,13 +519,16 @@ function AdminDashboard() {
         );
       });
 
-    const paidByStudent = new Map();
+    const paidByStudentAndCategory = new Map();
 
     sessionFees.forEach((fee) => {
       const studentId = getRecordId(fee.student);
-      paidByStudent.set(
-        studentId,
-        (paidByStudent.get(studentId) || 0) +
+      const feeCategory = fee.fee_category || "returning";
+      const feeKey = `${studentId}|${feeCategory}`;
+
+      paidByStudentAndCategory.set(
+        feeKey,
+        (paidByStudentAndCategory.get(feeKey) || 0) +
           Number(fee.amount_paid || fee.amount || 0)
       );
     });
@@ -502,11 +543,24 @@ function AdminDashboard() {
         getRecordId(effectiveEnrollment?.class_record) ||
         getRecordId(student.class_record);
       const feeCategory = effectiveEnrollment?.fee_category || "returning";
-      const expected =
-        structureByClassAndCategory.get(
-          `${classRecordId || "no-class"}|${feeCategory}`
-        ) || 0;
-      const paid = paidByStudent.get(getRecordId(student)) || 0;
+      const structureAmount =
+        getStructureCategoriesForFeeCategory(feeCategory)
+          .map((structureCategory) =>
+            structureByClassAndCategory.get(
+              `${classRecordId || "no-class"}|${structureCategory}`
+            )
+          )
+          .find((amount) => amount !== undefined) || 0;
+      const expected = getAdjustedExpectedFee({
+        structureAmount,
+        enrollment: {
+          ...effectiveEnrollment,
+          fee_category: feeCategory,
+        },
+      });
+      const paid =
+        paidByStudentAndCategory.get(`${getRecordId(student)}|${feeCategory}`) ||
+        0;
 
       return {
         expected,
@@ -525,6 +579,8 @@ function AdminDashboard() {
         (sum, row) => sum + Number(row.outstanding || 0),
         0
       ),
+      outstandingCount: studentFeeRows.filter((row) => row.outstanding > 0)
+        .length,
       records: sessionFees.length,
     };
   }, [
@@ -881,6 +937,26 @@ function AdminDashboard() {
           value: loading ? "..." : activeGenderSummary.Female || 0,
           icon: <FaUsers />,
         },
+        {
+          title: "Scholarship Students",
+          value: loading ? "..." : feeCategoryCounts.scholarship || 0,
+          icon: <FaGraduationCap />,
+        },
+        {
+          title: "Discounted Students",
+          value: loading ? "..." : feeCategoryCounts.discounted || 0,
+          icon: <FaMoneyBillWave />,
+        },
+        {
+          title: "Staff Children",
+          value: loading ? "..." : feeCategoryCounts.staff_child || 0,
+          icon: <FaUsers />,
+        },
+        {
+          title: "VIP Students",
+          value: loading ? "..." : feeCategoryCounts.vip || 0,
+          icon: <FaUsers />,
+        },
       ],
     },
     {
@@ -940,6 +1016,11 @@ function AdminDashboard() {
           title: "Outstanding",
           value: loading ? "..." : formatCurrency(feeSummary.outstanding),
           icon: <FaMoneyBillWave />,
+        },
+        {
+          title: "Students With Outstanding Fee",
+          value: loading ? "..." : feeSummary.outstandingCount,
+          icon: <FaUsers />,
         },
         {
           title: "Payment Records",

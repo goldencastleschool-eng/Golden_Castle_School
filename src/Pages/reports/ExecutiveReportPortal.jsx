@@ -399,6 +399,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
   };
 
   const summary = report?.summary || emptySummary;
+  const feeCategoryCounts = summary.fee_category_counts || emptySummary;
   const classSummaries = report?.class_summaries || emptyList;
   const classOptions = report?.class_options || emptyList;
   const newlyAdmittedStudents = report?.newly_admitted_students || emptyList;
@@ -723,30 +724,52 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
 
         {showFeePage && (
         <>
-        <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard
-            title="Total Students"
-            value={loading ? "..." : summary.total_students || 0}
-            icon={<FaUsers />}
-          />
-          <SummaryCard
-            title="Newly Admitted"
-            value={loading ? "..." : summary.newly_admitted || 0}
-            icon={<FaUserGraduate />}
-            tone="green"
-          />
-          <SummaryCard
-            title="Returning Students"
-            value={loading ? "..." : summary.returning || 0}
-            icon={<FaUserCheck />}
-            tone="amber"
-          />
-          <SummaryCard
-            title="Outstanding Students"
-            value={loading ? "..." : summary.outstanding_students || 0}
-            icon={<FaMoneyBillWave />}
-            tone="red"
-          />
+        <section className="mb-6">
+          <div className="mb-4">
+            <h2 className="text-2xl font-extrabold text-secondary">
+              Student Summary
+            </h2>
+            <p className="mt-1 text-sm font-semibold text-secondary/70">
+              Population and special fee category counts for the selected filter.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <SummaryCard
+              title="Total Students"
+              value={loading ? "..." : summary.total_students || 0}
+              icon={<FaUsers />}
+            />
+            <SummaryCard
+              title="Newly Admitted"
+              value={loading ? "..." : summary.newly_admitted || 0}
+              icon={<FaUserGraduate />}
+              tone="green"
+            />
+            <SummaryCard
+              title="Returning Students"
+              value={loading ? "..." : summary.returning || 0}
+              icon={<FaUserCheck />}
+              tone="amber"
+            />
+            <SummaryCard
+              title="Scholarship Students"
+              value={loading ? "..." : feeCategoryCounts.scholarship || 0}
+              icon={<FaUserGraduate />}
+              tone="green"
+            />
+            <SummaryCard
+              title="Staff Children"
+              value={loading ? "..." : feeCategoryCounts.staff_child || 0}
+              icon={<FaUsers />}
+              tone="amber"
+            />
+            <SummaryCard
+              title="VIP Students"
+              value={loading ? "..." : feeCategoryCounts.vip || 0}
+              icon={<FaUserCheck />}
+            />
+          </div>
         </section>
 
         <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.8fr]">
@@ -765,7 +788,7 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-lg bg-primary/5 p-5">
                 <p className="text-sm font-bold text-primary/60">Total Fee</p>
                 <p className="mt-2 text-2xl font-extrabold text-primary">
@@ -782,6 +805,14 @@ function ExecutiveReportPortal({ embedded = false, page = "fee" }) {
                 <p className="text-sm font-bold text-red-300">Balance</p>
                 <p className="mt-2 text-2xl font-extrabold text-red-200">
                   {loading ? "..." : formatCurrency(summary.balance)}
+                </p>
+              </div>
+              <div className="rounded-lg bg-red-500/10 p-5">
+                <p className="text-sm font-bold text-red-300">
+                  Students With Outstanding Fee
+                </p>
+                <p className="mt-2 text-2xl font-extrabold text-red-200">
+                  {loading ? "..." : summary.outstanding_students || 0}
                 </p>
               </div>
             </div>

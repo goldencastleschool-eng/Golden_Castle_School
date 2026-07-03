@@ -53,6 +53,7 @@ export const printPaymentReceipt = ({
   const studentId = getFeeStudentId(fee);
   const receiptNumber = getFeeReceiptNumber(fee);
   const expectedAmount = Number(fee.expected_amount_at_payment || 0);
+  const discountAmount = Number(fee.discount_amount_at_payment || 0);
   const relatedPayments = studentId
     ? payments.filter(
         (payment) =>
@@ -70,6 +71,16 @@ export const printPaymentReceipt = ({
     ? fee.expected_items_at_payment
     : [];
   const logoUrl = new URL(schoolLogo, window.location.origin).href;
+  const discountRow =
+    discountAmount > 0
+      ? `
+        <tr>
+          <td>${feeItems.length > 0 ? feeItems.length + 1 : 2}</td>
+          <td>Student Discount</td>
+          <td>-${escapeHtml(formatCurrency(discountAmount))}</td>
+        </tr>
+      `
+      : "";
   const feeItemRows = feeItems.length
     ? feeItems
         .map(
@@ -81,14 +92,14 @@ export const printPaymentReceipt = ({
             </tr>
           `
         )
-        .join("")
+        .join("") + discountRow
     : `
       <tr>
         <td>1</td>
         <td>Expected Fee</td>
         <td>${escapeHtml(formatCurrency(expectedAmount))}</td>
       </tr>
-    `;
+    ${discountRow}`;
   const noteMarkup = fee.note
     ? `<div class="note"><strong>Note:</strong> ${escapeHtml(fee.note)}</div>`
     : "";

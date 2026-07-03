@@ -2,9 +2,12 @@ export const feeCategories = [
   { value: "new", label: "Newly Admitted" },
   { value: "returning", label: "Returning/Old" },
   { value: "vip", label: "VIP Student" },
+  { value: "scholarship", label: "Scholarship Student" },
   { value: "discounted", label: "Discounted Student" },
   { value: "staff_child", label: "Staff Child" },
 ];
+
+export const feeExemptCategories = ["vip", "scholarship"];
 
 const legacyFeeCategoryLabels = {
   boarding: "Boarding Student (legacy)",
@@ -14,6 +17,9 @@ export const formatFeeCategory = (feeCategory = "") =>
   feeCategories.find((category) => category.value === feeCategory)?.label ||
   legacyFeeCategoryLabels[feeCategory] ||
   "Returning/Old";
+
+export const isFeeExemptCategory = (feeCategory = "") =>
+  feeExemptCategories.includes(feeCategory);
 
 export const getDefaultFeeItems = (feeCategory = "returning") => {
   if (feeCategory === "new") {

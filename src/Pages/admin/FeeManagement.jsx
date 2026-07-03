@@ -31,6 +31,7 @@ import {
   formatFeeCategory,
   getDefaultFeeItems,
   getFeeItemsKey,
+  isFeeExemptCategory,
 } from "../../utils/feeCategories.js";
 
 const DEFAULT_SESSION = "2025/2026";
@@ -178,7 +179,10 @@ const getStudentFeeCategory = (student, session, term) =>
   getStudentEffectiveFeeEnrollment(student, session, term)?.fee_category ||
   "returning";
 
-const isFeeExemptCategory = (feeCategory = "") => feeCategory === "vip";
+const getStructureCategoriesForFeeCategory = (feeCategory = "returning") =>
+  feeCategory === "discounted"
+    ? ["returning", "discounted"]
+    : [feeCategory || "returning"];
 
 const getStructureTotal = (items = []) =>
   items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -197,6 +201,49 @@ const findFeeStructure = (
       feeStructure.term === term &&
       (feeStructure.fee_category || "returning") === feeCategory
   );
+
+const findFeeStructureForStudentFee = (
+  feeStructures,
+  classRecordId,
+  session,
+  term,
+  feeCategory
+) => {
+  const structureCategories = getStructureCategoriesForFeeCategory(feeCategory);
+
+  return structureCategories
+    .map((structureCategory) =>
+      findFeeStructure(
+        feeStructures,
+        classRecordId,
+        session,
+        term,
+        structureCategory
+      )
+    )
+    .find(Boolean);
+};
+
+const getExpectedFeeSnapshot = ({ feeStructure, enrollment }) => {
+  const feeCategory = enrollment?.fee_category || "returning";
+  const baseAmount = Number(feeStructure?.amount || 0);
+  const rawDiscountAmount = Number(enrollment?.discount_amount || 0);
+  const discountAmount =
+    feeCategory === "discounted" && Number.isFinite(rawDiscountAmount)
+      ? Math.min(Math.max(rawDiscountAmount, 0), baseAmount)
+      : 0;
+  const expectedAmount = isFeeExemptCategory(feeCategory)
+    ? 0
+    : Math.max(baseAmount - discountAmount, 0);
+
+  return {
+    baseAmount,
+    discountAmount,
+    discountReason: enrollment?.discount_reason || "",
+    expectedAmount,
+    isExempt: isFeeExemptCategory(feeCategory),
+  };
+};
 
 const getFeeStructurePaymentCount = (feeStructure, fees = []) => {
   const structureClassId = getRecordId(feeStructure.class_record);
@@ -396,7 +443,12 @@ function FeeManagement() {
         batchForm.session,
         batchForm.term
       );
-      const expectedStructure = findFeeStructure(
+      const enrollment = getStudentEffectiveFeeEnrollment(
+        student,
+        batchForm.session,
+        batchForm.term
+      );
+      const expectedStructure = findFeeStructureForStudentFee(
         feeStructures,
         batchForm.class_record,
         batchForm.session,
@@ -411,12 +463,22 @@ function FeeManagement() {
         feeCategory,
       });
       const isFeeExempt = isFeeExemptCategory(feeCategory);
-      const expected = isFeeExempt ? 0 : Number(expectedStructure?.amount || 0);
+      const expectedSnapshot = getExpectedFeeSnapshot({
+        feeStructure: expectedStructure,
+        enrollment: {
+          ...enrollment,
+          fee_category: feeCategory,
+        },
+      });
+      const expected = expectedSnapshot.expectedAmount;
       const balance = isFeeExempt ? 0 : Math.max(expected - paid, 0);
 
       return {
         student,
         feeCategory,
+        baseExpected: expectedSnapshot.baseAmount,
+        discountAmount: expectedSnapshot.discountAmount,
+        discountReason: expectedSnapshot.discountReason,
         expected,
         paid,
         balance,
@@ -475,7 +537,7 @@ function FeeManagement() {
       : "";
   const selectedFormIsFeeExempt = isFeeExemptCategory(selectedFormFeeCategory);
 
-  const selectedFormStructure = findFeeStructure(
+  const selectedFormStructure = findFeeStructureForStudentFee(
     feeStructures,
     feeForm.class_record,
     feeForm.session,
@@ -512,7 +574,20 @@ function FeeManagement() {
 
   const selectedFormExpectedAmount = selectedFormIsFeeExempt
     ? 0
-    : Number(selectedFormStructure?.amount || 0);
+    : getExpectedFeeSnapshot({
+        feeStructure: selectedFormStructure,
+        enrollment: {
+          ...selectedFormEffectiveEnrollment,
+          fee_category: selectedFormFeeCategory,
+        },
+      }).expectedAmount;
+  const selectedFormExpectedSnapshot = getExpectedFeeSnapshot({
+    feeStructure: selectedFormStructure,
+    enrollment: {
+      ...selectedFormEffectiveEnrollment,
+      fee_category: selectedFormFeeCategory,
+    },
+  });
   const selectedStudentRemainingBeforePayment = selectedFormIsFeeExempt
     ? 0
     : selectedFormStructure
@@ -958,7 +1033,7 @@ function FeeManagement() {
     if (selectedFormIsFeeExempt) {
       setStatus({
         type: "error",
-        message: "VIP students are fee-exempt and do not require payment records.",
+        message: "This student is fee-exempt and does not require payment records.",
       });
       setSubmitting(false);
       return;
@@ -1283,19 +1358,34 @@ function FeeManagement() {
           term: filters.term,
           feeCategory,
         });
-        const expectedStructure = findFeeStructure(
+        const enrollment = getStudentEffectiveFeeEnrollment(
+          student,
+          filters.session,
+          filters.term
+        );
+        const expectedStructure = findFeeStructureForStudentFee(
           feeStructures,
           filters.class_record,
           filters.session,
           filters.term,
           feeCategory
         );
-        const expected = Number(expectedStructure?.amount || 0);
         const isFeeExempt = isFeeExemptCategory(feeCategory);
+        const expectedSnapshot = getExpectedFeeSnapshot({
+          feeStructure: expectedStructure,
+          enrollment: {
+            ...enrollment,
+            fee_category: feeCategory,
+          },
+        });
+        const expected = expectedSnapshot.expectedAmount;
 
         return {
           student,
           feeCategory,
+          baseExpected: expectedSnapshot.baseAmount,
+          discountAmount: expectedSnapshot.discountAmount,
+          discountReason: expectedSnapshot.discountReason,
           expected: isFeeExempt ? 0 : expected,
           paid: isFeeExempt ? 0 : paid,
           balance: isFeeExempt ? 0 : Math.max(expected - paid, 0),
@@ -1510,6 +1600,7 @@ function FeeManagement() {
     const studentId = getFeeStudentId(fee);
     const receiptNumber = getFeeReceiptNumber(fee);
     const expectedAmount = Number(fee.expected_amount_at_payment || 0);
+    const discountAmount = Number(fee.discount_amount_at_payment || 0);
     const relatedPayments = studentId
       ? fees.filter(
           (payment) =>
@@ -1527,6 +1618,16 @@ function FeeManagement() {
       ? fee.expected_items_at_payment
       : [];
     const logoUrl = new URL(schoolLogo, window.location.origin).href;
+    const discountRow =
+      discountAmount > 0
+        ? `
+          <tr>
+            <td>${feeItems.length > 0 ? feeItems.length + 1 : 2}</td>
+            <td>Student Discount</td>
+            <td>-${escapeHtml(formatCurrency(discountAmount))}</td>
+          </tr>
+        `
+        : "";
     const feeItemRows = feeItems.length
       ? feeItems
           .map(
@@ -1538,14 +1639,14 @@ function FeeManagement() {
               </tr>
             `
           )
-          .join("")
+          .join("") + discountRow
       : `
         <tr>
           <td>1</td>
           <td>Expected Fee</td>
           <td>${escapeHtml(formatCurrency(expectedAmount))}</td>
         </tr>
-      `;
+      ${discountRow}`;
     const noteMarkup = fee.note
       ? `<div class="note"><strong>Note:</strong> ${escapeHtml(fee.note)}</div>`
       : "";
@@ -2380,7 +2481,7 @@ function FeeManagement() {
                   Fee Exempt
                 </p>
                 <p className="mt-2 text-primary/75">
-                  This student is marked as VIP and does not pay school fees.
+                  This student is fee-exempt and does not pay school fees.
                   No payment record or fee structure is required.
                 </p>
                 <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -2441,8 +2542,14 @@ function FeeManagement() {
                       Expected
                     </p>
                     <p className="mt-1 text-2xl font-extrabold text-primary">
-                      {formatCurrency(selectedFormStructure.amount)}
+                      {formatCurrency(selectedFormExpectedAmount)}
                     </p>
+                    {selectedFormExpectedSnapshot.discountAmount > 0 && (
+                      <p className="mt-2 text-sm font-semibold text-primary/60">
+                        Base {formatCurrency(selectedFormExpectedSnapshot.baseAmount)} -
+                        discount {formatCurrency(selectedFormExpectedSnapshot.discountAmount)}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-primary/60">
@@ -2490,7 +2597,7 @@ function FeeManagement() {
             className="mt-7 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {selectedFormIsFeeExempt
-              ? "VIP Student - No Payment Required"
+              ? "Fee Exempt - No Payment Required"
               : submitting
               ? "Saving payment..."
               : editingFeeId
