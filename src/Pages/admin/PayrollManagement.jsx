@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
 import { getVisibleTermsForSession } from "../../utils/academicTerms.js";
@@ -173,6 +174,7 @@ function PayrollManagement() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [assignmentPage, setAssignmentPage] = useState(1);
   const [paymentPage, setPaymentPage] = useState(1);
   const [assignmentTotal, setAssignmentTotal] = useState(0);
@@ -810,38 +812,42 @@ function PayrollManagement() {
   };
 
   const handleDelete = async ({ endpoint, id, collection }) => {
-    const confirmed = window.confirm("Delete this payroll record?");
+    setDeleteTarget({ endpoint, id, collection });
+  };
 
-    if (!confirmed) {
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget?.endpoint || !deleteTarget?.id) {
       return;
     }
 
-    setSubmitting(`${endpoint}-${id}`);
+    setSubmitting(`${deleteTarget.endpoint}-${deleteTarget.id}`);
     setStatus({ type: "", message: "" });
 
     try {
-      await API.delete(`/payroll/${endpoint}/${id}`);
+      await API.delete(
+        `/payroll/${deleteTarget.endpoint}/${deleteTarget.id}`
+      );
 
       const removeRecord = (records) =>
-        records.filter((record) => record._id !== id);
+        records.filter((record) => record._id !== deleteTarget.id);
 
-      if (collection === "levels") {
+      if (deleteTarget.collection === "levels") {
         setLevels(removeRecord);
       }
 
-      if (collection === "staff") {
+      if (deleteTarget.collection === "staff") {
         setStaff(removeRecord);
       }
 
-      if (collection === "structures") {
+      if (deleteTarget.collection === "structures") {
         setStructures(removeRecord);
       }
 
-      if (collection === "assignments") {
+      if (deleteTarget.collection === "assignments") {
         setAssignments(removeRecord);
       }
 
-      if (collection === "payments") {
+      if (deleteTarget.collection === "payments") {
         setPayments(removeRecord);
       }
 
@@ -849,6 +855,7 @@ function PayrollManagement() {
         type: "success",
         message: "Payroll record deleted successfully.",
       });
+      setDeleteTarget(null);
     } catch (error) {
       setStatus({
         type: "error",
@@ -867,6 +874,18 @@ function PayrollManagement() {
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}
+      />
+      <AdminDeleteModal
+        open={Boolean(deleteTarget)}
+        title="Delete Payroll Record"
+        message="This action will permanently remove this payroll record if it has no linked protected records."
+        details={deleteTarget?.collection || ""}
+        confirmLabel="Delete Record"
+        loading={
+          submitting === `${deleteTarget?.endpoint}-${deleteTarget?.id}`
+        }
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
       />
 
       <div className="mx-auto max-w-[1500px]">

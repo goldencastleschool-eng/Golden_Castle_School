@@ -8,6 +8,8 @@ import {
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
+import AdminNotification from "../../components/common/AdminNotification.jsx";
 
 const emptyForm = {
   title: "",
@@ -44,6 +46,8 @@ function PortalNotices() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState({ type: "", message: "" });
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const activeNotices = useMemo(
     () => notices.filter((notice) => notice.is_active),
@@ -139,26 +143,29 @@ function PortalNotices() {
     }
   };
 
-  const handleDelete = async (noticeId) => {
-    const confirmed = window.confirm(
-      "Delete this notice and its read confirmations?"
-    );
+  const handleDeleteRequest = (notice) => {
+    setDeleteTarget(notice);
+  };
 
-    if (!confirmed) {
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget?._id) {
       return;
     }
 
     try {
-      await API.delete(`/portal-notices/admin/${noticeId}`);
+      setDeleting(true);
+      await API.delete(`/portal-notices/admin/${deleteTarget._id}`);
       setStatus({
         type: "success",
         message: "Portal notice deleted successfully.",
       });
       await fetchNotices();
 
-      if (editingId === noticeId) {
+      if (editingId === deleteTarget._id) {
         resetForm();
       }
+
+      setDeleteTarget(null);
     } catch (requestError) {
       setStatus({
         type: "error",
@@ -167,11 +174,27 @@ function PortalNotices() {
           requestError.response?.data?.error ||
           "Unable to delete portal notice.",
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
   return (
     <div className="px-6 py-8 lg:px-10">
+      <AdminNotification
+        status={status}
+        onDismiss={() => setStatus({ type: "", message: "" })}
+      />
+      <AdminDeleteModal
+        open={Boolean(deleteTarget)}
+        title="Delete Portal Notice"
+        message="This will permanently delete the notice and its read confirmations."
+        details={deleteTarget?.title || ""}
+        confirmLabel="Delete Notice"
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+      />
       <div className="mb-8 flex flex-col justify-between gap-5 xl:flex-row xl:items-start">
         <div>
           <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
@@ -194,18 +217,6 @@ function PortalNotices() {
           </p>
         </div>
       </div>
-
-      {status.message && (
-        <div
-          className={`mb-6 rounded-lg px-5 py-4 font-semibold ${
-            status.type === "success"
-              ? "border border-green-500/30 bg-green-500/10 text-green-700"
-              : "border border-red-500/30 bg-red-500/10 text-red-700"
-          }`}
-        >
-          {status.message}
-        </div>
-      )}
 
       <section className="mb-8 rounded-lg bg-secondary p-6 shadow-lg">
         <div className="mb-6 flex items-center justify-between gap-4">
@@ -392,7 +403,7 @@ function PortalNotices() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(notice._id)}
+                    onClick={() => handleDeleteRequest(notice)}
                     className="inline-flex flex-1 items-center justify-center gap-3 rounded-lg bg-red-500/10 px-4 py-3 font-bold text-red-700 transition-all duration-300 hover:bg-red-600 hover:text-white"
                   >
                     <FaTrash />

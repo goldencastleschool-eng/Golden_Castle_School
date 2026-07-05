@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
 import { sortStudentsByName } from "../../utils/students.js";
@@ -228,6 +229,7 @@ function BusManagement() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [enrollmentPage, setEnrollmentPage] = useState(1);
   const [paymentPage, setPaymentPage] = useState(1);
   const [structurePage, setStructurePage] = useState(1);
@@ -1001,43 +1003,51 @@ function BusManagement() {
   };
 
   const handleDelete = async ({ endpoint, id, collection }) => {
-    const confirmed = window.confirm("Delete this bus management record?");
+    setDeleteTarget({ endpoint, id, collection });
+  };
 
-    if (!confirmed) {
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget?.endpoint || !deleteTarget?.id) {
       return;
     }
 
-    setSubmitting(`delete-${id}`);
+    setSubmitting(`delete-${deleteTarget.id}`);
     setStatus({ type: "", message: "" });
 
     try {
-      await API.delete(`/bus-management/${endpoint}/${id}`);
+      await API.delete(
+        `/bus-management/${deleteTarget.endpoint}/${deleteTarget.id}`
+      );
 
-      if (collection === "buses") {
-        setBuses((currentBuses) => currentBuses.filter((bus) => bus._id !== id));
+      if (deleteTarget.collection === "buses") {
+        setBuses((currentBuses) =>
+          currentBuses.filter((bus) => bus._id !== deleteTarget.id)
+        );
       }
 
-      if (collection === "routes") {
+      if (deleteTarget.collection === "routes") {
         setRoutes((currentRoutes) =>
-          currentRoutes.filter((route) => route._id !== id)
+          currentRoutes.filter((route) => route._id !== deleteTarget.id)
         );
       }
 
-      if (collection === "structures") {
+      if (deleteTarget.collection === "structures") {
         setStructures((currentStructures) =>
-          currentStructures.filter((structure) => structure._id !== id)
+          currentStructures.filter((structure) => structure._id !== deleteTarget.id)
         );
       }
 
-      if (collection === "enrollments") {
+      if (deleteTarget.collection === "enrollments") {
         setEnrollments((currentEnrollments) =>
-          currentEnrollments.filter((enrollment) => enrollment._id !== id)
+          currentEnrollments.filter(
+            (enrollment) => enrollment._id !== deleteTarget.id
+          )
         );
       }
 
-      if (collection === "payments") {
+      if (deleteTarget.collection === "payments") {
         setPayments((currentPayments) =>
-          currentPayments.filter((payment) => payment._id !== id)
+          currentPayments.filter((payment) => payment._id !== deleteTarget.id)
         );
       }
 
@@ -1045,6 +1055,7 @@ function BusManagement() {
         type: "success",
         message: "Record deleted successfully.",
       });
+      setDeleteTarget(null);
     } catch (error) {
       setStatus({
         type: "error",
@@ -1216,6 +1227,16 @@ function BusManagement() {
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}
+      />
+      <AdminDeleteModal
+        open={Boolean(deleteTarget)}
+        title="Delete Bus Management Record"
+        message="This action will permanently remove this bus management record if it has no linked protected records."
+        details={deleteTarget?.collection || ""}
+        confirmLabel="Delete Record"
+        loading={submitting === `delete-${deleteTarget?.id}`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
       />
 
       <div className="mb-8">

@@ -1,5 +1,8 @@
-import schoolLogo from "../assets/1723987411228.jpg";
 import { formatFeeCategory } from "./feeCategories.js";
+import {
+  getPrintBrandHeader,
+  getPrintBrandStyles,
+} from "./printBranding.js";
 
 export { formatFeeCategory };
 
@@ -70,7 +73,6 @@ export const printPaymentReceipt = ({
   const feeItems = Array.isArray(fee.expected_items_at_payment)
     ? fee.expected_items_at_payment
     : [];
-  const logoUrl = new URL(schoolLogo, window.location.origin).href;
   const discountRow =
     discountAmount > 0
       ? `
@@ -117,6 +119,7 @@ export const printPaymentReceipt = ({
             color: #111;
             font-family: Arial, sans-serif;
           }
+          ${getPrintBrandStyles()}
           .receipt {
             width: 132mm;
             min-height: 194mm;
@@ -124,50 +127,11 @@ export const printPaymentReceipt = ({
             border: 1px solid #d7d7d7;
             padding: 8mm;
           }
-          .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            border-bottom: 2px solid #111;
-            padding-bottom: 12px;
-          }
-          .brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-          }
-          .brand img {
-            width: 48px;
-            height: 48px;
-            object-fit: cover;
-            border-radius: 50%;
-          }
-          h1 {
-            margin: 0;
-            font-size: 18px;
-            line-height: 1.15;
-          }
-          .subtitle {
-            margin: 4px 0 0;
-            color: #555;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-          }
-          .receipt-no {
-            text-align: right;
-            font-size: 11px;
-            color: #555;
-          }
-          .receipt-no strong {
-            display: block;
-            margin-top: 4px;
-            color: #111;
-            font-size: 13px;
+          .receipt .school-print-brand {
+            margin-bottom: 18px;
           }
           .title {
-            margin: 18px 0 12px;
+            margin: 0 0 12px;
             text-align: center;
             font-size: 16px;
             font-weight: 800;
@@ -273,19 +237,10 @@ export const printPaymentReceipt = ({
       </head>
       <body>
         <main class="receipt">
-          <header class="header">
-            <div class="brand">
-              <img src="${escapeHtml(logoUrl)}" alt="Golden Castle logo" />
-              <div>
-                <h1>Golden Castle<br />International School</h1>
-                <p class="subtitle">Official payment receipt</p>
-              </div>
-            </div>
-            <div class="receipt-no">
-              Receipt No.
-              <strong>${escapeHtml(receiptNumber)}</strong>
-            </div>
-          </header>
+          ${getPrintBrandHeader({
+            title: "Official payment receipt",
+            metaHtml: `Receipt No.<strong>${escapeHtml(receiptNumber)}</strong>`,
+          })}
 
           <div class="title">Payment Receipt</div>
 

@@ -2,17 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import {
   FaArrowRight,
   FaChalkboardUser,
-  FaCircleCheck,
-  FaCircleExclamation,
   FaLayerGroup,
   FaPrint,
   FaUserCheck,
   FaUsers,
-  FaXmark,
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
 import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
+import AdminNotification from "../../components/common/AdminNotification.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
 import PaginationControls from "../../components/common/PaginationControls.jsx";
 import {
@@ -62,40 +60,6 @@ const escapeHtml = (value = "") =>
 
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString() : "Not available";
-
-function ActionMessageModal({ status, onClose }) {
-  if (!status?.message) {
-    return null;
-  }
-
-  const isSuccess = status.type === "success";
-
-  return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-primary/60 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-lg bg-secondary p-7 text-primary shadow-lg">
-        <div
-          className={`mb-5 flex h-14 w-14 items-center justify-center rounded-lg text-xl text-white ${
-            isSuccess ? "bg-green-600" : "bg-red-600"
-          }`}
-        >
-          {isSuccess ? <FaCircleCheck /> : <FaCircleExclamation />}
-        </div>
-        <h3 className="text-2xl font-extrabold">
-          {isSuccess ? "Success" : "Notice"}
-        </h3>
-        <p className="mt-3 text-primary/70">{status.message}</p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary transition-all duration-300 hover:scale-[1.02]"
-        >
-          Close
-          <FaXmark />
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function TeacherManagement() {
   const [teachers, setTeachers] = useState([]);
@@ -499,9 +463,9 @@ function TeacherManagement() {
 
   return (
     <div className="px-6 py-8 lg:px-10">
-      <ActionMessageModal
+      <AdminNotification
         status={status}
-        onClose={() => setStatus({ type: "", message: "" })}
+        onDismiss={() => setStatus({ type: "", message: "" })}
       />
       <AdminDeleteModal
         open={Boolean(deactivateTarget)}

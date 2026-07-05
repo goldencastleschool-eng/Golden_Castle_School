@@ -9,12 +9,14 @@ import {
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import AdminDeleteModal from "../../components/common/AdminDeleteModal.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
 import {
   getVisibleTermsForSession,
   normalizeTermForSession,
 } from "../../utils/academicTerms.js";
+import { isSecondaryClass } from "../../utils/classSections.js";
 import { sortStudentsByName } from "../../utils/students.js";
 
 const DEFAULT_SESSION = "2025/2026";
@@ -140,6 +142,7 @@ function BoardingManagement() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState("");
   const [status, setStatus] = useState({ type: "", message: "" });
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [filters, setFilters] = useState({
     session: DEFAULT_SESSION,
     term: "",
@@ -193,7 +196,12 @@ function BoardingManagement() {
   }, [fetchBoardingData]);
 
   const classOptions = useMemo(
-    () => classes.filter((classRecord) => classRecord.session === enrollmentForm.session),
+    () =>
+      classes.filter(
+        (classRecord) =>
+          classRecord.session === enrollmentForm.session &&
+          isSecondaryClass(classRecord)
+      ),
     [classes, enrollmentForm.session]
   );
 
@@ -223,6 +231,64 @@ function BoardingManagement() {
       )
     );
   }, [enrollmentForm.session, enrollmentForm.term, selectedClass, students]);
+
+  const existingBoardingStudentIds = useMemo(() => {
+    if (!enrollmentForm.session || !enrollmentForm.term) {
+      return new Set();
+    }
+
+    return new Set(
+      enrollments
+        .filter(
+          (enrollment) =>
+            enrollment.session === enrollmentForm.session &&
+            enrollment.term === enrollmentForm.term
+        )
+        .map((enrollment) => getRecordId(enrollment.student))
+        .filter(Boolean)
+    );
+  }, [enrollmentForm.session, enrollmentForm.term, enrollments]);
+
+  const availableBoardingStudents = useMemo(
+    () =>
+      selectableStudents.filter(
+        (student) => !existingBoardingStudentIds.has(getRecordId(student))
+      ),
+    [existingBoardingStudentIds, selectableStudents]
+  );
+
+  const selectedBoardingStudentCount = enrollmentForm.student_ids.length;
+
+  const toggleBoardingStudent = (studentId) => {
+    setEnrollmentForm((form) => {
+      const selectedIds = new Set(form.student_ids);
+
+      if (selectedIds.has(studentId)) {
+        selectedIds.delete(studentId);
+      } else {
+        selectedIds.add(studentId);
+      }
+
+      return {
+        ...form,
+        student_ids: Array.from(selectedIds),
+      };
+    });
+  };
+
+  const selectAllAvailableBoardingStudents = () => {
+    setEnrollmentForm((form) => ({
+      ...form,
+      student_ids: availableBoardingStudents.map((student) => student._id),
+    }));
+  };
+
+  const clearSelectedBoardingStudents = () => {
+    setEnrollmentForm((form) => ({
+      ...form,
+      student_ids: [],
+    }));
+  };
 
   const structureByHouse = useMemo(() => {
     const map = new Map();
@@ -384,16 +450,35 @@ function BoardingManagement() {
     }
   };
 
-  const handleDelete = async (endpoint, id) => {
-    const confirmed = window.confirm("Delete this boarding record?");
+  const handleDeleteRequest = (endpoint, record, label) => {
+    setDeleteTarget({
+      endpoint,
+      id: getRecordId(record),
+      label,
+      detail:
+        record?.name ||
+        record?.house?.name ||
+        record?.student?.full_name ||
+        record?.session ||
+        "Selected boarding record",
+    });
+  };
 
-    if (!confirmed) {
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget?.endpoint || !deleteTarget?.id) {
       return;
     }
 
     try {
-      await API.delete(`/boarding-management/${endpoint}/${id}`);
-      setStatus({ type: "success", message: "Boarding record deleted." });
+      setSubmitting(`delete-${deleteTarget.id}`);
+      await API.delete(
+        `/boarding-management/${deleteTarget.endpoint}/${deleteTarget.id}`
+      );
+      setStatus({
+        type: "success",
+        message: `${deleteTarget.label || "Boarding record"} deleted.`,
+      });
+      setDeleteTarget(null);
       fetchBoardingData();
     } catch (requestError) {
       setStatus({
@@ -403,6 +488,8 @@ function BoardingManagement() {
           requestError.response?.data?.error ||
           "Unable to delete boarding record.",
       });
+    } finally {
+      setSubmitting("");
     }
   };
 
@@ -422,6 +509,16 @@ function BoardingManagement() {
       <AdminNotification
         status={status}
         onDismiss={() => setStatus({ type: "", message: "" })}
+      />
+      <AdminDeleteModal
+        open={Boolean(deleteTarget)}
+        title={`Delete ${deleteTarget?.label || "Boarding Record"}`}
+        message="This action will permanently remove this boarding management record if it has no linked protected records."
+        details={deleteTarget?.detail || ""}
+        confirmLabel={`Delete ${deleteTarget?.label || "Record"}`}
+        loading={submitting === `delete-${deleteTarget?.id}`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
       />
 
       <div className="mb-8">
@@ -527,11 +624,88 @@ function BoardingManagement() {
               <option value="">Select house</option>
               {houses.filter((house) => house.status === "active").map((house) => <option key={house._id} value={house._id}>{house.name}</option>)}
             </select>
-            <select multiple className={`${inputClass} min-h-44 md:col-span-2`} value={enrollmentForm.student_ids} onChange={(event) => setEnrollmentForm((form) => ({ ...form, student_ids: Array.from(event.target.selectedOptions).map((option) => option.value) }))}>
-              {selectableStudents.map((student) => <option key={student._id} value={student._id}>{student.full_name} - {student.admission_no}</option>)}
-            </select>
+            <div className="md:col-span-2">
+              <div className="mb-3 flex flex-col justify-between gap-3 rounded-lg border border-primary/10 bg-primary/5 px-4 py-3 md:flex-row md:items-center">
+                <p className="font-bold text-primary">
+                  {selectedBoardingStudentCount} student
+                  {selectedBoardingStudentCount === 1 ? "" : "s"} selected
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={selectAllAvailableBoardingStudents}
+                    disabled={availableBoardingStudents.length === 0}
+                    className="rounded-lg bg-primary/10 px-4 py-2 text-sm font-bold text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Select Available
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearSelectedBoardingStudents}
+                    disabled={selectedBoardingStudentCount === 0}
+                    className="rounded-lg bg-primary/10 px-4 py-2 text-sm font-bold text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              <div className="max-h-72 overflow-y-auto rounded-lg border border-primary/10">
+                {!enrollmentForm.class_record || !enrollmentForm.term ? (
+                  <div className="px-5 py-6 text-primary/70">
+                    Select a class and term to choose boarding students.
+                  </div>
+                ) : selectableStudents.length === 0 ? (
+                  <div className="px-5 py-6 text-primary/70">
+                    No active student is available for this class and term.
+                  </div>
+                ) : (
+                  selectableStudents.map((student) => {
+                    const studentId = getRecordId(student);
+                    const alreadyRegistered =
+                      existingBoardingStudentIds.has(studentId);
+                    const selected =
+                      enrollmentForm.student_ids.includes(studentId);
+
+                    return (
+                      <label
+                        key={studentId}
+                        className={`flex cursor-pointer items-center gap-4 border-b border-primary/10 px-5 py-4 last:border-b-0 ${
+                          alreadyRegistered ? "bg-primary/5 opacity-60" : ""
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          disabled={alreadyRegistered}
+                          onChange={() => toggleBoardingStudent(studentId)}
+                          className="h-5 w-5 accent-button"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-bold text-primary">
+                            {student.full_name}
+                          </span>
+                          <span className="block text-sm text-primary/60">
+                            {student.admission_no}
+                            {alreadyRegistered
+                              ? " | Already registered for boarding"
+                              : ""}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
-          <button className={`${buttonClass} mt-5`} disabled={submitting === "enrollment"}>
+          <button
+            className={`${buttonClass} mt-5`}
+            disabled={
+              submitting === "enrollment" ||
+              selectedBoardingStudentCount === 0
+            }
+          >
             <FaUsers />
             Register Students
           </button>
@@ -583,7 +757,7 @@ function BoardingManagement() {
                   <td className="px-5 py-4">
                     <div className="flex gap-2">
                       <button type="button" onClick={() => { setEditingHouseId(house._id); setHouseForm({ name: house.name || "", gender: house.gender || "", capacity: house.capacity?.toString() || "", status: house.status || "active" }); }} className="rounded-xl bg-primary/10 p-3 text-primary"><FaPenToSquare /></button>
-                      <button type="button" onClick={() => handleDelete("houses", house._id)} className="rounded-xl bg-red-500/10 p-3 text-red-700"><FaTrashCan /></button>
+                      <button type="button" onClick={() => handleDeleteRequest("houses", house, "Boarding House")} className="rounded-xl bg-red-500/10 p-3 text-red-700"><FaTrashCan /></button>
                     </div>
                   </td>
                 </tr>
@@ -647,7 +821,7 @@ function BoardingManagement() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete("fee-structures", structure._id)}
+                        onClick={() => handleDeleteRequest("fee-structures", structure, "Payment Structure")}
                         className="rounded-xl bg-red-500/10 p-3 text-red-700"
                       >
                         <FaTrashCan />

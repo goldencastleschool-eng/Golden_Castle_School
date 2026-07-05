@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FaArrowRight,
   FaBookOpen,
@@ -53,6 +53,31 @@ const initialClassResultForm = {
   class_record: "",
   assigned_teacher: "",
   pdf: null,
+};
+
+const initialBulkResultForm = {
+  session: "",
+  term: "",
+  class: "",
+  class_record: "",
+  filesByStudent: {},
+};
+
+const initialBulkCumulativeForm = {
+  session: "",
+  filesByClass: {},
+};
+
+const initialBulkBroadsheetForm = {
+  session: "",
+  term: "",
+  filesByClass: {},
+};
+
+const initialBulkClassResultForm = {
+  session: "",
+  term: "",
+  filesByClass: {},
 };
 
 const normalizeClassName = (className = "") =>
@@ -124,6 +149,16 @@ function UploadResult() {
   const [cumulativeForm, setCumulativeForm] = useState(initialCumulativeForm);
   const [broadsheetForm, setBroadsheetForm] = useState(initialBroadsheetForm);
   const [classResultForm, setClassResultForm] = useState(initialClassResultForm);
+  const [bulkResultForm, setBulkResultForm] = useState(initialBulkResultForm);
+  const [bulkCumulativeForm, setBulkCumulativeForm] = useState(
+    initialBulkCumulativeForm
+  );
+  const [bulkBroadsheetForm, setBulkBroadsheetForm] = useState(
+    initialBulkBroadsheetForm
+  );
+  const [bulkClassResultForm, setBulkClassResultForm] = useState(
+    initialBulkClassResultForm
+  );
   const [studentResultAccessForm, setStudentResultAccessForm] = useState({
     session: "",
     term: "",
@@ -150,6 +185,12 @@ function UploadResult() {
   const [uploadingCumulative, setUploadingCumulative] = useState(false);
   const [uploadingBroadsheet, setUploadingBroadsheet] = useState(false);
   const [uploadingClassResult, setUploadingClassResult] = useState(false);
+  const [uploadingBulkResults, setUploadingBulkResults] = useState(false);
+  const [uploadingBulkCumulative, setUploadingBulkCumulative] = useState(false);
+  const [uploadingBulkBroadsheets, setUploadingBulkBroadsheets] =
+    useState(false);
+  const [uploadingBulkClassResults, setUploadingBulkClassResults] =
+    useState(false);
   const [savingStudentResultAccess, setSavingStudentResultAccess] =
     useState(false);
   const [savingCumulativeAccess, setSavingCumulativeAccess] = useState(false);
@@ -463,6 +504,107 @@ function UploadResult() {
     });
   }, [classResultForm.class_record, classResultForm.session, teachers]);
 
+  const bulkResultAvailableClasses = useMemo(() => {
+    return classes.filter(
+      (classRecord) => classRecord.session === bulkResultForm.session
+    );
+  }, [bulkResultForm.session, classes]);
+
+  const bulkResultStudents = useMemo(() => {
+    if (
+      !bulkResultForm.class_record ||
+      !bulkResultForm.session ||
+      !bulkResultForm.term
+    ) {
+      return [];
+    }
+
+    const selectedClass = classes.find(
+      (classRecord) => classRecord._id === bulkResultForm.class_record
+    );
+
+    return sortStudentsByName(
+      students.filter(
+        (student) =>
+          student.status === "active" &&
+          studentBelongsToTermClass(
+            student,
+            selectedClass,
+            bulkResultForm.session,
+            bulkResultForm.term
+          )
+      )
+    );
+  }, [
+    bulkResultForm.class_record,
+    bulkResultForm.session,
+    bulkResultForm.term,
+    classes,
+    students,
+  ]);
+
+  const getAssignedFormTeacher = useCallback((classRecordId, session) => {
+    return teachers.find((teacher) => {
+      const teacherClassId =
+        teacher.assigned_class_record?._id || teacher.assigned_class_record;
+
+      return (
+        teacher.status !== "inactive" &&
+        isFormTeacher(teacher) &&
+        teacher.session === session &&
+        teacherClassId === classRecordId
+      );
+    });
+  }, [teachers]);
+
+  const bulkCumulativeRows = useMemo(() => {
+    if (!bulkCumulativeForm.session) {
+      return [];
+    }
+
+    return classes
+      .filter((classRecord) => classRecord.session === bulkCumulativeForm.session)
+      .map((classRecord) => ({
+        classRecord,
+        teacher: getAssignedFormTeacher(
+          classRecord._id,
+          bulkCumulativeForm.session
+        ),
+      }));
+  }, [bulkCumulativeForm.session, classes, getAssignedFormTeacher]);
+
+  const bulkBroadsheetRows = useMemo(() => {
+    if (!bulkBroadsheetForm.session) {
+      return [];
+    }
+
+    return classes
+      .filter((classRecord) => classRecord.session === bulkBroadsheetForm.session)
+      .map((classRecord) => ({
+        classRecord,
+        teacher: getAssignedFormTeacher(
+          classRecord._id,
+          bulkBroadsheetForm.session
+        ),
+      }));
+  }, [bulkBroadsheetForm.session, classes, getAssignedFormTeacher]);
+
+  const bulkClassResultRows = useMemo(() => {
+    if (!bulkClassResultForm.session) {
+      return [];
+    }
+
+    return classes
+      .filter((classRecord) => classRecord.session === bulkClassResultForm.session)
+      .map((classRecord) => ({
+        classRecord,
+        teacher: getAssignedFormTeacher(
+          classRecord._id,
+          bulkClassResultForm.session
+        ),
+      }));
+  }, [bulkClassResultForm.session, classes, getAssignedFormTeacher]);
+
   const filteredResults = useMemo(() => {
     const searchValue = resultSearch.trim().toLowerCase();
     const sourceResults =
@@ -550,6 +692,60 @@ function UploadResult() {
       visibleBroadsheetPage * PAGE_SIZE
     );
   }, [broadsheetRecordSource, visibleBroadsheetPage]);
+
+  const hasDuplicateResult = ({
+    studentId,
+    session,
+    term,
+    excludeId = "",
+  }) =>
+    (resultSummaryRecords.length > 0 ? resultSummaryRecords : results).some(
+      (result) =>
+        result._id !== excludeId &&
+        getRecordId(result.student) === studentId &&
+        result.session === session &&
+        result.term === term
+    );
+
+  const hasDuplicateCumulativeResult = ({
+    classRecordId,
+    teacherId,
+    session,
+  }) =>
+    cumulativeResultRecordSource.some(
+      (result) =>
+        getRecordId(result.class_record) === classRecordId &&
+        getRecordId(result.assigned_teacher) === teacherId &&
+        result.session === session
+    );
+
+  const hasDuplicateBroadsheet = ({
+    classRecordId,
+    teacherId,
+    session,
+    term,
+  }) =>
+    broadsheetRecordSource.some(
+      (broadsheet) =>
+        getRecordId(broadsheet.class_record) === classRecordId &&
+        getRecordId(broadsheet.assigned_teacher) === teacherId &&
+        broadsheet.session === session &&
+        broadsheet.term === term
+    );
+
+  const hasDuplicateClassResult = ({
+    classRecordId,
+    teacherId,
+    session,
+    term,
+  }) =>
+    classResultRecordSource.some(
+      (classResult) =>
+        getRecordId(classResult.class_record) === classRecordId &&
+        getRecordId(classResult.assigned_teacher) === teacherId &&
+        classResult.session === session &&
+        classResult.term === term
+    );
 
   useEffect(() => {
     setClassResultPage(1);
@@ -749,12 +945,154 @@ function UploadResult() {
     }));
   };
 
+  const buildBulkStatusMessage = (label, response) => {
+    const failedResults = (response.data?.results || []).filter(
+      (result) => !result.ok
+    );
+    const baseMessage = `${label}: ${response.data?.uploadedCount || 0} uploaded, ${response.data?.failedCount || 0} failed.`;
+
+    if (failedResults.length === 0) {
+      return baseMessage;
+    }
+
+    return `${baseMessage} Failed: ${failedResults
+      .slice(0, 3)
+      .map((result) => `${result.label} (${result.message})`)
+      .join("; ")}${failedResults.length > 3 ? "..." : ""}`;
+  };
+
+  const handleBulkResultChange = (event) => {
+    const { name, value } = event.target;
+
+    if (name === "session") {
+      setBulkResultForm((currentForm) => ({
+        ...currentForm,
+        session: value,
+        term: normalizeTermForSession(currentForm.term, value),
+        class: "",
+        class_record: "",
+        filesByStudent: {},
+      }));
+      return;
+    }
+
+    if (name === "class_record") {
+      const selectedClass = classes.find((classRecord) => classRecord._id === value);
+
+      setBulkResultForm((currentForm) => ({
+        ...currentForm,
+        class_record: value,
+        class: selectedClass?.name || "",
+        filesByStudent: {},
+      }));
+      return;
+    }
+
+    setBulkResultForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+      ...(name === "term" ? { filesByStudent: {} } : {}),
+    }));
+  };
+
+  const handleBulkResultFileChange = (studentId, file) => {
+    setBulkResultForm((currentForm) => ({
+      ...currentForm,
+      filesByStudent: {
+        ...currentForm.filesByStudent,
+        [studentId]: file || null,
+      },
+    }));
+  };
+
+  const handleBulkCumulativeChange = (event) => {
+    const { value } = event.target;
+
+    setBulkCumulativeForm({
+      session: value,
+      filesByClass: {},
+    });
+  };
+
+  const handleBulkCumulativeFileChange = (classRecordId, file) => {
+    setBulkCumulativeForm((currentForm) => ({
+      ...currentForm,
+      filesByClass: {
+        ...currentForm.filesByClass,
+        [classRecordId]: file || null,
+      },
+    }));
+  };
+
+  const handleBulkBroadsheetChange = (event) => {
+    const { name, value } = event.target;
+
+    setBulkBroadsheetForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+      ...(name === "session"
+        ? {
+            term: normalizeTermForSession(currentForm.term, value),
+            filesByClass: {},
+          }
+        : { filesByClass: {} }),
+    }));
+  };
+
+  const handleBulkBroadsheetFileChange = (classRecordId, file) => {
+    setBulkBroadsheetForm((currentForm) => ({
+      ...currentForm,
+      filesByClass: {
+        ...currentForm.filesByClass,
+        [classRecordId]: file || null,
+      },
+    }));
+  };
+
+  const handleBulkClassResultChange = (event) => {
+    const { name, value } = event.target;
+
+    setBulkClassResultForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+      ...(name === "session"
+        ? {
+            term: normalizeTermForSession(currentForm.term, value),
+            filesByClass: {},
+          }
+        : { filesByClass: {} }),
+    }));
+  };
+
+  const handleBulkClassResultFileChange = (classRecordId, file) => {
+    setBulkClassResultForm((currentForm) => ({
+      ...currentForm,
+      filesByClass: {
+        ...currentForm.filesByClass,
+        [classRecordId]: file || null,
+      },
+    }));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setUploading(true);
     setStatus({ type: "", message: "" });
 
     try {
+      if (
+        hasDuplicateResult({
+          studentId: resultForm.studentId,
+          session: resultForm.session,
+          term: resultForm.term,
+          excludeId: editingResultId,
+        })
+      ) {
+        throw new Error(
+          "A result PDF already exists for this student, session, and term."
+        );
+      }
+
       const formData = new FormData();
       formData.append("studentId", resultForm.studentId);
       formData.append("session", resultForm.session);
@@ -790,6 +1128,7 @@ function UploadResult() {
         message:
           error.response?.data?.message ||
           error.response?.data?.error ||
+          error.message ||
           "Unable to upload result.",
       });
     } finally {
@@ -803,6 +1142,19 @@ function UploadResult() {
     setStatus({ type: "", message: "" });
 
     try {
+      if (
+        hasDuplicateBroadsheet({
+          classRecordId: broadsheetForm.class_record,
+          teacherId: broadsheetForm.assigned_teacher,
+          session: broadsheetForm.session,
+          term: broadsheetForm.term,
+        })
+      ) {
+        throw new Error(
+          "A class broadsheet PDF already exists for this class, session, and term."
+        );
+      }
+
       const formData = new FormData();
       formData.append("session", broadsheetForm.session);
       formData.append("term", broadsheetForm.term);
@@ -829,6 +1181,7 @@ function UploadResult() {
         message:
           error.response?.data?.message ||
           error.response?.data?.error ||
+          error.message ||
           "Unable to upload class broadsheet.",
       });
     } finally {
@@ -867,12 +1220,98 @@ function UploadResult() {
     }
   };
 
+  const handleBulkResultSubmit = async (event) => {
+    event.preventDefault();
+    setUploadingBulkResults(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const selectedEntries = bulkResultStudents
+        .map((student) => ({
+          student,
+          file: bulkResultForm.filesByStudent[student._id],
+        }))
+        .filter((entry) => entry.file);
+
+      if (selectedEntries.length === 0) {
+        throw new Error("Select at least one student PDF.");
+      }
+
+      const duplicateEntry = selectedEntries.find(({ student }) =>
+        hasDuplicateResult({
+          studentId: student._id,
+          session: bulkResultForm.session,
+          term: bulkResultForm.term,
+        })
+      );
+
+      if (duplicateEntry) {
+        throw new Error(
+          `${duplicateEntry.student.full_name} already has a result PDF for this session and term.`
+        );
+      }
+
+      const formData = new FormData();
+      formData.append("session", bulkResultForm.session);
+      formData.append("term", bulkResultForm.term);
+      formData.append("class", bulkResultForm.class);
+      formData.append("class_record", bulkResultForm.class_record);
+      formData.append(
+        "entries",
+        JSON.stringify(
+          selectedEntries.map(({ student }) => ({
+            studentId: student._id,
+            studentName: student.full_name,
+          }))
+        )
+      );
+      selectedEntries.forEach(({ file }) => formData.append("pdfs", file));
+
+      const response = await API.post("/results/upload-bulk", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setBulkResultForm(initialBulkResultForm);
+      event.target.reset();
+      await fetchResults();
+      setStatus({
+        type: response.data?.failedCount ? "error" : "success",
+        message: buildBulkStatusMessage("Bulk result upload", response),
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Unable to upload bulk results.",
+      });
+    } finally {
+      setUploadingBulkResults(false);
+    }
+  };
+
   const handleCumulativeSubmit = async (event) => {
     event.preventDefault();
     setUploadingCumulative(true);
     setStatus({ type: "", message: "" });
 
     try {
+      if (
+        hasDuplicateCumulativeResult({
+          classRecordId: cumulativeForm.class_record,
+          teacherId: cumulativeForm.assigned_teacher,
+          session: cumulativeForm.session,
+        })
+      ) {
+        throw new Error(
+          "A cumulative result PDF already exists for this class and session."
+        );
+      }
+
       const formData = new FormData();
       formData.append("session", cumulativeForm.session);
       formData.append("class", cumulativeForm.class);
@@ -899,6 +1338,7 @@ function UploadResult() {
         message:
           error.response?.data?.message ||
           error.response?.data?.error ||
+          error.message ||
           "Unable to upload cumulative result.",
       });
     } finally {
@@ -933,6 +1373,155 @@ function UploadResult() {
       });
     } finally {
       setSavingCumulativeAccess(false);
+    }
+  };
+
+  const handleBulkCumulativeSubmit = async (event) => {
+    event.preventDefault();
+    setUploadingBulkCumulative(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const selectedEntries = bulkCumulativeRows
+        .map(({ classRecord, teacher }) => ({
+          classRecord,
+          teacher,
+          file: bulkCumulativeForm.filesByClass[classRecord._id],
+        }))
+        .filter((entry) => entry.file);
+
+      if (selectedEntries.length === 0) {
+        throw new Error("Select at least one cumulative PDF.");
+      }
+
+      const duplicateEntry = selectedEntries.find(({ classRecord, teacher }) =>
+        hasDuplicateCumulativeResult({
+          classRecordId: classRecord._id,
+          teacherId: teacher?._id || "",
+          session: bulkCumulativeForm.session,
+        })
+      );
+
+      if (duplicateEntry) {
+        throw new Error(
+          `${duplicateEntry.classRecord.name.toUpperCase()} already has a cumulative result PDF for this session.`
+        );
+      }
+
+      const formData = new FormData();
+      formData.append("session", bulkCumulativeForm.session);
+      formData.append(
+        "entries",
+        JSON.stringify(
+          selectedEntries.map(({ classRecord, teacher }) => ({
+            class_record: classRecord._id,
+            class: classRecord.name,
+            className: classRecord.name,
+            assigned_teacher: teacher?._id || "",
+          }))
+        )
+      );
+      selectedEntries.forEach(({ file }) => formData.append("pdfs", file));
+
+      const response = await API.post("/cumulative-results/upload-bulk", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setBulkCumulativeForm(initialBulkCumulativeForm);
+      event.target.reset();
+      await fetchCumulativeResults();
+      setStatus({
+        type: response.data?.failedCount ? "error" : "success",
+        message: buildBulkStatusMessage("Bulk cumulative upload", response),
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Unable to upload bulk cumulative results.",
+      });
+    } finally {
+      setUploadingBulkCumulative(false);
+    }
+  };
+
+  const handleBulkBroadsheetSubmit = async (event) => {
+    event.preventDefault();
+    setUploadingBulkBroadsheets(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const selectedEntries = bulkBroadsheetRows
+        .map(({ classRecord, teacher }) => ({
+          classRecord,
+          teacher,
+          file: bulkBroadsheetForm.filesByClass[classRecord._id],
+        }))
+        .filter((entry) => entry.file);
+
+      if (selectedEntries.length === 0) {
+        throw new Error("Select at least one class broadsheet PDF.");
+      }
+
+      const duplicateEntry = selectedEntries.find(({ classRecord, teacher }) =>
+        hasDuplicateBroadsheet({
+          classRecordId: classRecord._id,
+          teacherId: teacher?._id || "",
+          session: bulkBroadsheetForm.session,
+          term: bulkBroadsheetForm.term,
+        })
+      );
+
+      if (duplicateEntry) {
+        throw new Error(
+          `${duplicateEntry.classRecord.name.toUpperCase()} already has a class broadsheet PDF for this session and term.`
+        );
+      }
+
+      const formData = new FormData();
+      formData.append("session", bulkBroadsheetForm.session);
+      formData.append("term", bulkBroadsheetForm.term);
+      formData.append(
+        "entries",
+        JSON.stringify(
+          selectedEntries.map(({ classRecord, teacher }) => ({
+            class_record: classRecord._id,
+            className: classRecord.name,
+            assigned_teacher: teacher?._id || "",
+          }))
+        )
+      );
+      selectedEntries.forEach(({ file }) => formData.append("pdfs", file));
+
+      const response = await API.post("/class-broadsheets/upload-bulk", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setBulkBroadsheetForm(initialBulkBroadsheetForm);
+      event.target.reset();
+      await fetchClassBroadsheets();
+      setStatus({
+        type: response.data?.failedCount ? "error" : "success",
+        message: buildBulkStatusMessage("Bulk broadsheet upload", response),
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Unable to upload bulk class broadsheets.",
+      });
+    } finally {
+      setUploadingBulkBroadsheets(false);
     }
   };
 
@@ -973,6 +1562,19 @@ function UploadResult() {
     setStatus({ type: "", message: "" });
 
     try {
+      if (
+        hasDuplicateClassResult({
+          classRecordId: classResultForm.class_record,
+          teacherId: classResultForm.assigned_teacher,
+          session: classResultForm.session,
+          term: classResultForm.term,
+        })
+      ) {
+        throw new Error(
+          "A class result PDF already exists for this class, session, and term."
+        );
+      }
+
       const formData = new FormData();
       formData.append("session", classResultForm.session);
       formData.append("term", classResultForm.term);
@@ -999,6 +1601,7 @@ function UploadResult() {
         message:
           error.response?.data?.message ||
           error.response?.data?.error ||
+          error.message ||
           "Unable to upload class result.",
       });
     } finally {
@@ -1034,6 +1637,81 @@ function UploadResult() {
       });
     } finally {
       setSavingClassResultAccess(false);
+    }
+  };
+
+  const handleBulkClassResultSubmit = async (event) => {
+    event.preventDefault();
+    setUploadingBulkClassResults(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const selectedEntries = bulkClassResultRows
+        .map(({ classRecord, teacher }) => ({
+          classRecord,
+          teacher,
+          file: bulkClassResultForm.filesByClass[classRecord._id],
+        }))
+        .filter((entry) => entry.file);
+
+      if (selectedEntries.length === 0) {
+        throw new Error("Select at least one class result PDF.");
+      }
+
+      const duplicateEntry = selectedEntries.find(({ classRecord, teacher }) =>
+        hasDuplicateClassResult({
+          classRecordId: classRecord._id,
+          teacherId: teacher?._id || "",
+          session: bulkClassResultForm.session,
+          term: bulkClassResultForm.term,
+        })
+      );
+
+      if (duplicateEntry) {
+        throw new Error(
+          `${duplicateEntry.classRecord.name.toUpperCase()} already has a class result PDF for this session and term.`
+        );
+      }
+
+      const formData = new FormData();
+      formData.append("session", bulkClassResultForm.session);
+      formData.append("term", bulkClassResultForm.term);
+      formData.append(
+        "entries",
+        JSON.stringify(
+          selectedEntries.map(({ classRecord, teacher }) => ({
+            class_record: classRecord._id,
+            className: classRecord.name,
+            assigned_teacher: teacher?._id || "",
+          }))
+        )
+      );
+      selectedEntries.forEach(({ file }) => formData.append("pdfs", file));
+
+      const response = await API.post("/class-results/upload-bulk", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setBulkClassResultForm(initialBulkClassResultForm);
+      event.target.reset();
+      await fetchClassResults();
+      setStatus({
+        type: response.data?.failedCount ? "error" : "success",
+        message: buildBulkStatusMessage("Bulk class result upload", response),
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Unable to upload bulk class results.",
+      });
+    } finally {
+      setUploadingBulkClassResults(false);
     }
   };
 
@@ -1296,6 +1974,100 @@ function UploadResult() {
                 </button>
               )}
             </form>
+
+            <form
+              onSubmit={handleBulkResultSubmit}
+              className="mt-8 border-t border-primary/10 pt-7"
+            >
+              <div className="mb-5 flex items-center gap-3 text-primary">
+                <FaLayerGroup />
+                <h4 className="text-xl font-extrabold">Bulk Result PDFs</h4>
+              </div>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                <input
+                  className={inputClass}
+                  name="session"
+                  value={bulkResultForm.session}
+                  onChange={handleBulkResultChange}
+                  placeholder="Session e.g. 2025/2026"
+                  required
+                />
+                <select
+                  className={inputClass}
+                  name="term"
+                  value={bulkResultForm.term}
+                  onChange={handleBulkResultChange}
+                  required
+                >
+                  <option value="">Select term</option>
+                  {getVisibleTermsForSession(bulkResultForm.session).map((term) => (
+                    <option key={term} value={term}>
+                      {term}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className={inputClass}
+                  name="class_record"
+                  value={bulkResultForm.class_record}
+                  onChange={handleBulkResultChange}
+                  disabled={!bulkResultForm.session}
+                  required
+                >
+                  <option value="">
+                    {bulkResultForm.session ? "Select class" : "Enter session first"}
+                  </option>
+                  {bulkResultAvailableClasses.map((classRecord) => (
+                    <option key={classRecord._id} value={classRecord._id}>
+                      {classRecord.name.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {bulkResultStudents.length > 0 && (
+                <div className="mt-5 max-h-80 overflow-y-auto rounded-lg border border-primary/10">
+                  {bulkResultStudents.map((student) => (
+                    <label
+                      key={student._id}
+                      className="grid gap-3 border-b border-primary/10 p-4 last:border-b-0 md:grid-cols-[1fr_260px]"
+                    >
+                      <span className="font-semibold text-primary">
+                        {student.full_name}
+                        <span className="block text-sm font-normal text-primary/60">
+                          {student.admission_no}
+                        </span>
+                      </span>
+                      <input
+                        className={inputClass}
+                        type="file"
+                        accept="application/pdf"
+                        onChange={(event) =>
+                          handleBulkResultFileChange(
+                            student._id,
+                            event.target.files?.[0]
+                          )
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  uploadingBulkResults ||
+                  bulkResultStudents.length === 0 ||
+                  Object.values(bulkResultForm.filesByStudent).filter(Boolean)
+                    .length === 0
+                }
+                className="mt-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-primary px-5 py-4 font-bold text-secondary transition-all duration-300 hover:bg-button disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {uploadingBulkResults ? "Uploading bulk results..." : "Upload Bulk Results"}
+              </button>
+            </form>
+
           </div>
 
           <form
@@ -1454,6 +2226,74 @@ function UploadResult() {
                 {!uploadingCumulative && <FaArrowRight />}
               </button>
             </form>
+
+            <form
+              onSubmit={handleBulkCumulativeSubmit}
+              className="mt-8 border-t border-primary/10 pt-7"
+            >
+              <div className="mb-5 flex items-center gap-3 text-primary">
+                <FaLayerGroup />
+                <h4 className="text-xl font-extrabold">
+                  Bulk Cumulative PDFs
+                </h4>
+              </div>
+              <input
+                className={inputClass}
+                name="session"
+                value={bulkCumulativeForm.session}
+                onChange={handleBulkCumulativeChange}
+                placeholder="Session e.g. 2025/2026"
+                required
+              />
+
+              {bulkCumulativeRows.length > 0 && (
+                <div className="mt-5 max-h-80 overflow-y-auto rounded-lg border border-primary/10">
+                  {bulkCumulativeRows.map(({ classRecord, teacher }) => (
+                    <label
+                      key={classRecord._id}
+                      className="grid gap-3 border-b border-primary/10 p-4 last:border-b-0 md:grid-cols-[1fr_260px]"
+                    >
+                      <span className="font-semibold text-primary">
+                        {classRecord.name.toUpperCase()}
+                        <span className="block text-sm font-normal text-primary/60">
+                          {teacher
+                            ? `${teacher.full_name} - ${teacher.username}`
+                            : "No active form teacher assigned"}
+                        </span>
+                      </span>
+                      <input
+                        className={inputClass}
+                        type="file"
+                        accept="application/pdf"
+                        disabled={!teacher}
+                        onChange={(event) =>
+                          handleBulkCumulativeFileChange(
+                            classRecord._id,
+                            event.target.files?.[0]
+                          )
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  uploadingBulkCumulative ||
+                  bulkCumulativeRows.length === 0 ||
+                  Object.values(bulkCumulativeForm.filesByClass).filter(Boolean)
+                    .length === 0
+                }
+                className="mt-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-primary px-5 py-4 font-bold text-secondary transition-all duration-300 hover:bg-button disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {uploadingBulkCumulative
+                  ? "Uploading bulk cumulative..."
+                  : "Upload Bulk Cumulative"}
+              </button>
+            </form>
+
           </div>
 
           <form
@@ -1608,6 +2448,90 @@ function UploadResult() {
                   ? "Uploading broadsheet..."
                   : "Upload Class Broadsheet"}
                 {!uploadingBroadsheet && <FaArrowRight />}
+              </button>
+            </form>
+
+            <form
+              onSubmit={handleBulkBroadsheetSubmit}
+              className="mt-8 border-t border-primary/10 pt-7"
+            >
+              <div className="mb-5 flex items-center gap-3 text-primary">
+                <FaLayerGroup />
+                <h4 className="text-xl font-extrabold">
+                  Bulk Class Broadsheet PDFs
+                </h4>
+              </div>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <input
+                  className={inputClass}
+                  name="session"
+                  value={bulkBroadsheetForm.session}
+                  onChange={handleBulkBroadsheetChange}
+                  placeholder="Session e.g. 2025/2026"
+                  required
+                />
+                <select
+                  className={inputClass}
+                  name="term"
+                  value={bulkBroadsheetForm.term}
+                  onChange={handleBulkBroadsheetChange}
+                  required
+                >
+                  <option value="">Select term</option>
+                  {getVisibleTermsForSession(bulkBroadsheetForm.session).map((term) => (
+                    <option key={term} value={term}>
+                      {term}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {bulkBroadsheetRows.length > 0 && (
+                <div className="mt-5 max-h-80 overflow-y-auto rounded-lg border border-primary/10">
+                  {bulkBroadsheetRows.map(({ classRecord, teacher }) => (
+                    <label
+                      key={classRecord._id}
+                      className="grid gap-3 border-b border-primary/10 p-4 last:border-b-0 md:grid-cols-[1fr_260px]"
+                    >
+                      <span className="font-semibold text-primary">
+                        {classRecord.name.toUpperCase()}
+                        <span className="block text-sm font-normal text-primary/60">
+                          {teacher
+                            ? `${teacher.full_name} - ${teacher.username}`
+                            : "No active form teacher assigned"}
+                        </span>
+                      </span>
+                      <input
+                        className={inputClass}
+                        type="file"
+                        accept="application/pdf"
+                        disabled={!teacher}
+                        onChange={(event) =>
+                          handleBulkBroadsheetFileChange(
+                            classRecord._id,
+                            event.target.files?.[0]
+                          )
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  uploadingBulkBroadsheets ||
+                  !bulkBroadsheetForm.term ||
+                  bulkBroadsheetRows.length === 0 ||
+                  Object.values(bulkBroadsheetForm.filesByClass).filter(Boolean)
+                    .length === 0
+                }
+                className="mt-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-primary px-5 py-4 font-bold text-secondary transition-all duration-300 hover:bg-button disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {uploadingBulkBroadsheets
+                  ? "Uploading bulk broadsheets..."
+                  : "Upload Bulk Broadsheets"}
               </button>
             </form>
           </div>
@@ -1770,6 +2694,90 @@ function UploadResult() {
                   ? "Uploading class result..."
                   : "Upload Class Result"}
                 {!uploadingClassResult && <FaArrowRight />}
+              </button>
+            </form>
+
+            <form
+              onSubmit={handleBulkClassResultSubmit}
+              className="mt-8 border-t border-primary/10 pt-7"
+            >
+              <div className="mb-5 flex items-center gap-3 text-primary">
+                <FaLayerGroup />
+                <h4 className="text-xl font-extrabold">
+                  Bulk Class Result PDFs
+                </h4>
+              </div>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <input
+                  className={inputClass}
+                  name="session"
+                  value={bulkClassResultForm.session}
+                  onChange={handleBulkClassResultChange}
+                  placeholder="Session e.g. 2025/2026"
+                  required
+                />
+                <select
+                  className={inputClass}
+                  name="term"
+                  value={bulkClassResultForm.term}
+                  onChange={handleBulkClassResultChange}
+                  required
+                >
+                  <option value="">Select term</option>
+                  {getVisibleTermsForSession(bulkClassResultForm.session).map((term) => (
+                    <option key={term} value={term}>
+                      {term}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {bulkClassResultRows.length > 0 && (
+                <div className="mt-5 max-h-80 overflow-y-auto rounded-lg border border-primary/10">
+                  {bulkClassResultRows.map(({ classRecord, teacher }) => (
+                    <label
+                      key={classRecord._id}
+                      className="grid gap-3 border-b border-primary/10 p-4 last:border-b-0 md:grid-cols-[1fr_260px]"
+                    >
+                      <span className="font-semibold text-primary">
+                        {classRecord.name.toUpperCase()}
+                        <span className="block text-sm font-normal text-primary/60">
+                          {teacher
+                            ? `${teacher.full_name} - ${teacher.username}`
+                            : "No active form teacher assigned"}
+                        </span>
+                      </span>
+                      <input
+                        className={inputClass}
+                        type="file"
+                        accept="application/pdf"
+                        disabled={!teacher}
+                        onChange={(event) =>
+                          handleBulkClassResultFileChange(
+                            classRecord._id,
+                            event.target.files?.[0]
+                          )
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  uploadingBulkClassResults ||
+                  !bulkClassResultForm.term ||
+                  bulkClassResultRows.length === 0 ||
+                  Object.values(bulkClassResultForm.filesByClass).filter(Boolean)
+                    .length === 0
+                }
+                className="mt-6 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-primary px-5 py-4 font-bold text-secondary transition-all duration-300 hover:bg-button disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {uploadingBulkClassResults
+                  ? "Uploading bulk class results..."
+                  : "Upload Bulk Class Results"}
               </button>
             </form>
           </div>

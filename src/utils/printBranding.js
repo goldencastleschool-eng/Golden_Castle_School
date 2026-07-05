@@ -24,6 +24,10 @@ export const getPrintBrandStyles = () => `
     padding-bottom: 14px;
   }
 
+  .school-print-brand-text {
+    flex: 1;
+  }
+
   .school-print-brand img {
     border-radius: 50%;
     height: 58px;
@@ -46,16 +50,35 @@ export const getPrintBrandStyles = () => `
     margin: 5px 0 0;
     text-transform: uppercase;
   }
+
+  .school-print-brand-meta {
+    color: #555;
+    font-size: 11px;
+    margin-left: auto;
+    text-align: right;
+  }
+
+  .school-print-brand-meta strong {
+    color: #111;
+    display: block;
+    font-size: 13px;
+    margin-top: 4px;
+  }
 `;
 
-export const getPrintBrandHeader = ({ title = "", subtitle = "" } = {}) => `
+export const getPrintBrandHeader = ({
+  title = "",
+  subtitle = "",
+  metaHtml = "",
+} = {}) => `
   <header class="school-print-brand">
     <img src="${escapePrintHtml(getSchoolLogoUrl())}" alt="${SCHOOL_NAME} logo" />
-    <div>
+    <div class="school-print-brand-text">
       <h1>${SCHOOL_NAME}</h1>
       ${title ? `<p>${escapePrintHtml(title)}</p>` : ""}
       ${subtitle ? `<p>${escapePrintHtml(subtitle)}</p>` : ""}
     </div>
+    ${metaHtml ? `<div class="school-print-brand-meta">${metaHtml}</div>` : ""}
   </header>
 `;
 

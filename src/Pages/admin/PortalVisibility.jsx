@@ -34,6 +34,7 @@ const checkIcons = {
   fee_receipts: <FaReceipt />,
   teacher_class_list: <FaChalkboardUser />,
   teacher_broadsheets: <FaClipboardCheck />,
+  teacher_cumulative_results: <FaClipboardCheck />,
   teacher_class_results: <FaClipboardCheck />,
 };
 
