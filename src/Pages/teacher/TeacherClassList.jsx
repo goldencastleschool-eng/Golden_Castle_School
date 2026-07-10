@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FaUsers } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
+import PortalWelcomeBanner from "../../components/common/PortalWelcomeBanner.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { isFormTeacher } from "../../utils/teacherAssignments.js";
 
@@ -76,17 +77,25 @@ function TeacherClassList() {
   }, [students]);
 
   return (
-    <div className="px-6 py-8 lg:px-10">
+    <div className="px-4 py-6 sm:px-6 lg:px-10">
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
-          <FaUsers />
-        </div>
-        <h2 className="text-3xl font-extrabold text-secondary">
-          Class List
-        </h2>
-        <p className="mt-3 max-w-2xl text-secondary/75">
-          View students currently registered under your assigned form class.
-        </p>
+        <PortalWelcomeBanner
+          icon={<FaUsers />}
+          eyebrow="Form Teacher"
+          title="Welcome,"
+          name={user?.full_name || "Teacher"}
+          description="View students currently registered under your assigned form class."
+          metaItems={[
+            {
+              label: "Assigned Class",
+              value: user?.assigned_class || classRecord?.name || "Not available",
+            },
+            {
+              label: "Session",
+              value: user?.session || classRecord?.session || "Not available",
+            },
+          ]}
+        />
       </div>
 
       {!canViewClassList && (
@@ -102,10 +111,10 @@ function TeacherClassList() {
       )}
 
       {canViewClassList && (
-      <section className="rounded-lg bg-secondary p-6 shadow-lg">
+      <section className="rounded-lg bg-secondary p-5 shadow-lg sm:p-6">
         <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h3 className="text-3xl font-extrabold text-primary">
+            <h3 className="text-2xl font-extrabold text-primary sm:text-3xl">
               {classRecord
                 ? `${classRecord.name?.toUpperCase()} Students`
                 : "Assigned Class Students"}
@@ -119,7 +128,7 @@ function TeacherClassList() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3">
             <div className="rounded-lg bg-primary/5 px-5 py-4 text-primary">
               <p className="text-xs font-bold uppercase text-primary/50">
                 Total

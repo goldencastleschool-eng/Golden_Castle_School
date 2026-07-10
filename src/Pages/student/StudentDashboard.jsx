@@ -9,6 +9,7 @@ import {
 
 import API from "../../api/axios.jsx";
 import { CardSkeleton } from "../../components/common/Loading.jsx";
+import PortalWelcomeBanner from "../../components/common/PortalWelcomeBanner.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 function StudentDashboard() {
@@ -56,29 +57,28 @@ function StudentDashboard() {
           : "Not published";
 
   return (
-    <div className="min-h-screen overflow-hidden">
-      <section className="relative overflow-hidden bg-secondary px-6 py-8 lg:px-10">
-        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-button/20 blur-3xl"></div>
-
-        <div className="hidden md:block relative max-w-5xl">
-          <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-primary/10 bg-primary/10 px-5 py-3 text-primary">
-            <FaGraduationCap className="text-button" />
-            <span className="font-semibold">Student Result Portal</span>
-          </div>
-
-          <h2 className="text-3xl font-extrabold leading-tight text-primary md:text-4xl">
-            Welcome,{" "}
-            <span className="text-button">{user?.full_name || "Student"}</span>
-          </h2>
-
-          <p className="mt-6 max-w-3xl text-lg leading-relaxed text-primary/70">
-            View your student profile and check whether academic result records
-            have been published to your account.
-          </p>
-        </div>
+    <div className="min-h-screen bg-background">
+      <section className="px-4 pt-6 sm:px-6 lg:px-10">
+        <PortalWelcomeBanner
+          icon={<FaGraduationCap />}
+          eyebrow="Student Result Portal"
+          title="Welcome,"
+          name={user?.full_name || "Student"}
+          description="View your student profile and check whether academic result records have been published to your account."
+          metaItems={[
+            {
+              label: "Admission No.",
+              value: user?.admission_no || "Not available",
+            },
+            {
+              label: "Class",
+              value: user?.class || "Not available",
+            },
+          ]}
+        />
       </section>
 
-      <section className="px-6 py-8 lg:px-10">
+      <section className="px-4 py-6 sm:px-6 lg:px-10">
         {error && (
           <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-red-700">
             {error}
@@ -95,7 +95,7 @@ function StudentDashboard() {
               <FaIdCard />
             </div>
             <p className="font-medium text-primary/70">Admission Number</p>
-            <h3 className="mt-3 text-3xl font-extrabold text-primary">
+            <h3 className="mt-3 break-words text-2xl font-extrabold text-primary sm:text-3xl">
               {user?.admission_no || "Not available"}
             </h3>
           </div>
@@ -105,7 +105,7 @@ function StudentDashboard() {
               <FaBookOpen />
             </div>
             <p className="font-medium text-primary/70">Class</p>
-            <h3 className="mt-3 text-3xl font-extrabold text-primary">
+            <h3 className="mt-3 break-words text-2xl font-extrabold text-primary sm:text-3xl">
               {user?.class || "Not available"}
             </h3>
             <p className="mt-3 text-sm font-semibold text-primary/60">
@@ -118,7 +118,7 @@ function StudentDashboard() {
               <FaFilePdf />
             </div>
             <p className="font-medium text-primary/70">Available Results</p>
-            <h3 className="mt-3 text-3xl font-extrabold text-primary">
+            <h3 className="mt-3 break-words text-2xl font-extrabold text-primary sm:text-3xl">
               {results.length}
             </h3>
           </div>
@@ -142,7 +142,7 @@ function StudentDashboard() {
         </div>
 
         <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
-          <h3 className="text-3xl font-extrabold text-primary">
+          <h3 className="text-2xl font-extrabold text-primary sm:text-3xl">
             Academic Status
           </h3>
           <p className="mt-3 text-primary/70">
@@ -184,7 +184,7 @@ function StudentDashboard() {
         </section>
 
         <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
-          <h3 className="text-3xl font-extrabold text-primary">
+          <h3 className="text-2xl font-extrabold text-primary sm:text-3xl">
             Latest Result
           </h3>
           <p className="mt-3 text-primary/70">

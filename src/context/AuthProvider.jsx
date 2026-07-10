@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API from "../api/axios.jsx";
+import API, { clearAuthToken } from "../api/axios.jsx";
 import AuthContext from "./AuthContext.js";
 
 export const AuthProvider = ({ children }) => {
@@ -26,6 +26,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logout = () => {
+    clearAuthToken();
     setUser(null);
   };
 

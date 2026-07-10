@@ -1113,17 +1113,17 @@ function AdminDashboard() {
         onDismiss={() => setDismissedErrorMessage(status.message)}
       />
 
-      <section className="px-6 pt-8 lg:px-12">
-        <div className="rounded-lg border border-secondary/10 bg-secondary p-6 shadow-lg">
+      <section className="px-4 pt-6 sm:px-6 lg:px-12">
+        <div className="rounded-lg border border-secondary/10 bg-secondary p-5 shadow-lg sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
+            <div className="min-w-0">
               <div className="mb-3 inline-flex items-center gap-3 rounded-lg border border-primary/10 bg-primary/10 px-4 py-2 text-sm font-bold text-primary">
                 <FaChartLine className="text-button" />
                 Admin Command Center
               </div>
-              <h2 className="text-3xl font-extrabold leading-tight text-primary md:text-4xl">
+              <h2 className="text-2xl font-extrabold leading-tight text-primary sm:text-3xl md:text-4xl">
                 Welcome Back,{" "}
-                <span className="text-button">
+                <span className="break-words text-button">
                   {user?.username || "Administrator"}
                 </span>
               </h2>
@@ -1132,7 +1132,7 @@ function AdminDashboard() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]">
+            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-4 lg:min-w-[520px]">
               {[
                 ["Students", activeSessionStudents.length],
                 ["Classes", activeSessionClasses.length],
@@ -1143,7 +1143,7 @@ function AdminDashboard() {
                   <p className="text-xs font-bold uppercase text-primary/60">
                     {label}
                   </p>
-                  <p className="mt-2 text-lg font-extrabold text-primary">
+                  <p className="mt-2 break-words text-base font-extrabold text-primary sm:text-lg">
                     {loading ? "..." : value}
                   </p>
                 </div>
@@ -1153,7 +1153,7 @@ function AdminDashboard() {
         </div>
       </section>
 
-      <section className="px-6 py-8 lg:px-10">
+      <section className="px-4 py-6 sm:px-6 lg:px-10">
         <div className="mb-6 rounded-lg border border-secondary/10 bg-secondary p-5 shadow-lg">
           <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
             <div>

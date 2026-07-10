@@ -10,7 +10,7 @@ import {
 } from "react-icons/fa6";
 import { Link, useNavigate } from "react-router-dom";
 
-import API from "../../api/axios.jsx";
+import API, { setAuthToken } from "../../api/axios.jsx";
 import { PageLoader } from "../../components/common/Loading.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { getPortalLoginErrorMessage } from "../../utils/loginErrors.js";
@@ -135,7 +135,7 @@ function Login({ adminOnly = false, executiveOnly = false }) {
           };
 
       const response = await API.post(endpoint, payload);
-      const { student, admin, teacher, executive } = response.data;
+      const { student, admin, teacher, executive, token } = response.data;
       const account = isStudent
         ? {
             ...student,
@@ -150,6 +150,7 @@ function Login({ adminOnly = false, executiveOnly = false }) {
             ? executive
             : admin;
 
+      setAuthToken(token);
       setUser(account);
       navigate(
         isStudent

@@ -3,12 +3,15 @@ import { FaFilePdf } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
 import PdfViewer from "../../components/common/PdfViewer.jsx";
+import PortalWelcomeBanner from "../../components/common/PortalWelcomeBanner.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
 import {
   downloadPdfBlob,
   openPdfNativelyOnIOS,
 } from "../../utils/pdfDownload.js";
 
 function TeacherBroadsheets() {
+  const { user } = useAuth();
   const [broadsheets, setBroadsheets] = useState([]);
   const [selectedBroadsheetId, setSelectedBroadsheetId] = useState("");
   const [viewerUrl, setViewerUrl] = useState("");
@@ -136,17 +139,25 @@ function TeacherBroadsheets() {
   };
 
   return (
-    <div className="px-6 py-8 lg:px-10">
+    <div className="px-4 py-6 sm:px-6 lg:px-10">
       <div className="mb-8">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-lg bg-button text-xl text-secondary">
-          <FaFilePdf />
-        </div>
-        <h2 className="text-3xl font-extrabold text-secondary">
-          Class Broadsheets
-        </h2>
-        <p className="mt-3 max-w-2xl text-secondary/75">
-          View and download the class broadsheet currently approved by admin.
-        </p>
+        <PortalWelcomeBanner
+          icon={<FaFilePdf />}
+          eyebrow="Teacher Portal"
+          title="Welcome,"
+          name={user?.full_name || "Teacher"}
+          description="View and download the class broadsheet currently approved by admin."
+          metaItems={[
+            {
+              label: "Assigned Class",
+              value: user?.assigned_class || "Not available",
+            },
+            {
+              label: "Session",
+              value: user?.session || "Not available",
+            },
+          ]}
+        />
       </div>
 
       {error && (
@@ -156,7 +167,7 @@ function TeacherBroadsheets() {
       )}
 
       <div className="grid grid-cols-1 gap-8">
-        <aside className="rounded-lg bg-secondary p-6 shadow-lg">
+        <aside className="rounded-lg bg-secondary p-5 shadow-lg sm:p-6">
           <h3 className="text-2xl font-extrabold text-primary">
             Approved Records
           </h3>
@@ -209,7 +220,7 @@ function TeacherBroadsheets() {
         >
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
-              <h3 className="text-3xl font-extrabold text-primary">
+              <h3 className="text-2xl font-extrabold text-primary sm:text-3xl">
                 {selectedBroadsheet
                   ? `${selectedBroadsheet.class.toUpperCase()} Broadsheet`
                   : "Broadsheet Preview"}

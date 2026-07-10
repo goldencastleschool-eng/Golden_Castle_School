@@ -54,6 +54,64 @@ export const getTeacherAssignmentType = (teacher = {}) =>
 export const isFormTeacher = (teacher = {}) =>
   getTeacherAssignmentType(teacher) === TEACHER_ASSIGNMENT_TYPES.FORM;
 
+const getRecordId = (record) => {
+  if (!record) {
+    return "";
+  }
+
+  if (record._id) {
+    return record._id.toString();
+  }
+
+  return record.toString();
+};
+
+export const getTeacherAssignments = (teacher = {}) => {
+  teacher = teacher || {};
+  const assignments = [];
+
+  if (teacher.assigned_class_record || teacher.assigned_class || teacher.session) {
+    assignments.push({
+      assigned_class: teacher.assigned_class || "",
+      assigned_class_record: teacher.assigned_class_record || null,
+      assignment_type: getTeacherAssignmentType(teacher),
+      session: teacher.session || "",
+      status: teacher.status || "",
+    });
+  }
+
+  if (Array.isArray(teacher.assignment_history)) {
+    teacher.assignment_history.forEach((assignment) => {
+      assignments.push({
+        assigned_class: assignment.assigned_class || "",
+        assigned_class_record: assignment.assigned_class_record || null,
+        assignment_type: getTeacherAssignmentType(assignment),
+        session: assignment.session || "",
+        status: assignment.status || "",
+      });
+    });
+  }
+
+  return assignments;
+};
+
+export const getTeacherAssignmentForSessionClass = (
+  teacher = {},
+  { session = "", classRecordId = "", assignmentType = TEACHER_ASSIGNMENT_TYPES.FORM } = {}
+) => {
+  const normalizedAssignmentType =
+    normalizeTeacherAssignmentType(assignmentType) ||
+    TEACHER_ASSIGNMENT_TYPES.FORM;
+  const normalizedClassRecordId = getRecordId(classRecordId);
+
+  return getTeacherAssignments(teacher).find(
+    (assignment) =>
+      assignment.session === session &&
+      getRecordId(assignment.assigned_class_record) === normalizedClassRecordId &&
+      getTeacherAssignmentType(assignment) === normalizedAssignmentType
+  );
+};
+
 export const getAssignmentOptionsForClass = (classRecord) =>
   isSecondaryClass(classRecord)
     ? TEACHER_ASSIGNMENT_OPTIONS

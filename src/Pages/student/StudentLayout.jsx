@@ -65,14 +65,14 @@ function StudentLayout() {
   return (
     <main className="min-h-screen bg-background">
       <div className="sticky top-0 z-30 flex items-center justify-between bg-secondary px-5 py-4 shadow-lg lg:hidden">
-        <div className="flex items-center gap-3">
+        <div className="min-w-0 flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-button text-secondary">
             <FaBookOpen />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-lg font-extrabold text-primary">Student Portal</p>
-            <p className="text-xs font-semibold text-primary/60">
-              Golden Castle School
+            <p className="truncate text-xs font-semibold text-primary/60">
+              {user?.full_name || "Golden Castle School"}
             </p>
           </div>
         </div>

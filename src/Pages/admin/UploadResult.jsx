@@ -13,7 +13,10 @@ import AdminNotification from "../../components/common/AdminNotification.jsx";
 import { TableSkeleton } from "../../components/common/Loading.jsx";
 import PaginationControls from "../../components/common/PaginationControls.jsx";
 import { sortStudentsByName } from "../../utils/students.js";
-import { isFormTeacher } from "../../utils/teacherAssignments.js";
+import {
+  getTeacherAssignmentForSessionClass,
+  isFormTeacher,
+} from "../../utils/teacherAssignments.js";
 import {
   getVisibleTermsForSession,
   normalizeTermForSession,
@@ -439,17 +442,15 @@ function UploadResult() {
       return [];
     }
 
-    return teachers.filter((teacher) => {
-      const teacherClassId =
-        teacher.assigned_class_record?._id || teacher.assigned_class_record;
-
-      return (
+    return teachers.filter(
+      (teacher) =>
         teacher.status !== "inactive" &&
         isFormTeacher(teacher) &&
-        teacher.session === cumulativeForm.session &&
-        teacherClassId === cumulativeForm.class_record
-      );
-    });
+        getTeacherAssignmentForSessionClass(teacher, {
+          session: cumulativeForm.session,
+          classRecordId: cumulativeForm.class_record,
+        })
+    );
   }, [
     cumulativeForm.class_record,
     cumulativeForm.session,
@@ -467,17 +468,15 @@ function UploadResult() {
       return [];
     }
 
-    return teachers.filter((teacher) => {
-      const teacherClassId =
-        teacher.assigned_class_record?._id || teacher.assigned_class_record;
-
-      return (
+    return teachers.filter(
+      (teacher) =>
         teacher.status !== "inactive" &&
         isFormTeacher(teacher) &&
-        teacher.session === broadsheetForm.session &&
-        teacherClassId === broadsheetForm.class_record
-      );
-    });
+        getTeacherAssignmentForSessionClass(teacher, {
+          session: broadsheetForm.session,
+          classRecordId: broadsheetForm.class_record,
+        })
+    );
   }, [broadsheetForm.class_record, broadsheetForm.session, teachers]);
 
   const classResultAvailableClasses = useMemo(() => {
@@ -491,17 +490,15 @@ function UploadResult() {
       return [];
     }
 
-    return teachers.filter((teacher) => {
-      const teacherClassId =
-        teacher.assigned_class_record?._id || teacher.assigned_class_record;
-
-      return (
+    return teachers.filter(
+      (teacher) =>
         teacher.status !== "inactive" &&
         isFormTeacher(teacher) &&
-        teacher.session === classResultForm.session &&
-        teacherClassId === classResultForm.class_record
-      );
-    });
+        getTeacherAssignmentForSessionClass(teacher, {
+          session: classResultForm.session,
+          classRecordId: classResultForm.class_record,
+        })
+    );
   }, [classResultForm.class_record, classResultForm.session, teachers]);
 
   const bulkResultAvailableClasses = useMemo(() => {
@@ -544,17 +541,15 @@ function UploadResult() {
   ]);
 
   const getAssignedFormTeacher = useCallback((classRecordId, session) => {
-    return teachers.find((teacher) => {
-      const teacherClassId =
-        teacher.assigned_class_record?._id || teacher.assigned_class_record;
-
-      return (
+    return teachers.find(
+      (teacher) =>
         teacher.status !== "inactive" &&
         isFormTeacher(teacher) &&
-        teacher.session === session &&
-        teacherClassId === classRecordId
-      );
-    });
+        getTeacherAssignmentForSessionClass(teacher, {
+          session,
+          classRecordId,
+        })
+    );
   }, [teachers]);
 
   const bulkCumulativeRows = useMemo(() => {
