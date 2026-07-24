@@ -33,6 +33,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 
 // Axios instance for API requests
 import API from "../../api/axios.jsx";
+import { getPortalLoginPath } from "../../utils/portalHost.js";
 
 /* ==================================================
    ADMIN NAVIGATION LINKS
@@ -127,7 +128,7 @@ function AdminLayout() {
   const handleLogout = async () => {
     await API.post("/auth/logout").catch(() => {});
     await logout();
-    navigate("/login");
+    navigate(getPortalLoginPath("/secure-admin-login"));
   };
 
   /* ==========================================
