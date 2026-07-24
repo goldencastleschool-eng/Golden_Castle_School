@@ -16,6 +16,7 @@ import {
 import { useAuth } from "../../context/AuthContext.jsx";
 import API from "../../api/axios.jsx";
 import PortalNoticeGate from "../../components/common/PortalNoticeGate.jsx";
+import { getPortalLoginPath } from "../../utils/portalHost.js";
 
 const studentLinks = [
   {
@@ -50,7 +51,7 @@ function StudentLayout() {
   const handleLogout = async () => {
     await API.post("/auth/logout").catch(() => {});
     await logout();
-    navigate("/login");
+    navigate(getPortalLoginPath("/login"));
   };
 
   const linkClass = ({ isActive }) =>

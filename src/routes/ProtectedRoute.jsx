@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { PageLoader } from '../components/common/Loading.jsx';
+import { getPortalLoginPath } from '../utils/portalHost.js';
 
 export default function ProtectedRoute({ children, role, redirectTo }) {
   const { user, isAuthenticated, loading } = useAuth();
@@ -8,7 +9,7 @@ export default function ProtectedRoute({ children, role, redirectTo }) {
   const secureStaffRoles = ["admin", "principal", "chairman"];
   const redirectPath =
     redirectTo ||
-    (allowedRoles.some((allowedRole) => secureStaffRoles.includes(allowedRole))
+    getPortalLoginPath(allowedRoles.some((allowedRole) => secureStaffRoles.includes(allowedRole))
       ? "/secure-admin-login"
       : "/login");
 
