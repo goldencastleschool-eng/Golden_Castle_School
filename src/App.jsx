@@ -5,13 +5,16 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 // SHARED COMPONENTS
 import Header from "./components/common/Header.jsx";
 import Footer from "./components/common/Footer.jsx";
+import { isPortalHostname } from "./utils/portalHost.js";
 
 function App() {
+  const showPublicChrome = !isPortalHostname();
+
   return (
     <div className="min-h-screen flex flex-col">
       
       {/* HEADER */}
-      <Header />
+      {showPublicChrome && <Header />}
 
       {/* PAGE CONTENT */}
       <main className="flex-1">
@@ -22,7 +25,7 @@ function App() {
       <SpeedInsights/>
 
       {/* FOOTER */}
-      <Footer />
+      {showPublicChrome && <Footer />}
       
     </div>
   );

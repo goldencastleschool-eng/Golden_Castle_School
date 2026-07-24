@@ -22,6 +22,7 @@ import "./App.css";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 
 import { PageLoader } from "./components/common/Loading.jsx";
+import { isPortalHostname } from "./utils/portalHost.js";
 
 // PUBLIC PAGES
 const Home = lazy(() => import("./Pages/public/Home.jsx"));
@@ -105,22 +106,6 @@ const ExecutiveReportPortal = lazy(() =>
 
 // ERROR PAGE
 const PageNotFound = lazy(() => import("./Pages/public/PageNotFound.jsx"));
-
-const portalHostnames = (
-  import.meta.env.VITE_PORTAL_HOSTNAMES ||
-  "portal.goldencastleschool.com,portal.goldencastle.com"
-)
-  .split(",")
-  .map((hostname) => hostname.trim().toLowerCase())
-  .filter(Boolean);
-
-const isPortalHostname = () => {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  return portalHostnames.includes(window.location.hostname.toLowerCase());
-};
 
 // Cache portal data briefly so returning to dashboards feels instant while still refreshing in the background.
 const queryClient = new QueryClient({

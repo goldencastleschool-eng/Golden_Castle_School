@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import API, { clearAuthToken } from "../api/axios.jsx";
+import API from "../api/axios.jsx";
 import AuthContext from "./AuthContext.js";
+import { clearAuthToken } from "../utils/authToken.js";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

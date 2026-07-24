@@ -1,38 +1,12 @@
 import axios from "axios";
 
-const AUTH_TOKEN_STORAGE_KEY = "gcs_auth_token";
-
-export const getAuthToken = () => {
-  try {
-    return window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
-  } catch {
-    return "";
-  }
-};
-
-export const setAuthToken = (token) => {
-  try {
-    if (token) {
-      window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
-    }
-  } catch {
-    // Storage can be unavailable in some private browsing contexts.
-  }
-};
-
-export const clearAuthToken = () => {
-  try {
-    window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
-  } catch {
-    // Storage can be unavailable in some private browsing contexts.
-  }
-};
+import { clearAuthToken, getAuthToken } from "../utils/authToken.js";
+import { getPortalLoginPathForCurrentRoute } from "../utils/portalHost.js";
 
 const API = axios.create({
   baseURL:
     import.meta.env.VITE_API_BASE_URL ||
     "http://localhost:5000/api",
-  withCredentials: true,
 });
 
 API.interceptors.request.use((config) => {
@@ -52,11 +26,7 @@ API.interceptors.response.use(
     if (error.response?.status === 401 && !error.config?.skipAuthRedirect) {
       clearAuthToken();
 
-      const redirectPath = window.location.pathname.startsWith("/reports")
-        ? "/executive-login"
-        : window.location.pathname.startsWith("/admin")
-        ? "/secure-admin-login"
-        : "/login";
+      const redirectPath = getPortalLoginPathForCurrentRoute();
 
       // Prevent redirect loop on login page
       if (!window.location.pathname.includes("/login")) {

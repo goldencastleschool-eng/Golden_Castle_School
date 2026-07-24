@@ -10,9 +10,10 @@ import {
 } from "react-icons/fa6";
 import { Link, useNavigate } from "react-router-dom";
 
-import API, { setAuthToken } from "../../api/axios.jsx";
+import API from "../../api/axios.jsx";
 import { PageLoader } from "../../components/common/Loading.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { setAuthToken } from "../../utils/authToken.js";
 import { getPortalLoginErrorMessage } from "../../utils/loginErrors.js";
 
 const image =

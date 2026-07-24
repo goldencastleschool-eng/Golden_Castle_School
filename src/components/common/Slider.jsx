@@ -5,15 +5,15 @@ import "react-responsive-carousel/lib/styles/carousel.min.css";
 
 const slides = [
   {
-    image: "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1777222515/imageslider3_bd8xdu.png",
+    image: "https://res.cloudinary.com/dadane1xo/image/upload/f_auto,q_auto:good,w_1600,c_limit/v1777222515/imageslider3_bd8xdu.png",
     position: "object-[58%_center]",
   },
   {
-    image: "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1777222145/imageslider1_ew3bwz.png",
+    image: "https://res.cloudinary.com/dadane1xo/image/upload/f_auto,q_auto:good,w_1600,c_limit/v1777222145/imageslider1_ew3bwz.png",
     position: "object-[54%_center]",
   },
   {
-    image: "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1777222010/imageslider2_s6guyg.png",
+    image: "https://res.cloudinary.com/dadane1xo/image/upload/f_auto,q_auto:good,w_1600,c_limit/v1777222010/imageslider2_s6guyg.png",
     position: "object-[62%_center]",
   },
 ];
@@ -53,6 +53,9 @@ function Slider() {
             <img
               src={slide.image}
               alt={`Slide ${index + 1}`}
+              loading={index === 0 ? "eager" : "lazy"}
+              fetchPriority={index === 0 ? "high" : "low"}
+              decoding="async"
               className={`h-full w-full object-cover ${slide.position} scale-105 animate-[slowZoom_12s_linear_infinite]`}
             />
 
