@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios.jsx";
 import AuthContext from "./AuthContext.js";
-import { clearAuthToken } from "../utils/authToken.js";
+import { clearAuthToken, getAuthToken } from "../utils/authToken.js";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -10,6 +10,12 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const restoreSession = async () => {
+      if (!getAuthToken()) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await API.get("/auth/me", {
           skipAuthRedirect: true,
@@ -17,6 +23,7 @@ export const AuthProvider = ({ children }) => {
 
         setUser(response.data?.user || null);
       } catch {
+        clearAuthToken();
         setUser(null);
       } finally {
         setLoading(false);
