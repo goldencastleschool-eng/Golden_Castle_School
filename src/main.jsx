@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import {
   createBrowserRouter,
+  Navigate,
   RouterProvider,
 } from "react-router-dom";
 
@@ -105,6 +106,22 @@ const ExecutiveReportPortal = lazy(() =>
 // ERROR PAGE
 const PageNotFound = lazy(() => import("./Pages/public/PageNotFound.jsx"));
 
+const portalHostnames = (
+  import.meta.env.VITE_PORTAL_HOSTNAMES ||
+  "portal.goldencastleschool.com,portal.goldencastle.com"
+)
+  .split(",")
+  .map((hostname) => hostname.trim().toLowerCase())
+  .filter(Boolean);
+
+const isPortalHostname = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return portalHostnames.includes(window.location.hostname.toLowerCase());
+};
+
 // Cache portal data briefly so returning to dashboards feels instant while still refreshing in the background.
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -133,7 +150,11 @@ const router = createBrowserRouter([
       // HOME PAGE
       {
         index: true,
-        element: <Home />,
+        element: isPortalHostname() ? (
+          <Navigate to="/student-login" replace />
+        ) : (
+          <Home />
+        ),
       },
 
       // PUBLIC PAGES

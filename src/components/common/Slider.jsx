@@ -28,7 +28,7 @@ const slides = [
 
 function Slider() {
   return (
-    <div className="relative h-[700px] w-full">
+    <div className="absolute inset-0 h-full w-full [&_.carousel-root]:h-full [&_.carousel]:h-full [&_.control-dots]:z-20 [&_.slide]:h-full [&_.slider-wrapper]:h-full [&_.slider]:h-full">
 
       <Carousel
         autoPlay
@@ -47,13 +47,13 @@ function Slider() {
         {slides.map((slide, index) => (
           <div
             key={index}
-            className="relative h-[700px] w-full overflow-hidden"
+            className="relative h-full w-full overflow-hidden"
           >
 
             <img
               src={slide.image}
               alt={`Slide ${index + 1}`}
-              className={`h-[700px] w-full object-cover ${slide.position} scale-105 animate-[slowZoom_12s_linear_infinite]  sm:object-center`}
+              className={`h-full w-full object-cover ${slide.position} scale-105 animate-[slowZoom_12s_linear_infinite]`}
             />
 
             {/* Overlay */}
