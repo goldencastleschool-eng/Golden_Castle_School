@@ -2,9 +2,7 @@ import { Suspense } from "react";
 
 import { motion } from "framer-motion";
 
-import {
-  FaRegUser,
-} from "react-icons/fa6";
+import { FaArrowRight } from "react-icons/fa6";
 
 import { NavLink } from "react-router-dom";
 
@@ -99,30 +97,6 @@ export default function Hero() {
 
             <div className="mt-8 flex flex-wrap items-center gap-4 sm:mt-10">
 
-              {/* LOGIN BUTTON */}
-
-              <NavLink
-                to="/login"
-                className="
-                  group inline-flex items-center justify-center gap-3
-                  rounded-lg bg-button
-                  px-6 py-4
-                  font-semibold text-secondary
-                  shadow-lg
-                  transition-all duration-300
-                  hover:-translate-y-0.5
-                  hover:shadow-button/30
-                "
-              >
-                <span>Log In</span>
-
-                <FaRegUser className="transition duration-300 group-hover:rotate-12" />
-              </NavLink>
-
-
-
-              {/* ENROLL BUTTON */}
-
               <NavLink
                 to="/programs"
                 className="
@@ -137,7 +111,7 @@ export default function Hero() {
               >
                 <span>Explore Programs</span>
 
-                <FaRegUser className="transition duration-300 group-hover:rotate-12" />
+                <FaArrowRight className="transition duration-300 group-hover:translate-x-1" />
               </NavLink>
             </div>
 

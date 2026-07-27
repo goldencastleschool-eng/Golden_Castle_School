@@ -13,6 +13,7 @@ import {
 
 // CONTEXT
 import { AuthProvider } from "./context/AuthProvider.jsx";
+import { useAuth } from "./context/AuthContext.jsx";
 
 // LAYOUT
 import App from "./App.jsx";
@@ -22,7 +23,7 @@ import "./App.css";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 
 import { PageLoader } from "./components/common/Loading.jsx";
-import { isPortalHostname } from "./utils/portalHost.js";
+import { getPortalHomePath, isPortalHostname } from "./utils/portalHost.js";
 
 // PUBLIC PAGES
 const Home = lazy(() => import("./Pages/public/Home.jsx"));
@@ -119,6 +120,36 @@ const queryClient = new QueryClient({
   },
 });
 
+function PortalHomeRedirect() {
+  const { user, isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <PageLoader message="Checking your portal access..." />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to={getPortalHomePath()} replace />;
+  }
+
+  if (user?.role === "student") {
+    return <Navigate to="/student" replace />;
+  }
+
+  if (user?.role === "teacher") {
+    return <Navigate to="/teacher" replace />;
+  }
+
+  if (user?.role === "admin") {
+    return <Navigate to="/admin" replace />;
+  }
+
+  if (user?.role === "principal" || user?.role === "chairman") {
+    return <Navigate to="/reports" replace />;
+  }
+
+  return <Navigate to={getPortalHomePath()} replace />;
+}
+
 
 
 // =========================
@@ -136,7 +167,7 @@ const router = createBrowserRouter([
       {
         index: true,
         element: isPortalHostname() ? (
-          <Navigate to="/student-login" replace />
+          <PortalHomeRedirect />
         ) : (
           <Home />
         ),
@@ -205,6 +236,10 @@ const router = createBrowserRouter([
   {
         path: "login",
         element: <AdminLogin />,
+  },
+  {
+        path: "teacher-login",
+        element: <AdminLogin teacherOnly />,
   },
   {
         path: "secure-admin-login",

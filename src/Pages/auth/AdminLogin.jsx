@@ -15,6 +15,7 @@ import { PageLoader } from "../../components/common/Loading.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { setAuthToken } from "../../utils/authToken.js";
 import { getPortalLoginErrorMessage } from "../../utils/loginErrors.js";
+import { isPortalHostname } from "../../utils/portalHost.js";
 
 const image =
   "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1777222544/shoolfrontgate_x1klhb.png";
@@ -46,11 +47,17 @@ const executiveRoleOption = {
 
 const reportRoles = ["principal", "chairman"];
 
-function Login({ adminOnly = false, executiveOnly = false }) {
+function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }) {
   const navigate = useNavigate();
   const { setUser } = useAuth();
   const [role, setRole] = useState(() =>
-    executiveOnly ? "executive" : adminOnly ? "admin" : "student"
+    executiveOnly
+      ? "executive"
+      : adminOnly
+        ? "admin"
+        : teacherOnly
+          ? "teacher"
+          : "student"
   );
   const [formData, setFormData] = useState({
     identifier: "",
@@ -66,7 +73,9 @@ function Login({ adminOnly = false, executiveOnly = false }) {
     ? [executiveRoleOption]
     : adminOnly
       ? [adminRoleOption]
-      : roleOptions;
+      : teacherOnly
+        ? roleOptions.filter((roleOption) => roleOption.value === "teacher")
+        : roleOptions;
   const roleLabel = isStudent
     ? "Student"
     : isTeacher
@@ -78,21 +87,33 @@ function Login({ adminOnly = false, executiveOnly = false }) {
     ? "Executive Reports Login"
     : adminOnly
       ? "Secure Admin Login"
-      : "Portal Login";
+      : teacherOnly
+        ? "Staff Portal Login"
+        : "Portal Login";
   const sideDescription = executiveOnly
     ? "Sign in through the separate reporting access point for school leadership."
     : adminOnly
       ? "Sign in through the secure administrator access point."
-      : "Choose your portal role and sign in securely to continue.";
+      : teacherOnly
+        ? "Sign in through the dedicated staff access point."
+        : "Choose your portal role and sign in securely to continue.";
 
   useEffect(() => {
-    setRole(executiveOnly ? "executive" : adminOnly ? "admin" : "student");
+    setRole(
+      executiveOnly
+        ? "executive"
+        : adminOnly
+          ? "admin"
+          : teacherOnly
+            ? "teacher"
+            : "student"
+    );
     setError("");
     setFormData({
       identifier: "",
       password: "",
     });
-  }, [adminOnly, executiveOnly]);
+  }, [adminOnly, executiveOnly, teacherOnly]);
 
   const handleRoleChange = (nextRole) => {
     setRole(nextRole);
@@ -303,7 +324,7 @@ function Login({ adminOnly = false, executiveOnly = false }) {
               </button>
             </form>
 
-            {(adminOnly || executiveOnly) && (
+            {(adminOnly || executiveOnly) && !isPortalHostname() && (
               <p className="mt-4 text-center text-sm font-semibold text-primary/70">
                 {adminOnly ? "Principal or chairman?" : "Administrator?"}{" "}
                 <Link
