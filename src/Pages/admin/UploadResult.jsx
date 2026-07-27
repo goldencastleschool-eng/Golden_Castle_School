@@ -179,6 +179,7 @@ function UploadResult() {
   });
   const [editingResultId, setEditingResultId] = useState("");
   const [resultSearch, setResultSearch] = useState("");
+  const [selectedResultIds, setSelectedResultIds] = useState([]);
   const [resultPage, setResultPage] = useState(1);
   const [cumulativePage, setCumulativePage] = useState(1);
   const [classResultPage, setClassResultPage] = useState(1);
@@ -644,6 +645,17 @@ function UploadResult() {
       ),
     [filteredResults, visibleResultPage]
   );
+  const displayedResultIds = useMemo(
+    () => displayedResults.map((result) => result._id).filter(Boolean),
+    [displayedResults]
+  );
+  const selectedResultCount = selectedResultIds.length;
+  const selectedDisplayedResultCount = displayedResultIds.filter((resultId) =>
+    selectedResultIds.includes(resultId)
+  ).length;
+  const allDisplayedResultsSelected =
+    displayedResultIds.length > 0 &&
+    selectedDisplayedResultCount === displayedResultIds.length;
 
   const cumulativeResultRecordSource =
     cumulativeResultSummaryRecords.length > 0
@@ -1732,6 +1744,30 @@ function UploadResult() {
     setResultForm(initialResultForm);
   };
 
+  const handleResultSelectionChange = (resultId, checked) => {
+    setSelectedResultIds((currentIds) => {
+      if (checked) {
+        return currentIds.includes(resultId)
+          ? currentIds
+          : [...currentIds, resultId];
+      }
+
+      return currentIds.filter((selectedId) => selectedId !== resultId);
+    });
+  };
+
+  const handleDisplayedResultSelectionChange = (checked) => {
+    setSelectedResultIds((currentIds) => {
+      if (checked) {
+        return [...new Set([...currentIds, ...displayedResultIds])];
+      }
+
+      return currentIds.filter(
+        (selectedId) => !displayedResultIds.includes(selectedId)
+      );
+    });
+  };
+
   const handleDeleteRequest = (result, type = "termly") => {
     setDeleteTarget({
       ...result,
@@ -1739,14 +1775,49 @@ function UploadResult() {
     });
   };
 
+  const handleBatchDeleteRequest = () => {
+    if (!selectedResultIds.length) {
+      return;
+    }
+
+    setDeleteTarget({
+      deleteType: "batch-termly",
+      resultIds: selectedResultIds,
+      count: selectedResultIds.length
+    });
+  };
+
   const handleDeleteConfirm = async () => {
-    if (!deleteTarget?._id) {
+    if (
+      !deleteTarget?._id &&
+      deleteTarget?.deleteType !== "batch-termly"
+    ) {
       return;
     }
 
     setDeleting(true);
     try {
-      if (deleteTarget.deleteType === "broadsheet") {
+      if (deleteTarget.deleteType === "batch-termly") {
+        const response = await API.delete("/results/batch", {
+          data: {
+            resultIds: deleteTarget.resultIds
+          }
+        });
+        const deletedCount = response.data?.deletedCount || 0;
+        const missingCount = response.data?.missingCount || 0;
+
+        setSelectedResultIds((currentIds) =>
+          currentIds.filter(
+            (selectedId) => !deleteTarget.resultIds.includes(selectedId)
+          )
+        );
+        setStatus({
+          type: missingCount ? "error" : "success",
+          message: missingCount
+            ? `${deletedCount} result record(s) deleted. ${missingCount} selected record(s) were no longer available.`
+            : `${deletedCount} result record(s) deleted successfully.`,
+        });
+      } else if (deleteTarget.deleteType === "broadsheet") {
         await API.delete(`/class-broadsheets/${deleteTarget._id}`);
       } else if (deleteTarget.deleteType === "class-result") {
         await API.delete(`/class-results/${deleteTarget._id}`);
@@ -1754,18 +1825,23 @@ function UploadResult() {
         await API.delete(`/cumulative-results/${deleteTarget._id}`);
       } else {
         await API.delete(`/results/${deleteTarget._id}`);
+        setSelectedResultIds((currentIds) =>
+          currentIds.filter((selectedId) => selectedId !== deleteTarget._id)
+        );
       }
-      setStatus({
-        type: "success",
-        message:
-          deleteTarget.deleteType === "broadsheet"
-              ? "Class broadsheet deleted successfully."
-            : deleteTarget.deleteType === "class-result"
-              ? "Class result deleted successfully."
-            : deleteTarget.deleteType === "cumulative"
-              ? "Cumulative result deleted successfully."
-            : "Result deleted successfully.",
-      });
+      if (deleteTarget.deleteType !== "batch-termly") {
+        setStatus({
+          type: "success",
+          message:
+            deleteTarget.deleteType === "broadsheet"
+                ? "Class broadsheet deleted successfully."
+              : deleteTarget.deleteType === "class-result"
+                ? "Class result deleted successfully."
+              : deleteTarget.deleteType === "cumulative"
+                ? "Cumulative result deleted successfully."
+              : "Result deleted successfully.",
+        });
+      }
       setDeleteTarget(null);
       if (deleteTarget.deleteType === "broadsheet") {
         await fetchClassBroadsheets();
@@ -1801,7 +1877,9 @@ function UploadResult() {
       <AdminDeleteModal
         open={Boolean(deleteTarget)}
         title={
-          deleteTarget?.deleteType === "broadsheet"
+          deleteTarget?.deleteType === "batch-termly"
+            ? "Delete Selected Results"
+            : deleteTarget?.deleteType === "broadsheet"
               ? "Delete Class Broadsheet"
             : deleteTarget?.deleteType === "class-result"
               ? "Delete Class Result"
@@ -1810,7 +1888,9 @@ function UploadResult() {
             : "Delete Result"
         }
         message={
-          deleteTarget?.deleteType === "broadsheet"
+          deleteTarget?.deleteType === "batch-termly"
+            ? "This action will permanently remove the selected uploaded result PDF records from the system."
+            : deleteTarget?.deleteType === "broadsheet"
               ? "This action will permanently remove this uploaded class broadsheet PDF record from the system."
             : deleteTarget?.deleteType === "class-result"
               ? "This action will permanently remove this uploaded class result PDF record from the system."
@@ -1819,12 +1899,16 @@ function UploadResult() {
             : "This action will permanently remove this uploaded result PDF record from the system."
         }
         details={
-          deleteTarget
+          deleteTarget?.deleteType === "batch-termly"
+            ? `${deleteTarget.count} selected result record(s)`
+            : deleteTarget
             ? `${deleteTarget.student?.full_name || deleteTarget.class || "Unknown record"} - ${deleteTarget.session}${deleteTarget.term ? ` - ${deleteTarget.term}` : ""}`
             : ""
         }
         confirmLabel={
-          deleteTarget?.deleteType === "broadsheet"
+          deleteTarget?.deleteType === "batch-termly"
+            ? "Delete Selected Results"
+            : deleteTarget?.deleteType === "broadsheet"
               ? "Delete Class Broadsheet"
             : deleteTarget?.deleteType === "class-result"
               ? "Delete Class Result"
@@ -2827,13 +2911,23 @@ function UploadResult() {
       </section>
 
       <section className="mt-8 rounded-lg bg-secondary p-6 shadow-lg">
-        <div className="mb-5">
+        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
             <h3 className="text-3xl font-extrabold text-primary">
               Result Records
             </h3>
             <p className="mt-2 text-primary/70">
               Showing 15 uploads per page. Use search to filter these records.
             </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleBatchDeleteRequest}
+            disabled={selectedResultCount === 0 || deleting}
+            className="w-full cursor-pointer rounded-lg bg-red-600 px-5 py-3 text-sm font-bold text-white shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
+          >
+            Delete selected ({selectedResultCount})
+          </button>
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[360px]">
@@ -2849,6 +2943,18 @@ function UploadResult() {
           <table className="w-full min-w-[900px] text-left">
             <thead className="bg-primary/10 text-primary">
               <tr>
+                <th className="px-5 py-4 font-bold">
+                  <input
+                    type="checkbox"
+                    checked={allDisplayedResultsSelected}
+                    disabled={displayedResultIds.length === 0 || loadingStudents}
+                    aria-label="Select all visible result records"
+                    onChange={(event) =>
+                      handleDisplayedResultSelectionChange(event.target.checked)
+                    }
+                    className="h-5 w-5 cursor-pointer accent-button disabled:cursor-not-allowed"
+                  />
+                </th>
                 <th className="px-5 py-4 font-bold">S/N</th>
                 <th className="px-5 py-4 font-bold">Student</th>
                 <th className="px-5 py-4 font-bold">Class</th>
@@ -2859,10 +2965,10 @@ function UploadResult() {
             </thead>
             <tbody className="divide-y divide-primary/10">
               {loadingStudents ? (
-                <TableSkeleton columns={6} />
+                <TableSkeleton columns={7} />
               ) : displayedResults.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-6 text-primary/70" colSpan="6">
+                  <td className="px-5 py-6 text-primary/70" colSpan="7">
                     {resultSearch
                       ? "No result record matches your search."
                       : "No result records yet."}
@@ -2871,6 +2977,20 @@ function UploadResult() {
               ) : (
                 displayedResults.map((result, index) => (
                   <tr key={result._id} className="text-primary/80">
+                    <td className="px-5 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedResultIds.includes(result._id)}
+                        aria-label={`Select result for ${result.student?.full_name || "Unknown student"}`}
+                        onChange={(event) =>
+                          handleResultSelectionChange(
+                            result._id,
+                            event.target.checked
+                          )
+                        }
+                        className="h-5 w-5 cursor-pointer accent-button"
+                      />
+                    </td>
                     <td className="px-5 py-4 font-bold text-primary">
                       {(visibleResultPage - 1) * PAGE_SIZE + index + 1}
                     </td>
