@@ -101,6 +101,9 @@ const PortalVisibility = lazy(() =>
 const PortalNotices = lazy(() =>
   import("./Pages/admin/PortalNotices.jsx")
 );
+const AuthActivity = lazy(() =>
+  import("./Pages/admin/AuthActivity.jsx")
+);
 const ExecutiveReportPortal = lazy(() =>
   import("./Pages/reports/ExecutiveReportPortal.jsx")
 );
@@ -374,6 +377,10 @@ const router = createBrowserRouter([
           {
             path: "portal-notices",
             element: <PortalNotices />,
+          },
+          {
+            path: "login-activity",
+            element: <AuthActivity />,
           },
         ],
       },

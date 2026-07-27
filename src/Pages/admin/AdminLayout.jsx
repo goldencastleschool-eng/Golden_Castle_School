@@ -15,6 +15,7 @@ import {
   FaBus,
   FaChartLine,
   FaChartPie,
+  FaClockRotateLeft,
   FaClipboardCheck,
   FaChalkboardUser,
   FaEye,
@@ -106,6 +107,11 @@ const adminLinks = [
     label: "Portal Notices",
     path: "/admin/portal-notices",
     icon: <FaBullhorn />,
+  },
+  {
+    label: "Login Activity",
+    path: "/admin/login-activity",
+    icon: <FaClockRotateLeft />,
   },
 ];
 
