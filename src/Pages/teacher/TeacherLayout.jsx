@@ -42,6 +42,11 @@ const teacherLinks = [
     formTeacherOnly: true,
   },
   {
+    label: "Academic AI",
+    path: "/teacher/academic-ai",
+    icon: <FaBookOpen />,
+  },
+  {
     label: "Settings",
     path: "/teacher/settings",
     icon: <FaGear />,

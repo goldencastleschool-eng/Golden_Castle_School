@@ -6,12 +6,14 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import Header from "./components/common/Header.jsx";
 import Footer from "./components/common/Footer.jsx";
 import { isPortalHostname } from "./utils/portalHost.js";
+import Seo from "./components/common/Seo.jsx";
 
 function App() {
   const showPublicChrome = !isPortalHostname();
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo />
       
       {/* HEADER */}
       {showPublicChrome && <Header />}

@@ -12,6 +12,7 @@ import {
   FaBars,
   FaBed,
   FaBullhorn,
+  FaBookOpen,
   FaBus,
   FaChartLine,
   FaChartPie,
@@ -107,6 +108,11 @@ const adminLinks = [
     label: "Portal Notices",
     path: "/admin/portal-notices",
     icon: <FaBullhorn />,
+  },
+  {
+    label: "Academic AI",
+    path: "/admin/academic-ai",
+    icon: <FaBookOpen />,
   },
   {
     label: "Login Activity",

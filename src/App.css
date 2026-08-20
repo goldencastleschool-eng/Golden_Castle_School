@@ -41,6 +41,37 @@
     background: transparent;
 }
 
+.academic-ai-active input,
+.academic-ai-active select,
+.academic-ai-active textarea {
+    border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 8%, var(--color-secondary));
+    color: var(--color-accent);
+}
+
+.academic-ai-active input::placeholder,
+.academic-ai-active textarea::placeholder {
+    color: color-mix(in srgb, var(--color-accent) 65%, transparent);
+}
+
+.academic-ai-active input:focus,
+.academic-ai-active select:focus,
+.academic-ai-active textarea:focus {
+    border-color: var(--color-button);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-button) 25%, transparent);
+    outline: none;
+}
+
+.academic-ai-active option {
+    background: var(--color-secondary);
+    color: var(--color-accent);
+}
+
+.academic-ai-active pre {
+    border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 7%, var(--color-secondary));
+}
+
 @keyframes slowZoom {
     0% {
         transform: scale(1.03);

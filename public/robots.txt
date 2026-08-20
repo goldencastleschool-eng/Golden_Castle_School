@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /teacher
+Disallow: /student
+Disallow: /reports
+Disallow: /login
+Disallow: /teacher-login
+Disallow: /secure-admin-login
+Disallow: /student-login
+Disallow: /executive-login
+
+Sitemap: https://www.goldencastleschool.com/sitemap.xml

@@ -37,6 +37,19 @@ const normalizeClassName = (className = "") =>
 const isActiveStudent = (student) =>
   !student.status || student.status === "active";
 
+const studentHasClassEnrollment = (student, classRecord) =>
+  Array.isArray(student.class_enrollments) &&
+  student.class_enrollments.some((enrollment) => {
+    const enrollmentClassRecordId =
+      enrollment.class_record?._id || enrollment.class_record;
+
+    return (
+      enrollmentClassRecordId === classRecord._id ||
+      (normalizeClassName(enrollment.class) === normalizeClassName(classRecord.name) &&
+        enrollment.session === classRecord.session)
+    );
+  });
+
 const escapeHtml = (value = "") =>
   value
     .toString()
@@ -197,10 +210,10 @@ function ClassManagement() {
 
     return students.filter(
       (student) =>
-        isActiveStudent(student) &&
-        normalizeClassName(student.class) ===
+        studentHasClassEnrollment(student, selectedClassRecord) ||
+        (normalizeClassName(student.class) ===
           normalizeClassName(selectedClassRecord.name) &&
-        student.current_session === selectedClassRecord.session
+          student.current_session === selectedClassRecord.session)
     );
   }, [classes, studentViewClassId, studentViewSessionFilter, students]);
 
@@ -928,17 +941,17 @@ function ClassManagement() {
   const getClassStudentCount = (classRecord) =>
     students.filter(
       (student) =>
-        isActiveStudent(student) &&
-        normalizeClassName(student.class) === normalizeClassName(classRecord.name) &&
-        student.current_session === classRecord.session
+        studentHasClassEnrollment(student, classRecord) ||
+        (normalizeClassName(student.class) === normalizeClassName(classRecord.name) &&
+          student.current_session === classRecord.session)
     ).length;
   const buildClassStudentRows = () =>
     sortedClassStudents.map((student, index) => ({
       sn: index + 1,
       name: student.full_name || "",
       admissionNo: student.admission_no || "",
-      className: student.class || selectedClassRecord?.name || "",
-      session: student.current_session || selectedClassRecord?.session || "",
+      className: selectedClassRecord?.name || student.class || "",
+      session: selectedClassRecord?.session || student.current_session || "",
       gender: student.gender || "Not set",
       created: student.createdAt
         ? new Date(student.createdAt).toLocaleDateString()
@@ -1419,7 +1432,7 @@ function ClassManagement() {
                       {student.full_name}
                     </td>
                     <td className="px-5 py-4">{student.admission_no}</td>
-                    <td className="px-5 py-4">{student.class}</td>
+                    <td className="px-5 py-4">{selectedClassRecord.name}</td>
                     <td className="px-5 py-4">{student.gender || "Not set"}</td>
                     <td className="px-5 py-4">
                       {student.createdAt
@@ -1450,9 +1463,9 @@ function ClassManagement() {
               Promote or Demote Students
             </h3>
             <p className="mt-3 max-w-3xl text-primary/70">
-              Move selected students from one class session into another class
-              and session. Existing result records keep their original class,
-              session, and term.
+              Promote selected students into another class and session. Their
+              original class roster and result records remain available for
+              historical reference.
             </p>
 
             <div className="mt-6 rounded-lg border border-primary/10 bg-primary/5 p-5">

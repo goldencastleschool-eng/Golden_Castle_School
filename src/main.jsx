@@ -74,6 +74,9 @@ const TeacherClassList = lazy(() =>
 const TeacherSettings = lazy(() =>
   import("./Pages/teacher/TeacherSettings.jsx")
 );
+const AcademicStudio = lazy(() =>
+  import("./Pages/teacher/AcademicStudio.jsx")
+);
 const AdminDashboard = lazy(() => import("./Pages/admin/AdminDashboard.jsx"));
 const AdminLayout = lazy(() => import("./Pages/admin/AdminLayout.jsx"));
 const ClassManagement = lazy(() =>
@@ -103,6 +106,9 @@ const PortalNotices = lazy(() =>
 );
 const AuthActivity = lazy(() =>
   import("./Pages/admin/AuthActivity.jsx")
+);
+const AcademicContentManagement = lazy(() =>
+  import("./Pages/admin/AcademicContentManagement.jsx")
 );
 const ExecutiveReportPortal = lazy(() =>
   import("./Pages/reports/ExecutiveReportPortal.jsx")
@@ -314,6 +320,10 @@ const router = createBrowserRouter([
             path: "settings",
             element: <TeacherSettings />,
           },
+          {
+            path: "academic-ai",
+            element: <AcademicStudio />,
+          },
         ],
       },
 
@@ -381,6 +391,10 @@ const router = createBrowserRouter([
           {
             path: "login-activity",
             element: <AuthActivity />,
+          },
+          {
+            path: "academic-ai",
+            element: <AcademicContentManagement />,
           },
         ],
       },
