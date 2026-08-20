@@ -73,13 +73,6 @@ const teachers = [
   },
 
   {
-    name: "Mr. Benjamin",
-    subject: "Physics, Mathematics & Further Mathematics",
-    image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1200&auto=format&fit=crop"
-  },
-
-  {
     name: "Mrs. Florence",
     subject: "Business Studies, Igbo Language & Fin. Accounting",
     image:
@@ -106,13 +99,6 @@ const teachers = [
     image:
       "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779619621/WhatsApp_Image_2026-05-24_at_11.40.11_AM_ftoebd.jpg",
   },
-
-  {
-    name: "Mrs. Patience C",
-    subject: "Chemistry",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop",
-
-  },
    {
     name: "Mrs. Love",
     subject: "Religious Studies & History",
@@ -136,18 +122,6 @@ const teachers = [
     subject: "Head Teacher & English Language",
     image:
       "https://res.cloudinary.com/dadane1xo/image/upload/v1779619633/WhatsApp_Image_2026-05-24_at_11.40.20_AM_1_qpmfzn.jpg",
-  },
-   {
-    name: "Mrs. Constance",
-    subject: "assisting Head Teacher & Pre-vocational Studies",
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop",
-  },
-   {
-    name: "Mrs. Chidiebre",
-    subject: "Biology & Agricultural Science",
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop",
   },
 ];
 

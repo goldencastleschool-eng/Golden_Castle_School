@@ -51,7 +51,7 @@ const instructors = [
     name: "Mr. ",
     subject: "Music Instructor",
     image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1200&auto=format&fit=crop",
+      "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779619627/WhatsApp_Image_2026-05-24_at_11.40.18_AM_2_gkmvv9.jpg",
   },
 ];
 

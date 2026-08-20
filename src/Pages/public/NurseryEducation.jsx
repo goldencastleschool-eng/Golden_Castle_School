@@ -76,23 +76,11 @@ const teachers = [
     image:
       "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779619627/WhatsApp_Image_2026-05-24_at_11.40.17_AM_rvgk6k.jpg",
   },
-   {
-    name: "Miss. Chiamaka",
-    subject: "Pre-Nursery 2 Assisting Teacher",
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop",
-  },
   {
     name: "Miss. Unique",
     subject: "Nursery 1 Teacher",
     image:
       "https://res.cloudinary.com/dadane1xo/image/upload/q_auto/f_auto/v1779619625/WhatsApp_Image_2026-05-24_at_11.40.16_AM_2_g6coay.jpg",
-  },
-   {
-    name: "Miss. Mercy",
-    subject: "Nursery 1 Assisting Teacher",
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=1200&auto=format&fit=crop",
   },
   {
     name: "Mrs. Ada",
