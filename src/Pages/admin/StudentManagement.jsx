@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   FaArrowRight,
   FaLayerGroup,
@@ -83,8 +84,11 @@ const getPreferredStudentFeeEnrollment = (
   {};
 
 function StudentManagement() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [activeSession, setActiveSession] = useState("");
+  const [registrationSessions, setRegistrationSessions] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [studentForm, setStudentForm] = useState(initialStudentForm);
   const [editingStudentId, setEditingStudentId] = useState("");
@@ -102,16 +106,34 @@ function StudentManagement() {
   const [deleting, setDeleting] = useState(false);
   const [passwordResetTargetId, setPasswordResetTargetId] = useState("");
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [registrationApplication, setRegistrationApplication] = useState(null);
+  const applicationId = searchParams.get("applicationId");
 
   const fetchStudents = async () => {
     try {
       setLoadingStudents(true);
-      const [studentsResponse, classesResponse] = await Promise.all([
+      const [studentsResponse, classesResponse, sessionsResponse] = await Promise.all([
         API.get("/students"),
         API.get("/classes"),
+        API.get("/academic-sessions"),
       ]);
       setStudents(studentsResponse.data || []);
       setClasses(classesResponse.data || []);
+      const configuredSession = sessionsResponse.data?.active_session || "";
+      setActiveSession(configuredSession);
+      setRegistrationSessions(sessionsResponse.data?.sessions || []);
+      if (configuredSession) {
+        setStudentForm((currentForm) =>
+          currentForm.current_session
+            ? currentForm
+            : { ...currentForm, current_session: configuredSession }
+        );
+        setStudentViewSessionFilter((currentSession) =>
+          currentSession === DEFAULT_SESSION_FILTER
+            ? configuredSession
+            : currentSession
+        );
+      }
     } catch (error) {
       setStatus({
         type: "error",
@@ -125,6 +147,41 @@ function StudentManagement() {
   useEffect(() => {
     fetchStudents();
   }, []);
+
+  useEffect(() => {
+    if (!applicationId) {
+      setRegistrationApplication(null);
+      return;
+    }
+
+    API.get(`/admission-applications/${applicationId}/registration`)
+      .then((response) => {
+        const application = response.data;
+        const feeCategory = {
+          regular: "new",
+          vip: "vip",
+          scholarship: "scholarship",
+        }[application.admission_category || "regular"];
+        setRegistrationApplication(application);
+        setEditingStudentId("");
+        setStudentForm({
+          ...initialStudentForm,
+          full_name: application.full_name || "",
+          gender: application.gender || "",
+          current_session: application.applying_session || "",
+          class: application.preferred_class?.name || "",
+          class_record: application.preferred_class?._id || "",
+          fee_category: feeCategory,
+        });
+      })
+      .catch((error) => {
+        setStatus({
+          type: "error",
+          message: error.response?.data?.message || "Unable to load the approved application.",
+        });
+        setSearchParams({});
+      });
+  }, [applicationId, setSearchParams]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -208,6 +265,16 @@ function StudentManagement() {
 
         const response = await API.put(`/students/${editingStudentId}`, payload);
         savedStudent = response.data;
+      } else if (registrationApplication) {
+        const response = await API.post(
+          `/admission-applications/${registrationApplication._id}/convert`,
+          {
+            class_record: studentForm.class_record,
+            password: studentForm.password,
+            admission_term: studentForm.admission_term,
+          }
+        );
+        savedStudent = response.data.student;
       } else {
         const response = await API.post("/students", studentForm);
         savedStudent = response.data;
@@ -215,11 +282,15 @@ function StudentManagement() {
 
       setStudentForm(initialStudentForm);
       setEditingStudentId("");
+      setRegistrationApplication(null);
+      setSearchParams({});
       setStatus({
         type: "success",
         message: editingStudentId
           ? "Student updated successfully."
-          : "Student account created successfully.",
+          : registrationApplication
+            ? `Student account created successfully: ${savedStudent?.admission_no}.`
+            : "Student account created successfully.",
       });
       if (savedStudent?._id) {
         setStudents((currentStudents) => {
@@ -347,6 +418,15 @@ function StudentManagement() {
 
   const inputClass =
     "w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 placeholder:text-primary/40 focus:border-button focus:ring-2 focus:ring-button/20";
+
+  const registrationSessionOptions = useMemo(
+    () =>
+      [...new Set([
+        ...registrationSessions,
+        ...classes.map((classRecord) => classRecord.session).filter(Boolean),
+      ])].sort().reverse(),
+    [classes, registrationSessions]
+  );
 
   useEffect(() => {
     setStudentPage(1);
@@ -505,8 +585,22 @@ function StudentManagement() {
           className="rounded-lg bg-secondary p-6 shadow-lg"
         >
           <h3 className="text-3xl font-extrabold text-primary">
-            {editingStudentId ? "Edit Student" : "Register Student"}
+            {editingStudentId
+              ? "Edit Student"
+              : registrationApplication
+                ? "Register Approved Applicant"
+                : "Register Student"}
           </h3>
+          {registrationApplication && (
+            <div className="mt-4 rounded-lg border border-button/30 bg-button/10 p-4 text-primary">
+              <p className="font-bold">
+                Registering from approved application {registrationApplication.application_reference}.
+              </p>
+              <p className="mt-1 text-sm text-primary/75">
+                Fee category is based on the approved application. {registrationApplication.boarding_requested ? "Boarding was requested and still requires separate approval in Boarding Management." : ""}
+              </p>
+            </div>
+          )}
           <p className="mt-3 text-primary/70">
             The password is stored securely by the backend.
           </p>
@@ -525,17 +619,29 @@ function StudentManagement() {
               name="admission_no"
               value={studentForm.admission_no}
               onChange={handleChange}
-              placeholder="Admission number"
-              required
+              placeholder={
+                editingStudentId
+                  ? "Admission number"
+                  : "Generated automatically after registration"
+              }
+              readOnly
+              aria-readonly="true"
             />
-            <input
+            <select
               className={inputClass}
               name="current_session"
               value={studentForm.current_session}
               onChange={handleChange}
-              placeholder="Current session e.g. 2025/2026"
               required
-            />
+            >
+              <option value="">Select registration session</option>
+              {registrationSessionOptions.map((session) => (
+                <option key={session} value={session}>
+                  {session}
+                  {session === activeSession ? " — Current session" : ""}
+                </option>
+              ))}
+            </select>
             <select
               className={inputClass}
               name="class_record"
@@ -589,6 +695,7 @@ function StudentManagement() {
               name="fee_category"
               value={studentForm.fee_category}
               onChange={handleChange}
+              disabled={Boolean(registrationApplication)}
               required
             >
               <option value="">Select student fee category</option>
@@ -641,7 +748,9 @@ function StudentManagement() {
                 : "Creating student..."
               : editingStudentId
                 ? "Save Changes"
-                : "Create Student"}
+                : registrationApplication
+                  ? "Register Approved Student"
+                  : "Create Student"}
             {!submitting && <FaArrowRight />}
           </button>
 
@@ -652,6 +761,19 @@ function StudentManagement() {
               className="mt-4 w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary"
             >
               Cancel Edit
+            </button>
+          )}
+          {registrationApplication && (
+            <button
+              type="button"
+              onClick={() => {
+                setRegistrationApplication(null);
+                setStudentForm(initialStudentForm);
+                setSearchParams({});
+              }}
+              className="mt-3 w-full rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary"
+            >
+              Cancel application registration
             </button>
           )}
         </form>

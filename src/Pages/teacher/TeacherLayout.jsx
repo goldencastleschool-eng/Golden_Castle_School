@@ -42,6 +42,17 @@ const teacherLinks = [
     formTeacherOnly: true,
   },
   {
+    label: "Class Scoresheet",
+    path: "/teacher/class-scoresheet",
+    icon: <FaUsers />,
+    formTeacherOnly: true,
+  },
+  {
+    label: "Subject Scores",
+    path: "/teacher/subject-scores",
+    icon: <FaBookOpen />,
+  },
+  {
     label: "Academic AI",
     path: "/teacher/academic-ai",
     icon: <FaBookOpen />,

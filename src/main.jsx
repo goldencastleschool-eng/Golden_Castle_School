@@ -43,6 +43,8 @@ const ComputerTraining = lazy(() =>
 );
 const BoardingSchool = lazy(() => import("./Pages/public/BoardingSchool.jsx"));
 const MusicAndArts = lazy(() => import("./Pages/public/MusicAndArts.jsx"));
+const AdmissionApplication = lazy(() => import("./Pages/public/AdmissionApplication.jsx"));
+const ApplicationStatus = lazy(() => import("./Pages/public/ApplicationStatus.jsx"));
 
 // AUTH PAGES
 const AdminLogin = lazy(() => import("./Pages/auth/AdminLogin.jsx"));
@@ -77,6 +79,9 @@ const TeacherSettings = lazy(() =>
 const AcademicStudio = lazy(() =>
   import("./Pages/teacher/AcademicStudio.jsx")
 );
+const SubjectScores = lazy(() => import("./Pages/teacher/SubjectScores.jsx"));
+const ClassScoreSheet = lazy(() => import("./Pages/teacher/ClassScoreSheet.jsx"));
+const SubjectManagement = lazy(() => import("./Pages/admin/SubjectManagement.jsx"));
 const AdminDashboard = lazy(() => import("./Pages/admin/AdminDashboard.jsx"));
 const AdminLayout = lazy(() => import("./Pages/admin/AdminLayout.jsx"));
 const ClassManagement = lazy(() =>
@@ -110,6 +115,7 @@ const AuthActivity = lazy(() =>
 const AcademicContentManagement = lazy(() =>
   import("./Pages/admin/AcademicContentManagement.jsx")
 );
+const AdmissionsManagement = lazy(() => import("./Pages/admin/AdmissionsManagement.jsx"));
 const ExecutiveReportPortal = lazy(() =>
   import("./Pages/reports/ExecutiveReportPortal.jsx")
 );
@@ -196,6 +202,14 @@ const router = createBrowserRouter([
       {
         path: "contact",
         element: <Contact />,
+      },
+      {
+        path: "apply",
+        element: <AdmissionApplication />,
+      },
+      {
+        path: "application-status",
+        element: <ApplicationStatus />,
       },
 
       // PROGRAM ROUTES
@@ -324,6 +338,14 @@ const router = createBrowserRouter([
             path: "academic-ai",
             element: <AcademicStudio />,
           },
+          {
+            path: "subject-scores",
+            element: <SubjectScores />,
+          },
+          {
+            path: "class-scoresheet",
+            element: <ClassScoreSheet />,
+          },
         ],
       },
 
@@ -345,8 +367,16 @@ const router = createBrowserRouter([
             element: <StudentManagement />,
           },
           {
+            path: "admissions",
+            element: <AdmissionsManagement />,
+          },
+          {
             path: "teachers",
             element: <TeacherManagement />,
+          },
+          {
+            path: "subjects",
+            element: <SubjectManagement />,
           },
           {
             path: "classes",

@@ -77,6 +77,8 @@ const sortClassRecords = (classRecords = []) =>
 function ClassManagement() {
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [activeSession, setActiveSession] = useState("");
+  const [activatingSession, setActivatingSession] = useState(false);
   const [sessionFilter, setSessionFilter] = useState(DEFAULT_SESSION_FILTER);
   const [studentViewSessionFilter, setStudentViewSessionFilter] = useState(
     DEFAULT_SESSION_FILTER
@@ -131,12 +133,22 @@ function ClassManagement() {
   const fetchClassData = async () => {
     try {
       setLoadingStudents(true);
-      const [studentsResponse, classesResponse] = await Promise.all([
+      const [studentsResponse, classesResponse, sessionsResponse] = await Promise.all([
         API.get("/students"),
         API.get("/classes"),
+        API.get("/academic-sessions"),
       ]);
       setStudents(studentsResponse.data || []);
       setClasses(classesResponse.data || []);
+      const configuredSession = sessionsResponse.data?.active_session || "";
+      setActiveSession(configuredSession);
+      if (configuredSession) {
+        setSessionFilter(configuredSession);
+        setStudentViewSessionFilter(configuredSession);
+        setClassSession((currentSession) =>
+          currentSession === DEFAULT_SESSION_FILTER ? configuredSession : currentSession
+        );
+      }
     } catch (requestError) {
       setStatus({
         type: "error",
@@ -632,6 +644,33 @@ function ClassManagement() {
     }
   };
 
+  const handleActivateSession = async () => {
+    if (!classSession || classSession === activeSession) {
+      return;
+    }
+
+    setActivatingSession(true);
+    setStatus({ type: "", message: "" });
+    try {
+      const response = await API.put("/academic-sessions/active", {
+        session: classSession,
+      });
+      setActiveSession(response.data.active_session);
+      setSessionFilter(response.data.active_session);
+      setStudentViewSessionFilter(response.data.active_session);
+      setStatus({ type: "success", message: response.data.message });
+    } catch (requestError) {
+      setStatus({
+        type: "error",
+        message:
+          requestError.response?.data?.message ||
+          "Unable to set the active academic session.",
+      });
+    } finally {
+      setActivatingSession(false);
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -1110,6 +1149,29 @@ function ClassManagement() {
       </div>
 
       <section className="rounded-lg bg-secondary p-6 shadow-lg">
+        <div className="mb-8 rounded-lg border border-primary/10 bg-primary/5 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary/60">
+                Active academic session
+              </p>
+              <p className="mt-2 text-2xl font-extrabold text-primary">
+                {activeSession || "Not configured"}
+              </p>
+              <p className="mt-1 text-sm text-primary/70">
+                This is the default registration session and controls new admission-number years.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleActivateSession}
+              disabled={!classSession || classSession === activeSession || activatingSession}
+              className="rounded-lg bg-primary px-5 py-3 font-bold text-secondary transition hover:bg-primary/85 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {activatingSession ? "Setting session..." : "Set class session as current"}
+            </button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_360px]">
           <div>
             <h3 className="text-3xl font-extrabold text-primary">

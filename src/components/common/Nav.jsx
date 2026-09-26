@@ -34,6 +34,15 @@ const NAV_LINKS = [
   },
 
   {
+    name: "Apply",
+    path: "/apply",
+  },
+  {
+    name: "Application Status",
+    path: "/application-status",
+  },
+
+  {
     name: "Gallery",
     path: "/gallery",
   },

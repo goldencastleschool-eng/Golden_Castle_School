@@ -60,9 +60,19 @@ const adminLinks = [
     icon: <FaUserGraduate />,
   },
   {
+    label: "Admissions",
+    path: "/admin/admissions",
+    icon: <FaClipboardCheck />,
+  },
+  {
     label: "Teachers",
     path: "/admin/teachers",
     icon: <FaChalkboardUser />,
+  },
+  {
+    label: "Subjects",
+    path: "/admin/subjects",
+    icon: <FaBookOpen />,
   },
   {
     label: "Classes",

@@ -19,6 +19,7 @@ import {
 } from "../../utils/classSections.js";
 import {
   TEACHER_ASSIGNMENT_TYPES,
+  TEACHER_ASSIGNMENT_OPTIONS,
   isFormTeacher,
 } from "../../utils/teacherAssignments.js";
 import {
@@ -64,6 +65,10 @@ const formatDate = (value) =>
 function TeacherManagement() {
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [classSubjects, setClassSubjects] = useState([]);
+  const [batchTeacherId, setBatchTeacherId] = useState("");
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState([]);
+  const [assignmentReason, setAssignmentReason] = useState("Batch assignment");
   const [teacherForm, setTeacherForm] = useState(initialTeacherForm);
   const [editingTeacherId, setEditingTeacherId] = useState("");
   const [usernameSuffix, setUsernameSuffix] = useState(createUsernameSuffix);
@@ -80,9 +85,10 @@ function TeacherManagement() {
       setLoading(true);
       setStatus({ type: "", message: "" });
 
-      const [teachersRequest, classesRequest] = await Promise.allSettled([
+      const [teachersRequest, classesRequest, subjectsRequest] = await Promise.allSettled([
         API.get("/teachers"),
         API.get("/classes"),
+        API.get("/subject-scores/class-subjects"),
       ]);
 
       if (classesRequest.status === "rejected") {
@@ -94,6 +100,7 @@ function TeacherManagement() {
       }
 
       setClasses(classesRequest.value.data || []);
+      setClassSubjects(subjectsRequest.status === "fulfilled" ? subjectsRequest.value.data || [] : []);
       setTeachers(
         teachersRequest.status === "fulfilled"
           ? teachersRequest.value.data || []
@@ -203,10 +210,7 @@ function TeacherManagement() {
     setStatus({ type: "", message: "" });
 
     try {
-      const payload = {
-        ...teacherForm,
-        assignment_type: TEACHER_ASSIGNMENT_TYPES.FORM,
-      };
+      const payload = { ...teacherForm };
 
       if (!payload.password) {
         delete payload.password;
@@ -228,8 +232,8 @@ function TeacherManagement() {
       setStatus({
         type: "success",
         message: editingTeacherId
-          ? "Form teacher updated successfully."
-          : "Form teacher registered successfully.",
+          ? "Teacher updated successfully."
+          : "Teacher registered successfully.",
       });
       if (savedTeacher?._id) {
         setTeachers((currentTeachers) => {
@@ -269,7 +273,7 @@ function TeacherManagement() {
         teacher.assigned_class_record?._id ||
         teacher.assigned_class_record ||
         "",
-      assignment_type: TEACHER_ASSIGNMENT_TYPES.FORM,
+      assignment_type: teacher.assignment_type || TEACHER_ASSIGNMENT_TYPES.FORM,
       password: "",
     });
     setStatus({ type: "", message: "" });
@@ -283,6 +287,21 @@ function TeacherManagement() {
 
   const handleDeactivateRequest = (teacher) => {
     setDeactivateTarget(teacher);
+  };
+
+  const handleBatchAssignment = async () => {
+    if (!batchTeacherId || selectedSubjectIds.length === 0) {
+      setStatus({ type: "error", message: "Select a teacher and at least one registered class subject." });
+      return;
+    }
+    try {
+      const response = await API.put("/subject-scores/class-subjects/assign-teacher", { teacher_id: batchTeacherId, class_subject_ids: selectedSubjectIds, reason: assignmentReason });
+      setStatus({ type: "success", message: response.data.message });
+      setSelectedSubjectIds([]);
+      await fetchTeacherData();
+    } catch (error) {
+      setStatus({ type: "error", message: error.response?.data?.message || "Unable to assign subjects." });
+    }
   };
 
   const handleResetPassword = async (teacherId) => {
@@ -490,7 +509,7 @@ function TeacherManagement() {
           Teacher Management
         </h2>
         <p className="mt-3 max-w-2xl text-secondary/75">
-          Register form teachers and assign them to class records by session.
+          Register form, class, and subject teachers, then assign subjects in batches.
         </p>
       </div>
 
@@ -499,7 +518,7 @@ function TeacherManagement() {
           <div className="grid grid-cols-1 gap-8 ">
             <div>
               <h3 className="text-3xl font-extrabold text-primary">
-                {editingTeacherId ? "Edit Form Teacher" : "Register Form Teacher"}
+                {editingTeacherId ? "Edit Teacher" : "Register Teacher"}
               </h3>
               <p className="mt-3 max-w-2xl text-primary/70">
                 {editingTeacherId
@@ -534,10 +553,22 @@ function TeacherManagement() {
 
               <select
                 className={inputClass}
+                name="assignment_type"
+                value={teacherForm.assignment_type}
+                onChange={handleChange}
+              >
+                {TEACHER_ASSIGNMENT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+
+              <select
+                className={inputClass}
                 name="assigned_class_record"
                 value={teacherForm.assigned_class_record}
                 onChange={handleChange}
-                required
+                required={teacherForm.assignment_type !== "subject_teacher"}
+                disabled={teacherForm.assignment_type === "subject_teacher"}
               >
                 <option value="">Assigned class</option>
                 {availableClasses.map((classRecord) => (
@@ -576,16 +607,16 @@ function TeacherManagement() {
 
               <button
                 type="submit"
-                disabled={submitting || availableClasses.length === 0}
+                disabled={submitting || (teacherForm.assignment_type !== "subject_teacher" && availableClasses.length === 0)}
                 className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-md transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {submitting
                   ? editingTeacherId
-                    ? "Saving form teacher..."
-                    : "Registering form teacher..."
+                    ? "Saving teacher..."
+                    : "Registering teacher..."
                   : editingTeacherId
-                    ? "Save Form Teacher"
-                    : "Register Form Teacher"}
+                    ? "Save Teacher"
+                    : "Register Teacher"}
                 {!submitting && <FaArrowRight />}
               </button>
 
@@ -599,6 +630,22 @@ function TeacherManagement() {
                 </button>
               )}
             </form>
+          </div>
+        </section>
+
+        <section className="rounded-lg bg-secondary p-6 shadow-lg">
+          <h3 className="text-2xl font-extrabold text-primary">Batch Subject Assignments</h3>
+          <p className="mt-2 text-primary/70">Assign one teacher to any number of active class subject offerings. Reassignments close the prior assignment and retain its history.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <select className={inputClass} value={batchTeacherId} onChange={(event) => setBatchTeacherId(event.target.value)}>
+              <option value="">Select active teacher</option>
+              {teachers.filter((teacher) => teacher.status === "active").map((teacher) => <option key={teacher._id} value={teacher._id}>{teacher.full_name} — {teacher.username}</option>)}
+            </select>
+            <input className={inputClass} value={assignmentReason} onChange={(event) => setAssignmentReason(event.target.value)} placeholder="Reason for assignment or reassignment" />
+            <button type="button" onClick={handleBatchAssignment} className="rounded-lg bg-button px-5 py-3 font-bold text-secondary md:col-span-2">Assign selected subjects</button>
+          </div>
+          <div className="mt-5 max-h-80 overflow-y-auto rounded-lg border border-primary/10">
+            {classSubjects.length === 0 ? <p className="p-5 text-primary/65">No class subjects have been registered yet. Add them in Subjects first.</p> : classSubjects.map((item) => <label key={item._id} className="flex cursor-pointer items-center justify-between gap-4 border-b border-primary/10 px-5 py-4 last:border-b-0"><span><span className="block font-bold text-primary">{item.subject_record?.name || item.subject}</span><span className="text-sm text-primary/65">{item.class_record?.session} — {item.class_record?.name?.toUpperCase()} · {item.active_assignment?.teacher?.full_name || item.assigned_teacher?.full_name || "Unassigned"}</span></span><input type="checkbox" checked={selectedSubjectIds.includes(item._id)} onChange={() => setSelectedSubjectIds((ids) => ids.includes(item._id) ? ids.filter((id) => id !== item._id) : [...ids, item._id])} className="h-5 w-5 accent-button" /></label>)}
           </div>
         </section>
 
