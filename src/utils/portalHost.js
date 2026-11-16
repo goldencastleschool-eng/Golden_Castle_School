@@ -4,6 +4,7 @@ const DEFAULT_PORTAL_HOST_MAP = {
   "staff.goldencastleschool.com": "teacher",
   "admin.goldencastleschool.com": "admin",
   "executive.goldencastleschool.com": "executive",
+  "bursar.goldencastleschool.com": "bursar",
   "portal.goldencastle.com": "student",
 };
 
@@ -32,6 +33,7 @@ export const PORTAL_TYPES = {
   TEACHER: "teacher",
   ADMIN: "admin",
   EXECUTIVE: "executive",
+  BURSAR: "bursar",
 };
 
 export const getCurrentPortalType = () => {
@@ -63,6 +65,10 @@ export const getPortalLoginPath = (fallbackPath = "/login") => {
     return "/executive-login";
   }
 
+  if (portalType === PORTAL_TYPES.BURSAR) {
+    return "/bursar-login";
+  }
+
   return fallbackPath;
 };
 
@@ -85,6 +91,10 @@ export const getPortalHomePath = () => {
     return "/executive-login";
   }
 
+  if (portalType === PORTAL_TYPES.BURSAR) {
+    return "/bursar-login";
+  }
+
   return "/";
 };
 
@@ -102,6 +112,8 @@ export const getPortalLoginPathForCurrentRoute = () => {
           ? "/teacher-login"
           : window.location.pathname.startsWith("/student")
             ? "/student-login"
+          : window.location.pathname.startsWith("/bursar")
+            ? "/bursar-login"
             : "/login"
   );
 };

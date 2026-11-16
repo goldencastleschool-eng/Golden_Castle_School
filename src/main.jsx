@@ -100,6 +100,8 @@ const BusManagement = lazy(() => import("./Pages/admin/BusManagement.jsx"));
 const BoardingManagement = lazy(() =>
   import("./Pages/admin/BoardingManagement.jsx")
 );
+const BursarLayout = lazy(() => import("./Pages/bursar/BursarLayout.jsx"));
+const BursarFinancePortal = lazy(() => import("./Pages/bursar/BursarFinancePortal.jsx"));
 const PayrollManagement = lazy(() =>
   import("./Pages/admin/PayrollManagement.jsx")
 );
@@ -156,6 +158,10 @@ function PortalHomeRedirect() {
 
   if (user?.role === "admin") {
     return <Navigate to="/admin" replace />;
+  }
+
+  if (user?.role === "bursar") {
+    return <Navigate to="/bursar" replace />;
   }
 
   if (user?.role === "principal" || user?.role === "chairman") {
@@ -273,6 +279,10 @@ const router = createBrowserRouter([
         element: <AdminLogin executiveOnly />,
   },
   {
+        path: "bursar-login",
+        element: <AdminLogin bursarOnly />,
+  },
+  {
         path: "student-login",
         element: <StudentLogin />,
   },
@@ -350,6 +360,17 @@ const router = createBrowserRouter([
       },
 
       // ADMIN DASHBOARD
+      {
+        path: "bursar",
+        element: (
+          <ProtectedRoute role="bursar" redirectTo="/bursar-login">
+            <BursarLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          { index: true, element: <BursarFinancePortal /> },
+        ],
+      },
       {
         path: "admin",
         element: (

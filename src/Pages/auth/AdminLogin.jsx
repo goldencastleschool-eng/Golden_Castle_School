@@ -7,6 +7,7 @@ import {
   FaChalkboardUser,
   FaUser,
   FaUserShield,
+  FaMoneyBillWave,
 } from "react-icons/fa6";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -39,6 +40,12 @@ const adminRoleOption = {
   icon: <FaUserShield />,
 };
 
+const bursarRoleOption = {
+  label: "Bursar",
+  value: "bursar",
+  icon: <FaMoneyBillWave />,
+};
+
 const executiveRoleOption = {
   label: "Principal/Chairman",
   value: "executive",
@@ -47,7 +54,7 @@ const executiveRoleOption = {
 
 const reportRoles = ["principal", "chairman"];
 
-function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }) {
+function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false, bursarOnly = false }) {
   const navigate = useNavigate();
   const { setUser } = useAuth();
   const [role, setRole] = useState(() =>
@@ -57,6 +64,8 @@ function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }
         ? "admin"
         : teacherOnly
           ? "teacher"
+          : bursarOnly
+            ? "bursar"
           : "student"
   );
   const [formData, setFormData] = useState({
@@ -69,12 +78,15 @@ function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }
   const isStudent = role === "student";
   const isTeacher = role === "teacher";
   const isExecutive = role === "executive";
+  const isBursar = role === "bursar";
   const availableRoleOptions = executiveOnly
     ? [executiveRoleOption]
     : adminOnly
       ? [adminRoleOption]
       : teacherOnly
         ? roleOptions.filter((roleOption) => roleOption.value === "teacher")
+        : bursarOnly
+          ? [bursarRoleOption]
         : roleOptions;
   const roleLabel = isStudent
     ? "Student"
@@ -82,6 +94,8 @@ function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }
       ? "Teacher"
       : isExecutive
         ? "Principal/Chairman"
+        : isBursar
+          ? "Bursar"
         : "Admin";
   const pageTitle = executiveOnly
     ? "Executive Reports Login"
@@ -89,6 +103,8 @@ function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }
       ? "Secure Admin Login"
       : teacherOnly
         ? "Staff Portal Login"
+        : bursarOnly
+          ? "Bursar Portal Login"
         : "Portal Login";
   const sideDescription = executiveOnly
     ? "Sign in through the separate reporting access point for school leadership."
@@ -96,6 +112,8 @@ function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }
       ? "Sign in through the secure administrator access point."
       : teacherOnly
         ? "Sign in through the dedicated staff access point."
+        : bursarOnly
+          ? "Sign in to record and correct school payment records."
         : "Choose your portal role and sign in securely to continue.";
 
   useEffect(() => {
@@ -106,6 +124,8 @@ function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }
           ? "admin"
           : teacherOnly
             ? "teacher"
+            : bursarOnly
+              ? "bursar"
             : "student"
     );
     setError("");
@@ -113,7 +133,7 @@ function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }
       identifier: "",
       password: "",
     });
-  }, [adminOnly, executiveOnly, teacherOnly]);
+  }, [adminOnly, executiveOnly, teacherOnly, bursarOnly]);
 
   const handleRoleChange = (nextRole) => {
     setRole(nextRole);
@@ -144,6 +164,8 @@ function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }
           ? "/auth/teacher/login"
           : isExecutive
             ? "/auth/executive/login"
+            : isBursar
+              ? "/auth/bursar/login"
             : "/auth/admin/login";
       const identifier = formData.identifier.trim();
       const payload = isStudent
@@ -157,7 +179,7 @@ function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }
           };
 
       const response = await API.post(endpoint, payload);
-      const { student, admin, teacher, executive, token } = response.data;
+      const { student, admin, teacher, executive, bursar, token } = response.data;
       const account = isStudent
         ? {
             ...student,
@@ -170,6 +192,8 @@ function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }
             }
           : isExecutive
             ? executive
+            : isBursar
+              ? bursar
             : admin;
 
       setAuthToken(token);
@@ -179,6 +203,8 @@ function Login({ adminOnly = false, executiveOnly = false, teacherOnly = false }
           ? "/student"
           : isTeacher
             ? "/teacher"
+            : isBursar
+              ? "/bursar"
             : isExecutive || reportRoles.includes(account?.role)
               ? "/reports"
               : "/admin"

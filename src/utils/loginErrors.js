@@ -3,6 +3,7 @@ const roleLabels = {
   executive: "principal/chairman",
   student: "student",
   teacher: "teacher",
+  bursar: "bursar",
 };
 
 const identifierLabels = {
@@ -10,6 +11,7 @@ const identifierLabels = {
   executive: "username",
   student: "admission number",
   teacher: "username",
+  bursar: "username",
 };
 
 export const getPortalLoginErrorMessage = (requestError, role = "student") => {
