@@ -102,6 +102,7 @@ const BoardingManagement = lazy(() =>
 );
 const BursarLayout = lazy(() => import("./Pages/bursar/BursarLayout.jsx"));
 const BursarFinancePortal = lazy(() => import("./Pages/bursar/BursarFinancePortal.jsx"));
+const BursarNewAdmissions = lazy(() => import("./Pages/bursar/BursarNewAdmissions.jsx"));
 const PayrollManagement = lazy(() =>
   import("./Pages/admin/PayrollManagement.jsx")
 );
@@ -369,6 +370,7 @@ const router = createBrowserRouter([
         ),
         children: [
           { index: true, element: <BursarFinancePortal /> },
+          { path: "new-admissions", element: <BursarNewAdmissions /> },
         ],
       },
       {

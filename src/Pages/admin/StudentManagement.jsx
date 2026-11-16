@@ -533,6 +533,25 @@ function StudentManagement() {
     });
   }, [studentNameSort, viewedClassStudents]);
 
+  const newAdmissionsForSelectedTerm = useMemo(() => {
+    if (!studentViewSessionFilter || !studentViewTermFilter) {
+      return [];
+    }
+
+    return students
+      .filter(
+        (student) =>
+          getStudentFeeEnrollment(
+            student,
+            studentViewSessionFilter,
+            studentViewTermFilter
+          )?.fee_category === "new"
+      )
+      .sort((firstStudent, secondStudent) =>
+        (firstStudent.full_name || "").localeCompare(secondStudent.full_name || "")
+      );
+  }, [studentViewSessionFilter, studentViewTermFilter, students]);
+
   const handleStudentViewSessionChange = (event) => {
     const nextSession = event.target.value;
     setStudentViewSessionFilter(nextSession);
@@ -857,6 +876,31 @@ function StudentManagement() {
               {selectedViewClass ? sortedViewedClassStudents.length : "0"}
             </p>
           </div>
+
+          {studentViewTermFilter && (
+            <div className="mb-6 rounded-lg border border-button/20 bg-button/10 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-primary/70">
+                    New Admissions — {studentViewSessionFilter}, {studentViewTermFilter}
+                  </p>
+                  <p className="mt-2 text-3xl font-extrabold text-primary">
+                    {newAdmissionsForSelectedTerm.length}
+                  </p>
+                </div>
+                <span className="rounded-full bg-button px-4 py-2 text-sm font-bold text-secondary">
+                  Newly admitted students
+                </span>
+              </div>
+              {newAdmissionsForSelectedTerm.length > 0 && (
+                <p className="mt-4 text-sm font-semibold text-primary/80">
+                  {newAdmissionsForSelectedTerm
+                    .map((student) => `${student.full_name} (${student.admission_no})`)
+                    .join(" · ")}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="overflow-x-auto rounded-lg border border-primary/10">
             <table className="w-full min-w-[960px] text-left">

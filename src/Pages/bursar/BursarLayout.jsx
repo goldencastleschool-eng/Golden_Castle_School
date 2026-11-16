@@ -1,5 +1,5 @@
-import { FaMoneyBillWave, FaRightFromBracket, FaUserShield } from "react-icons/fa6";
-import { Outlet, useNavigate } from "react-router-dom";
+import { FaMoneyBillWave, FaRightFromBracket, FaUserGraduate, FaUserShield } from "react-icons/fa6";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import API from "../../api/axios.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -31,6 +31,12 @@ function BursarLayout() {
           </div>
         </div>
       </header>
+      <nav className="border-b border-primary/10 bg-secondary">
+        <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-5 py-3 sm:px-8">
+          <NavLink end to="/bursar" className={({ isActive }) => `inline-flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold ${isActive ? "bg-button text-secondary" : "text-primary hover:bg-primary/10"}`}><FaMoneyBillWave /> Fee records</NavLink>
+          <NavLink to="/bursar/new-admissions" className={({ isActive }) => `inline-flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold ${isActive ? "bg-button text-secondary" : "text-primary hover:bg-primary/10"}`}><FaUserGraduate /> New admissions</NavLink>
+        </div>
+      </nav>
       <section className="mx-auto max-w-7xl px-5 py-7 sm:px-8"><Outlet /></section>
     </main>
   );
