@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FaBed, FaBus, FaMoneyBillWave, FaPenToSquare, FaReceipt, FaUsers } from "react-icons/fa6";
 import API from "../../api/axios.jsx";
 import PortalWelcomeBanner from "../../components/common/PortalWelcomeBanner.jsx";
+import AdminNotification from "../../components/common/AdminNotification.jsx";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 const PAGE_SIZE = 25;
@@ -16,11 +17,20 @@ const effectiveFeeEnrollment = (student, session, term) => {
   const enrollment = (student?.fee_enrollments || []).filter((item) => item.session === session && termIndex(item.term) <= termIndex(term)).sort((first, second) => termIndex(second.term) - termIndex(first.term))[0];
   return enrollment?.term !== term && enrollment?.fee_category === "new" ? { ...enrollment, fee_category: "returning" } : enrollment;
 };
+const feeTemplateSectionForClass = (classRecord = {}) => {
+  const name = (classRecord?.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (/(creche|pg1|pg2|pregrade|playgroup|preprimary|prekg)/.test(name)) return "early_years";
+  if (/(nursery|nur1|nur2|nur3|kg1|kg2|kg3)/.test(name)) return "nursery";
+  if (/(jss|juniorsecondary|js1|js2|js3)/.test(name)) return "junior_secondary";
+  if (/(sss|ss1|ss2|ss3|seniorsecondary)/.test(name)) return "senior_secondary";
+  if (/(basic|primary|pry|grade|b1|b2|b3|b4|b5)/.test(name)) return "basic";
+  return "";
+};
 
 function BursarFinancePortal() {
   const [type, setType] = useState("school");
   const [schoolMode, setSchoolMode] = useState("individual");
-  const [data, setData] = useState({ students: [], classes: [], fees: [], schoolStructures: [], busEnrollments: [], busPayments: [], busStructures: [], boardingEnrollments: [], boardingPayments: [], boardingStructures: [] });
+  const [data, setData] = useState({ students: [], classes: [], fees: [], schoolStructures: [], schoolTemplates: [], busEnrollments: [], busPayments: [], busStructures: [], boardingEnrollments: [], boardingPayments: [], boardingStructures: [] });
   const [form, setForm] = useState(initialForm);
   const [batchAmounts, setBatchAmounts] = useState({});
   const [batchSelected, setBatchSelected] = useState({});
@@ -36,12 +46,13 @@ function BursarFinancePortal() {
   const load = async () => {
     setLoading(true);
     try {
-      const [students, classes, fees, schoolStructures, busEnrollments, busPayments, busStructures, boardingEnrollments, boardingPayments, boardingStructures] = await Promise.all([
+      const [students, classes, fees, schoolStructures, schoolTemplates, busEnrollments, busPayments, busStructures, boardingEnrollments, boardingPayments, boardingStructures] = await Promise.all([
         API.get("/students"), API.get("/classes"), API.get("/fees"), API.get("/fee-structures"),
+        API.get("/fee-section-templates"),
         API.get("/bus-management/enrollments"), API.get("/bus-management/payments"), API.get("/bus-management/fee-structures"),
         API.get("/boarding-management/enrollments"), API.get("/boarding-management/payments"), API.get("/boarding-management/fee-structures"),
       ]);
-      setData({ students: students.data || [], classes: classes.data || [], fees: fees.data || [], schoolStructures: schoolStructures.data || [], busEnrollments: busEnrollments.data || [], busPayments: busPayments.data || [], busStructures: busStructures.data || [], boardingEnrollments: boardingEnrollments.data || [], boardingPayments: boardingPayments.data || [], boardingStructures: boardingStructures.data || [] });
+      setData({ students: students.data || [], classes: classes.data || [], fees: fees.data || [], schoolStructures: schoolStructures.data || [], schoolTemplates: schoolTemplates.data || [], busEnrollments: busEnrollments.data || [], busPayments: busPayments.data || [], busStructures: busStructures.data || [], boardingEnrollments: boardingEnrollments.data || [], boardingPayments: boardingPayments.data || [], boardingStructures: boardingStructures.data || [] });
     } catch (error) {
       setStatus({ type: "error", message: error.response?.data?.message || "Unable to load bursar records." });
     } finally { setLoading(false); }
@@ -59,10 +70,15 @@ function BursarFinancePortal() {
   const selectedEnrollment = activeEnrollments.find((item) => idOf(item) === form.enrollment);
   const schoolCategory = effectiveFeeEnrollment(selectedStudent, form.session, form.term)?.fee_category || "returning";
 
-  const schoolStructureFor = (student) => {
-    const category = effectiveFeeEnrollment(student, form.session, form.term)?.fee_category || "returning";
+  const schoolStructureFor = (student, session = form.session, term = form.term, classRecord = selectedClass) => {
+    const category = effectiveFeeEnrollment(student, session, term)?.fee_category || "returning";
     const categories = category === "discounted" ? ["discounted", "returning"] : [category];
-    return data.schoolStructures.find((item) => idOf(item.class_record) === form.class_record && item.session === form.session && item.term === form.term && categories.includes(item.fee_category || "returning"));
+    const classId = idOf(effectiveFeeEnrollment(student, session, term)?.class_record) || idOf(classRecord);
+    const classStructure = data.schoolStructures.find((item) => idOf(item.class_record) === classId && item.session === session && item.term === term && categories.includes(item.fee_category || "returning"));
+    if (classStructure) return classStructure;
+    const selectedTemplateClass = classRecord || data.classes.find((item) => idOf(item) === classId);
+    const section = feeTemplateSectionForClass(selectedTemplateClass);
+    return data.schoolTemplates.find((item) => item.section === section && item.session === session && item.term === term && categories.includes(item.fee_category || "returning"));
   };
   const structure = useMemo(() => {
     if (type === "school") return selectedStudent ? schoolStructureFor(selectedStudent) : null;
@@ -96,13 +112,13 @@ function BursarFinancePortal() {
     const enrollment = effectiveFeeEnrollment(student, classView.session, classView.term);
     const category = enrollment?.fee_category || "returning";
     const categories = category === "discounted" ? ["discounted", "returning"] : [category];
-    const feeStructure = data.schoolStructures.find((item) => idOf(item.class_record) === classView.class_record && item.session === classView.session && item.term === classView.term && categories.includes(item.fee_category || "returning"));
+    const feeStructure = schoolStructureFor(student, classView.session, classView.term, data.classes.find((item) => idOf(item) === classView.class_record));
     const exempt = ["vip", "scholarship"].includes(category);
     const expectedAmount = exempt ? 0 : Math.max(Number(feeStructure?.amount || 0) - (category === "discounted" ? Number(enrollment?.discount_amount || 0) : 0), 0);
     const paidAmount = data.fees.filter((fee) => idOf(fee.student) === idOf(student) && fee.session === classView.session && fee.term === classView.term && (fee.fee_category || "returning") === category).reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
     const status = exempt || (expectedAmount > 0 && paidAmount >= expectedAmount) ? "paid" : "unpaid";
     return { student, expectedAmount, paidAmount, balanceAmount: Math.max(expectedAmount - paidAmount, 0), status };
-  }), [classView.class_record, classView.session, classView.term, classViewStudents, data.fees, data.schoolStructures]);
+  }), [classView.class_record, classView.session, classView.term, classViewStudents, data.classes, data.fees, data.schoolStructures, data.schoolTemplates]);
   const filteredClassPaymentRows = classPaymentRows.filter((row) => !paymentStatusFilter || row.status === paymentStatusFilter);
   const classPaymentTotals = classPaymentRows.reduce((totals, row) => ({ expected: totals.expected + row.expectedAmount, paid: totals.paid + row.paidAmount, balance: totals.balance + row.balanceAmount, paidCount: totals.paidCount + (row.status === "paid" ? 1 : 0), unpaidCount: totals.unpaidCount + (row.status === "unpaid" ? 1 : 0) }), { expected: 0, paid: 0, balance: 0, paidCount: 0, unpaidCount: 0 });
   const printSchoolFeeReport = () => {
@@ -115,7 +131,7 @@ function BursarFinancePortal() {
       if (!enrollment) return null;
       const category = enrollment.fee_category || "returning";
       const categories = category === "discounted" ? ["discounted", "returning"] : [category];
-      const feeStructure = data.schoolStructures.find((item) => idOf(item.class_record) === idOf(enrollment.class_record || student.class_record) && item.session === form.session && item.term === form.term && categories.includes(item.fee_category || "returning"));
+      const feeStructure = schoolStructureFor(student, form.session, form.term, data.classes.find((item) => idOf(item) === idOf(enrollment.class_record || student.class_record)));
       const exempt = ["vip", "scholarship"].includes(category);
       const expectedAmount = exempt ? 0 : Math.max(Number(feeStructure?.amount || 0) - (category === "discounted" ? Number(enrollment.discount_amount || 0) : 0), 0);
       const paidAmount = data.fees.filter((fee) => idOf(fee.student) === idOf(student) && fee.session === form.session && fee.term === form.term && (fee.fee_category || "returning") === category).reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
@@ -171,9 +187,9 @@ function BursarFinancePortal() {
   const changeSchoolContext = (key, value) => { setForm((current) => ({ ...current, [key]: value, ...(key === "session" ? { class_record: "", student: "" } : key === "class_record" || key === "term" ? { student: "" } : {}) })); setPaymentPage(1); };
 
   return <div className="space-y-6 text-primary">
+    <AdminNotification status={status} onDismiss={() => setStatus({ type: "", message: "" })} />
     <PortalWelcomeBanner icon={<FaMoneyBillWave />} eyebrow="Finance operations" title="Welcome," name="Bursar" description="Record and correct payments against administrator-approved fee structures. Payment records cannot be deleted from this portal." />
     <div className="flex flex-wrap gap-3">{[["school", <FaReceipt />, "School fees"], ["bus", <FaBus />, "Bus fees"], ["boarding", <FaBed />, "Boarding fees"]].map(([value, icon, text]) => <button key={value} type="button" onClick={() => setType(value)} className={`inline-flex items-center gap-2 rounded-lg px-4 py-3 font-bold ${type === value ? "bg-button text-secondary" : "bg-secondary text-primary shadow-sm"}`}>{icon}{text}</button>)}</div>
-    {status.message && <div className={`rounded-lg px-4 py-3 font-semibold ${status.type === "error" ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>{status.message}</div>}
     <section className="rounded-lg bg-secondary p-5 shadow-sm"><div className="mb-5 flex flex-wrap items-center justify-between gap-4"><div><h2 className="text-xl font-extrabold text-primary">{editing ? `Edit ${label} payment` : `Record ${label} payment`}</h2><p className="mt-1 text-sm text-primary/60">Select the class first for school fees; fee structures remain administrator-controlled.</p></div>{editing && <button type="button" className="text-sm font-bold text-button" onClick={() => { setEditing(null); setForm(initialForm()); }}>Cancel edit</button>}</div>
       {type === "school" && <div className="mb-5 flex flex-wrap gap-2"><button type="button" onClick={() => setSchoolMode("individual")} className={`rounded-lg px-4 py-2 font-bold ${schoolMode === "individual" ? "bg-button text-secondary" : "bg-primary/10 text-primary"}`}>Individual payment</button><button type="button" onClick={() => { setSchoolMode("batch"); setEditing(null); }} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 font-bold ${schoolMode === "batch" ? "bg-button text-secondary" : "bg-primary/10 text-primary"}`}><FaUsers /> Class batch register</button></div>}
       <div className="grid gap-3 md:grid-cols-3">{type === "school" ? <><select required className={input} value={form.session} onChange={(event) => changeSchoolContext("session", event.target.value)}><option value="">Select session</option>{sessionOptions.map((value) => <option key={value}>{value}</option>)}</select><select required className={input} value={form.class_record} onChange={(event) => changeSchoolContext("class_record", event.target.value)}><option value="">Select class</option>{eligibleClasses.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}</select><select required className={input} value={form.term} onChange={(event) => changeSchoolContext("term", event.target.value)}><option value="">Select term</option>{terms.map((item) => <option key={item}>{item}</option>)}</select></> : <select required className={`${input} md:col-span-3`} value={form.enrollment} onChange={(event) => setForm({ ...form, enrollment: event.target.value })}><option value="">Select active {type} enrolment</option>{activeEnrollments.map((item) => <option key={item._id} value={item._id}>{item.student?.full_name} — {item.student?.admission_no} ({item.session}, {item.term})</option>)}</select>}</div>

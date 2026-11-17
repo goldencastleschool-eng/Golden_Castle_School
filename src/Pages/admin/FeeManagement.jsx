@@ -32,6 +32,7 @@ import {
   getFeeItemsKey,
   isFeeExemptCategory,
 } from "../../utils/feeCategories.js";
+import FeeSectionTemplateManagement from "./FeeSectionTemplateManagement.jsx";
 
 const DEFAULT_SESSION = "2025/2026";
 const PAGE_SIZE = 15;
@@ -223,6 +224,48 @@ const findFeeStructureForStudentFee = (
     .find(Boolean);
 };
 
+const getFeeSectionForClass = (classRecord = {}) => {
+  const name = (classRecord?.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  if (/(creche|pg1|pg2|pregrade|playgroup|preprimary|prekg)/.test(name)) return "early_years";
+  if (/(nursery|nur1|nur2|nur3|kg1|kg2|kg3)/.test(name)) return "nursery";
+  if (/(jss|juniorsecondary|js1|js2|js3)/.test(name)) return "junior_secondary";
+  if (/(sss|ss1|ss2|ss3|seniorsecondary)/.test(name)) return "senior_secondary";
+  if (/(basic|primary|pry|grade|b1|b2|b3|b4|b5)/.test(name)) return "basic";
+
+  return "";
+};
+
+const findEffectiveFeeStructure = (
+  feeStructures,
+  feeSectionTemplates,
+  classRecord,
+  session,
+  term,
+  feeCategory
+) => {
+  const classStructure = findFeeStructureForStudentFee(
+    feeStructures,
+    getRecordId(classRecord),
+    session,
+    term,
+    feeCategory
+  );
+
+  if (classStructure) return classStructure;
+
+  const section = getFeeSectionForClass(classRecord);
+  const structureCategories = getStructureCategoriesForFeeCategory(feeCategory);
+
+  return feeSectionTemplates.find(
+    (template) =>
+      template.section === section &&
+      template.session === session &&
+      template.term === term &&
+      structureCategories.includes(template.fee_category || "returning")
+  );
+};
+
 const getExpectedFeeSnapshot = ({ feeStructure, enrollment }) => {
   const feeCategory = enrollment?.fee_category || "returning";
   const baseAmount = Number(feeStructure?.amount || 0);
@@ -289,6 +332,7 @@ const getStudentPaidForFeeWindow = ({
 function FeeManagement() {
   const [fees, setFees] = useState([]);
   const [feeStructures, setFeeStructures] = useState([]);
+  const [feeSectionTemplates, setFeeSectionTemplates] = useState([]);
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [feeForm, setFeeForm] = useState(initialFeeForm);
@@ -323,16 +367,18 @@ function FeeManagement() {
   const fetchFeeData = async () => {
     try {
       setLoading(true);
-      const [feesResponse, feeStructuresResponse, studentsResponse, classesResponse] =
+      const [feesResponse, feeStructuresResponse, templatesResponse, studentsResponse, classesResponse] =
         await Promise.all([
           API.get("/fees"),
           API.get("/fee-structures"),
+          API.get("/fee-section-templates"),
           API.get("/students"),
           API.get("/classes"),
         ]);
 
       setFees(feesResponse.data || []);
       setFeeStructures(feeStructuresResponse.data || []);
+      setFeeSectionTemplates(templatesResponse.data || []);
       setStudents(studentsResponse.data || []);
       setClasses(classesResponse.data || []);
     } catch (error) {
@@ -447,9 +493,10 @@ function FeeManagement() {
         batchForm.session,
         batchForm.term
       );
-      const expectedStructure = findFeeStructureForStudentFee(
+      const expectedStructure = findEffectiveFeeStructure(
         feeStructures,
-        batchForm.class_record,
+        feeSectionTemplates,
+        selectedBatchClass,
         batchForm.session,
         batchForm.term,
         feeCategory
@@ -490,6 +537,7 @@ function FeeManagement() {
     batchForm.session,
     batchForm.term,
     feeStructures,
+    feeSectionTemplates,
     fees,
     selectedBatchClass,
     students,
@@ -536,9 +584,10 @@ function FeeManagement() {
       : "";
   const selectedFormIsFeeExempt = isFeeExemptCategory(selectedFormFeeCategory);
 
-  const selectedFormStructure = findFeeStructureForStudentFee(
+  const selectedFormStructure = findEffectiveFeeStructure(
     feeStructures,
-    feeForm.class_record,
+    feeSectionTemplates,
+    selectedFormClass,
     feeForm.session,
     feeForm.term,
     selectedFormFeeCategory
@@ -1042,7 +1091,7 @@ function FeeManagement() {
       setStatus({
         type: "error",
         message:
-          "Create a matching payment structure for this class, session, term, and student category before recording payment.",
+          "Create a matching class payment structure or section fee template for this session, term, and student category before recording payment.",
       });
       setSubmitting(false);
       return;
@@ -1924,6 +1973,7 @@ function FeeManagement() {
       </div>
 
       <div className="grid grid-cols-1 gap-8">
+        <FeeSectionTemplateManagement />
         <section className="rounded-lg bg-secondary p-6 shadow-lg">
           <div className="grid grid-cols-1 gap-8">
             <div>
