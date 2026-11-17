@@ -83,7 +83,10 @@ function ClassManagement() {
   const [studentViewSessionFilter, setStudentViewSessionFilter] = useState(
     DEFAULT_SESSION_FILTER
   );
+  const [studentViewTermFilter, setStudentViewTermFilter] = useState("");
   const [studentViewClassId, setStudentViewClassId] = useState("");
+  const [classRoster, setClassRoster] = useState([]);
+  const [loadingClassRoster, setLoadingClassRoster] = useState(false);
   const [studentNameSort, setStudentNameSort] = useState("az");
   const [className, setClassName] = useState("");
   const [classSession, setClassSession] = useState(DEFAULT_SESSION_FILTER);
@@ -209,31 +212,41 @@ function ClassManagement() {
     );
   }, [classes, studentViewSessionFilter]);
 
-  const classStudents = useMemo(() => {
-    const selectedClassRecord = classes.find(
-      (classRecord) =>
-        classRecord._id === studentViewClassId &&
-        classRecord.session === studentViewSessionFilter
-    );
-
-    if (!selectedClassRecord) {
-      return [];
-    }
-
-    return students.filter(
-      (student) =>
-        studentHasClassEnrollment(student, selectedClassRecord) ||
-        (normalizeClassName(student.class) ===
-          normalizeClassName(selectedClassRecord.name) &&
-          student.current_session === selectedClassRecord.session)
-    );
-  }, [classes, studentViewClassId, studentViewSessionFilter, students]);
-
   const selectedClassRecord = classes.find(
     (classRecord) =>
       classRecord._id === studentViewClassId &&
       classRecord.session === studentViewSessionFilter
   );
+
+  useEffect(() => {
+    if (!selectedClassRecord || !studentViewTermFilter) {
+      setClassRoster([]);
+      setLoadingClassRoster(false);
+      return undefined;
+    }
+
+    let active = true;
+    setLoadingClassRoster(true);
+    API.get(`/classes/${selectedClassRecord._id}/students`, {
+      params: { session: selectedClassRecord.session, term: studentViewTermFilter },
+    })
+      .then((response) => {
+        if (active) setClassRoster(response.data?.students || []);
+      })
+      .catch((error) => {
+        if (active) {
+          setClassRoster([]);
+          setStatus({ type: "error", message: error.response?.data?.message || "Unable to load the class roster." });
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingClassRoster(false);
+      });
+
+    return () => { active = false; };
+  }, [selectedClassRecord, studentViewTermFilter]);
+
+  const classStudents = classRoster;
 
   const sortedClassStudents = useMemo(() => {
     return [...classStudents].sort((firstStudent, secondStudent) => {
@@ -247,7 +260,7 @@ function ClassManagement() {
   }, [classStudents, studentNameSort]);
   useEffect(() => {
     setClassStudentPage(1);
-  }, [studentViewClassId, studentViewSessionFilter, sortedClassStudents.length]);
+  }, [studentViewClassId, studentViewSessionFilter, studentViewTermFilter, sortedClassStudents.length]);
 
   const visibleClassStudentPage = Math.min(
     classStudentPage,
@@ -479,6 +492,7 @@ function ClassManagement() {
 
   const handleStudentViewSessionChange = (event) => {
     setStudentViewSessionFilter(event.target.value);
+    setStudentViewTermFilter("");
     setStudentViewClassId("");
   };
 
@@ -998,7 +1012,7 @@ function ClassManagement() {
     }));
 
   const handleExportClassStudents = () => {
-    if (!selectedClassRecord || sortedClassStudents.length === 0) {
+    if (!selectedClassRecord || !studentViewTermFilter || sortedClassStudents.length === 0) {
       setStatus({
         type: "error",
         message: "Select a class with students before exporting.",
@@ -1035,7 +1049,7 @@ function ClassManagement() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${selectedClassRecord.name}-${selectedClassRecord.session}-students.csv`;
+    link.download = `${selectedClassRecord.name}-${selectedClassRecord.session}-${studentViewTermFilter}-students.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -1092,10 +1106,10 @@ function ClassManagement() {
         <body>
           ${getPrintBrandHeader({
             title: "Class Students",
-            subtitle: `${selectedClassRecord.name.toUpperCase()} - ${selectedClassRecord.session}`,
+            subtitle: `${selectedClassRecord.name.toUpperCase()} - ${selectedClassRecord.session} - ${studentViewTermFilter}`,
           })}
           <h1>${escapeHtml(selectedClassRecord.name.toUpperCase())} Students</h1>
-          <p>Session: ${escapeHtml(selectedClassRecord.session)} | Total: ${sortedClassStudents.length}</p>
+          <p>Session: ${escapeHtml(selectedClassRecord.session)} | Term: ${escapeHtml(studentViewTermFilter)} | Total: ${sortedClassStudents.length}</p>
           <table>
             <thead>
               <tr>
@@ -1367,12 +1381,12 @@ function ClassManagement() {
             </h3>
             <p className="mt-2 text-primary/70">
               {selectedClassRecord
-                ? "Only students registered under this class are shown."
-                : "Choose a class from the records above or the selector."}
+                ? "Active students are shown for the selected academic term."
+                : "Choose a session, term, and class to view the roster."}
             </p>
           </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-[220px_220px_170px_auto_auto] xl:items-end">
+        <div className="mb-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
 
           <div>
             <label className="mb-2 block text-sm font-semibold text-primary/60">
@@ -1387,6 +1401,22 @@ function ClassManagement() {
                 <option key={session} value={session}>
                   {session}
                 </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-primary/60">
+              Term
+            </label>
+            <select
+              className="w-full rounded-lg border border-primary/10 bg-primary/5 px-5 py-4 text-primary outline-none transition-all duration-300 focus:border-button focus:ring-2 focus:ring-button/20"
+              value={studentViewTermFilter}
+              onChange={(event) => setStudentViewTermFilter(event.target.value)}
+            >
+              <option value="">Select term</option>
+              {getVisibleTermsForSession(studentViewSessionFilter).map((term) => (
+                <option key={term} value={term}>{term}</option>
               ))}
             </select>
           </div>
@@ -1426,8 +1456,8 @@ function ClassManagement() {
           <button
             type="button"
             onClick={handleExportClassStudents}
-            disabled={!selectedClassRecord || sortedClassStudents.length === 0}
-            className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-lg transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={!selectedClassRecord || !studentViewTermFilter || sortedClassStudents.length === 0}
+            className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-button px-5 py-4 font-bold text-secondary shadow-lg transition-all duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 xl:col-span-2"
           >
             Export Excel
           </button>
@@ -1435,8 +1465,8 @@ function ClassManagement() {
           <button
             type="button"
             onClick={handlePrintClassStudents}
-            disabled={!selectedClassRecord || sortedClassStudents.length === 0}
-            className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={!selectedClassRecord || !studentViewTermFilter || sortedClassStudents.length === 0}
+            className="flex cursor-pointer items-center justify-center gap-3 rounded-lg bg-primary/10 px-5 py-4 font-bold text-primary transition-all duration-300 hover:bg-primary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-60 xl:col-span-2"
           >
             Print
           </button>
@@ -1448,13 +1478,20 @@ function ClassManagement() {
           </div>
         )}
 
-        <div className="mb-6 rounded-lg bg-primary/5 p-5">
-          <p className="text-sm font-semibold text-primary/50">
-            Students in Selected Class
-          </p>
-          <p className="mt-3 text-3xl font-extrabold text-primary">
-            {selectedClassRecord ? sortedClassStudents.length : "0"}
-          </p>
+        <div className="mb-6 flex flex-col gap-4 rounded-lg bg-primary/5 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-primary/50">
+              Active students in selected class
+            </p>
+            <p className="mt-3 text-3xl font-extrabold text-primary">
+              {selectedClassRecord && studentViewTermFilter ? sortedClassStudents.length : "0"}
+            </p>
+          </div>
+          <div className="rounded-lg bg-secondary px-4 py-3 text-sm font-bold text-primary/80">
+            {selectedClassRecord && studentViewTermFilter
+              ? `${selectedClassRecord.name.toUpperCase()} · ${selectedClassRecord.session} · ${studentViewTermFilter}`
+              : "Select session, term, and class"}
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-lg border border-primary/10">
@@ -1470,12 +1507,12 @@ function ClassManagement() {
             </thead>
 
             <tbody className="divide-y divide-primary/10">
-              {loadingStudents ? (
+              {loadingStudents || loadingClassRoster ? (
                 <TableSkeleton columns={5} />
-              ) : !selectedClassRecord ? (
+                ) : !selectedClassRecord || !studentViewTermFilter ? (
                 <tr>
                   <td className="px-5 py-6 text-primary/70" colSpan="5">
-                    Select a class to view students.
+                    Select a session, term, and class to view students.
                   </td>
                 </tr>
               ) : sortedClassStudents.length === 0 ? (

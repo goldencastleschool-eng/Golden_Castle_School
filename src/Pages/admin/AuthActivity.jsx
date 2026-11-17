@@ -12,6 +12,9 @@ import {
 import API from "../../api/axios.jsx";
 import AdminNotification from "../../components/common/AdminNotification.jsx";
 import { CardSkeleton } from "../../components/common/Loading.jsx";
+import PaginationControls from "../../components/common/PaginationControls.jsx";
+
+const PAGE_SIZE = 25;
 
 const roleOptions = [
   { label: "All users", value: "" },
@@ -45,11 +48,12 @@ const formatRole = (role = "") =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-const fetchAuthActivity = async (filters) => {
+const fetchAuthActivity = async (filters, page) => {
   const response = await API.get("/auth-activity", {
     params: {
       ...filters,
-      limit: 100,
+      limit: PAGE_SIZE,
+      page,
     },
   });
 
@@ -64,8 +68,9 @@ function AuthActivity() {
     date_to: "",
   });
   const [dismissedErrorMessage, setDismissedErrorMessage] = useState("");
+  const [page, setPage] = useState(1);
 
-  const queryKey = useMemo(() => ["auth-activity", filters], [filters]);
+  const queryKey = useMemo(() => ["auth-activity", filters, page], [filters, page]);
   const {
     data,
     error,
@@ -74,7 +79,7 @@ function AuthActivity() {
     refetch,
   } = useQuery({
     queryKey,
-    queryFn: () => fetchAuthActivity(filters),
+    queryFn: () => fetchAuthActivity(filters, page),
     staleTime: 1000 * 30,
   });
 
@@ -96,6 +101,7 @@ function AuthActivity() {
         };
 
   const updateFilter = (name, value) => {
+    setPage(1);
     setFilters((currentFilters) => ({
       ...currentFilters,
       [name]: value,
@@ -288,6 +294,13 @@ function AuthActivity() {
             </div>
           </div>
         )}
+
+        <PaginationControls
+          currentPage={data?.page || page}
+          totalItems={total}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+        />
       </section>
     </div>
   );

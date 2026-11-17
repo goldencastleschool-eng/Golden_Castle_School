@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   FaArrowRight,
   FaLayerGroup,
+  FaPrint,
   FaUserCheck,
   FaUserGraduate,
   FaUsers,
@@ -19,6 +20,10 @@ import {
   normalizeTermForSession,
 } from "../../utils/academicTerms.js";
 import { feeCategories, formatFeeCategory } from "../../utils/feeCategories.js";
+import {
+  getPrintBrandHeader,
+  getPrintBrandStyles,
+} from "../../utils/printBranding.js";
 
 const initialStudentForm = {
   full_name: "",
@@ -39,6 +44,15 @@ const PAGE_SIZE = 15;
 
 const normalizeClassName = (className = "") =>
   className.toString().trim().toLowerCase().replace(/\s+/g, "");
+
+const escapeHtml = (value = "") =>
+  value
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
 const isActiveStudent = (student) =>
   !student.status || student.status === "active";
@@ -99,6 +113,7 @@ function StudentManagement() {
   );
   const [studentViewTermFilter, setStudentViewTermFilter] = useState("");
   const [studentViewClassId, setStudentViewClassId] = useState("");
+  const [viewedClassRoster, setViewedClassRoster] = useState([]);
   const [studentNameSort, setStudentNameSort] = useState("az");
   const [status, setStatus] = useState({ type: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -491,36 +506,33 @@ function StudentManagement() {
     );
   }, [classes, studentViewClassId, studentViewSessionFilter]);
 
-  const viewedClassStudents = useMemo(() => {
-    if (!selectedViewClass) {
-      return [];
+  useEffect(() => {
+    if (!selectedViewClass || !studentViewTermFilter) {
+      setViewedClassRoster([]);
+      return undefined;
     }
 
-    return students.filter(
-      (student) => {
-        if (
-          !isActiveStudent(student) ||
-          normalizeClassName(student.class) !==
-            normalizeClassName(selectedViewClass.name) ||
-          student.current_session !== selectedViewClass.session
-        ) {
-          return false;
+    let active = true;
+    API.get(`/classes/${selectedViewClass._id}/students`, {
+      params: { session: selectedViewClass.session, term: studentViewTermFilter },
+    })
+      .then((response) => {
+        if (active) setViewedClassRoster(response.data?.students || []);
+      })
+      .catch((error) => {
+        if (active) {
+          setViewedClassRoster([]);
+          setStatus({
+            type: "error",
+            message: error.response?.data?.message || "Unable to load the class roster.",
+          });
         }
+      });
 
-        if (!studentViewTermFilter) {
-          return true;
-        }
+    return () => { active = false; };
+  }, [selectedViewClass, studentViewTermFilter]);
 
-        return Boolean(
-          getStudentFeeEnrollment(
-            student,
-            selectedViewClass.session,
-            studentViewTermFilter
-          )
-        );
-      }
-    );
-  }, [selectedViewClass, studentViewTermFilter, students]);
+  const viewedClassStudents = viewedClassRoster;
 
   const sortedViewedClassStudents = useMemo(() => {
     return [...viewedClassStudents].sort((firstStudent, secondStudent) => {
@@ -559,6 +571,79 @@ function StudentManagement() {
       normalizeTermForSession(currentTerm, nextSession)
     );
     setStudentViewClassId("");
+  };
+
+  const handlePrintViewedStudents = () => {
+    if (!selectedViewClass) {
+      setStatus({
+        type: "error",
+        message: "Select a session and class before printing the student register.",
+      });
+      return;
+    }
+
+    const printWindow = window.open("", "_blank", "width=1100,height=800");
+
+    if (!printWindow) {
+      setStatus({
+        type: "error",
+        message: "Unable to open the print window. Allow popups and try again.",
+      });
+      return;
+    }
+
+    const studentRows = sortedViewedClassStudents
+      .map((student, index) => {
+        const enrollment = getPreferredStudentFeeEnrollment(
+          student,
+          selectedViewClass.session,
+          studentViewTermFilter
+        );
+        const feeCategory = enrollment?.fee_category
+          ? formatFeeCategory(enrollment.fee_category)
+          : "Not set";
+
+        return `<tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(student.full_name)}</td>
+          <td>${escapeHtml(student.admission_no)}</td>
+          <td>${escapeHtml(student.gender || "Not set")}</td>
+          <td>${escapeHtml(feeCategory)}</td>
+        </tr>`;
+      })
+      .join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${escapeHtml(selectedViewClass.name.toUpperCase())} Student Register</title>
+          <style>
+            ${getPrintBrandStyles()}
+            body { font-family: Arial, sans-serif; color: #111; padding: 24px; }
+            h1 { margin: 0 0 6px; font-size: 24px; }
+            p { margin: 0 0 14px; color: #555; }
+            table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+            th, td { border: 1px solid #ddd; padding: 9px; text-align: left; font-size: 13px; }
+            th { background: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          ${getPrintBrandHeader({
+            title: "Student Register",
+            subtitle: `${selectedViewClass.name.toUpperCase()} - ${selectedViewClass.session}${studentViewTermFilter ? ` - ${studentViewTermFilter}` : ""}`,
+          })}
+          <h1>${escapeHtml(selectedViewClass.name.toUpperCase())} Student Register</h1>
+          <p>Session: ${escapeHtml(selectedViewClass.session)}${studentViewTermFilter ? ` | Term: ${escapeHtml(studentViewTermFilter)}` : ""} | Active students: ${sortedViewedClassStudents.length}</p>
+          <table>
+            <thead><tr><th>S/N</th><th>Student</th><th>Admission No.</th><th>Gender</th><th>Fee Category</th></tr></thead>
+            <tbody>${studentRows || '<tr><td colspan="5">No active students found.</td></tr>'}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    window.setTimeout(() => printWindow.print(), 250);
   };
 
   const availableClasses = classes.filter(
@@ -799,7 +884,8 @@ function StudentManagement() {
 
         <section className="rounded-lg bg-secondary p-6 shadow-lg">
           <div className="mb-6 flex flex-col gap-4 rounded-lg bg-secondary p-6 shadow-lg">
-            <div>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
               <p className="text-sm font-bold uppercase text-button">
                 Student Filters
               </p>
@@ -810,6 +896,16 @@ function StudentManagement() {
                 Select a session and class to view active students in that
                 class.
               </p>
+              </div>
+              <button
+                type="button"
+                onClick={handlePrintViewedStudents}
+                disabled={!selectedViewClass || !studentViewTermFilter || loadingStudents}
+                className="inline-flex items-center gap-2 rounded-lg bg-button px-4 py-3 text-sm font-bold text-secondary shadow-md transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <FaPrint />
+                Print students
+              </button>
             </div>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -830,7 +926,7 @@ function StudentManagement() {
                 value={studentViewTermFilter}
               onChange={(event) => setStudentViewTermFilter(event.target.value)}
             >
-              <option value="">All terms</option>
+              <option value="">Select term</option>
               {getVisibleTermsForSession(studentViewSessionFilter).map((term) => (
                 <option key={term} value={term}>
                   {term}

@@ -333,6 +333,9 @@ function FeeManagement() {
   const [fees, setFees] = useState([]);
   const [feeStructures, setFeeStructures] = useState([]);
   const [feeSectionTemplates, setFeeSectionTemplates] = useState([]);
+  const [feeFormRoster, setFeeFormRoster] = useState([]);
+  const [batchRoster, setBatchRoster] = useState([]);
+  const [filterRoster, setFilterRoster] = useState([]);
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [feeForm, setFeeForm] = useState(initialFeeForm);
@@ -435,30 +438,78 @@ function FeeManagement() {
     [classes, structureForm.session]
   );
 
-  const formStudents = useMemo(() => {
-    const selectedClass = classes.find(
-      (classRecord) => classRecord._id === feeForm.class_record
-    );
+  useEffect(() => {
+    if (!feeForm.class_record || !feeForm.session || !feeForm.term) {
+      setFeeFormRoster([]);
+      return undefined;
+    }
 
-    return sortStudentsByName(
-      students.filter((student) => {
-        if (!isActiveStudent(student)) {
-          return false;
-        }
-
-        if (!selectedClass || !feeForm.term) {
-          return false;
-        }
-
-        return studentBelongsToTermClass(
-          student,
-          selectedClass,
-          feeForm.session,
-          feeForm.term
-        );
+    let active = true;
+    API.get(`/classes/${feeForm.class_record}/students`, {
+      params: { session: feeForm.session, term: feeForm.term },
+    })
+      .then((response) => {
+        if (active) setFeeFormRoster(response.data?.students || []);
       })
-    );
-  }, [classes, feeForm.class_record, feeForm.session, feeForm.term, students]);
+      .catch((error) => {
+        if (active) {
+          setFeeFormRoster([]);
+          setStatus({ type: "error", message: error.response?.data?.message || "Unable to load the fee class roster." });
+        }
+      });
+
+    return () => { active = false; };
+  }, [feeForm.class_record, feeForm.session, feeForm.term]);
+
+  useEffect(() => {
+    if (!batchForm.class_record || !batchForm.session || !batchForm.term) {
+      setBatchRoster([]);
+      return undefined;
+    }
+
+    let active = true;
+    API.get(`/classes/${batchForm.class_record}/students`, {
+      params: { session: batchForm.session, term: batchForm.term },
+    })
+      .then((response) => {
+        if (active) setBatchRoster(response.data?.students || []);
+      })
+      .catch((error) => {
+        if (active) {
+          setBatchRoster([]);
+          setStatus({ type: "error", message: error.response?.data?.message || "Unable to load the batch class roster." });
+        }
+      });
+
+    return () => { active = false; };
+  }, [batchForm.class_record, batchForm.session, batchForm.term]);
+
+  useEffect(() => {
+    if (!filters.class_record || !filters.session || !filters.term) {
+      setFilterRoster([]);
+      return undefined;
+    }
+
+    let active = true;
+    API.get(`/classes/${filters.class_record}/students`, {
+      params: { session: filters.session, term: filters.term },
+    })
+      .then((response) => {
+        if (active) setFilterRoster(response.data?.students || []);
+      })
+      .catch((error) => {
+        if (active) {
+          setFilterRoster([]);
+          setStatus({ type: "error", message: error.response?.data?.message || "Unable to load the payment class roster." });
+        }
+      });
+
+    return () => { active = false; };
+  }, [filters.class_record, filters.session, filters.term]);
+
+  const formStudents = useMemo(() => {
+    return sortStudentsByName(feeFormRoster);
+  }, [feeFormRoster]);
 
   const selectedBatchClass = useMemo(
     () =>
@@ -471,18 +522,7 @@ function FeeManagement() {
       return [];
     }
 
-    return sortStudentsByName(
-      students.filter(
-        (student) =>
-          isActiveStudent(student) &&
-          studentBelongsToTermClass(
-            student,
-            selectedBatchClass,
-            batchForm.session,
-            batchForm.term
-          )
-      )
-    ).map((student) => {
+    return sortStudentsByName(batchRoster).map((student) => {
       const feeCategory = getStudentFeeCategory(
         student,
         batchForm.session,
@@ -538,9 +578,9 @@ function FeeManagement() {
     batchForm.term,
     feeStructures,
     feeSectionTemplates,
+    batchRoster,
     fees,
     selectedBatchClass,
-    students,
   ]);
 
   const selectedBatchRows = batchPaymentRows.filter(
@@ -1378,18 +1418,7 @@ function FeeManagement() {
       return [];
     }
 
-    return students
-      .filter((student) => {
-        return (
-          isActiveStudent(student) &&
-          studentBelongsToTermClass(
-            student,
-            selectedFilterClass,
-            filters.session,
-            filters.term
-          )
-        );
-      })
+    return filterRoster
       .sort((firstStudent, secondStudent) =>
         (firstStudent.full_name || "").localeCompare(secondStudent.full_name || "")
       )
@@ -1411,9 +1440,10 @@ function FeeManagement() {
           filters.session,
           filters.term
         );
-        const expectedStructure = findFeeStructureForStudentFee(
+        const expectedStructure = findEffectiveFeeStructure(
           feeStructures,
-          filters.class_record,
+          feeSectionTemplates,
+          selectedFilterClass,
           filters.session,
           filters.term,
           feeCategory
@@ -1446,8 +1476,9 @@ function FeeManagement() {
     filters.session,
     filters.term,
     feeStructures,
+    feeSectionTemplates,
+    filterRoster,
     selectedFilterClass,
-    students,
   ]);
   const balanceRows = useMemo(() => {
     if (!filters.payment_status) {
