@@ -5,10 +5,7 @@ import {
 } from "react-icons/fa6";
 
 import API from "../../api/axios.jsx";
-import {
-  ACADEMIC_TERMS,
-  getVisibleTermsForSession,
-} from "../../utils/academicTerms.js";
+import { ACADEMIC_TERMS } from "../../utils/academicTerms.js";
 import {
   formatCurrency,
   formatFeeCategory,
@@ -32,6 +29,7 @@ const sortFeeTerms = (terms = []) =>
 
 function StudentFees() {
   const [summaries, setSummaries] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [paymentHistoryFilter, setPaymentHistoryFilter] = useState({
     session: "",
     term: "",
@@ -44,25 +42,27 @@ function StudentFees() {
         setError("");
 
         const response = await API.get("/fees/me");
-        const summaryList = (response.data?.summaries || []).filter((summary) =>
-          getVisibleTermsForSession(summary.session).includes(summary.term)
+        const summaryList = response.data?.summaries || [];
+        const paymentList = response.data?.payments || summaryList.flatMap(
+          (summary) => summary.payments || []
         );
 
         setSummaries(summaryList);
+        setPayments(paymentList);
 
-        if (summaryList.length > 0) {
-          const firstSummary = summaryList[0];
+        const newestRecord = [...summaryList, ...paymentList].sort(
+          (firstRecord, secondRecord) =>
+            (secondRecord.session || "").localeCompare(
+              firstRecord.session || ""
+            ) ||
+            getTermSortValue(firstRecord.term) -
+              getTermSortValue(secondRecord.term)
+        )[0];
 
-          setPaymentHistoryFilter({
-            session: firstSummary.session || "",
-            term: firstSummary.term || "",
-          });
-        } else {
-          setPaymentHistoryFilter({
-            session: "",
-            term: "",
-          });
-        }
+        setPaymentHistoryFilter({
+          session: newestRecord?.session || "",
+          term: newestRecord?.term || "",
+        });
       } catch (requestError) {
         setError(
           requestError.response?.data?.message ||
@@ -75,33 +75,39 @@ function StudentFees() {
     fetchFees();
   }, []);
 
-  const allPayments = useMemo(
-    () => summaries.flatMap((summary) => summary.payments || []),
-    [summaries]
-  );
+  const allPayments = payments;
 
   const paymentSessionOptions = useMemo(() => {
     return [
-      ...new Set(summaries.map((summary) => summary.session).filter(Boolean)),
+      ...new Set([
+        ...summaries.map((summary) => summary.session),
+        ...payments.map((payment) => payment.session),
+      ].filter(Boolean)),
     ].sort((firstSession, secondSession) =>
       secondSession.localeCompare(firstSession)
     );
-  }, [summaries]);
+  }, [payments, summaries]);
 
   const paymentTermOptions = useMemo(() => {
-    return sortFeeTerms([
-      ...new Set(
-        summaries
+    const terms = [
+      ...summaries
+        .filter(
+          (summary) =>
+            !paymentHistoryFilter.session ||
+            summary.session === paymentHistoryFilter.session
+        )
+        .map((summary) => summary.term),
+        ...payments
           .filter(
-            (summary) =>
+            (payment) =>
               !paymentHistoryFilter.session ||
-              summary.session === paymentHistoryFilter.session
+              payment.session === paymentHistoryFilter.session
           )
-          .map((summary) => summary.term)
-          .filter(Boolean)
-      ),
-    ]);
-  }, [paymentHistoryFilter.session, summaries]);
+          .map((payment) => payment.term),
+      ].filter(Boolean);
+
+    return sortFeeTerms([...new Set(terms)]);
+  }, [paymentHistoryFilter.session, payments, summaries]);
 
   const paymentHistorySummaries = useMemo(() => {
     return summaries.filter(
@@ -112,14 +118,17 @@ function StudentFees() {
     );
   }, [paymentHistoryFilter.session, paymentHistoryFilter.term, summaries]);
 
-  const filteredPaymentHistory = useMemo(() => {
-    return paymentHistorySummaries.flatMap((summary) =>
-      (summary.payments || []).map((payment) => ({
-        ...payment,
-        fee_category: payment.fee_category || summary.fee_category,
-      }))
-    );
-  }, [paymentHistorySummaries]);
+  const filteredPaymentHistory = useMemo(
+    () =>
+      payments.filter(
+        (payment) =>
+          (!paymentHistoryFilter.session ||
+            payment.session === paymentHistoryFilter.session) &&
+          (!paymentHistoryFilter.term ||
+            payment.term === paymentHistoryFilter.term)
+      ),
+    [paymentHistoryFilter.session, paymentHistoryFilter.term, payments]
+  );
 
   const paymentHistoryExpected = paymentHistorySummaries.reduce(
     (sum, summary) => sum + Number(summary.expected_amount || 0),
@@ -149,9 +158,9 @@ function StudentFees() {
       if (name === "session") {
         const termsForSession = sortFeeTerms([
           ...new Set(
-            summaries
-              .filter((summary) => summary.session === value)
-              .map((summary) => summary.term)
+            [...summaries, ...payments]
+              .filter((record) => record.session === value)
+              .map((record) => record.term)
               .filter(Boolean)
           ),
         ]);
